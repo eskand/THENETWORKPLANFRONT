@@ -1,0 +1,188 @@
+/* ============================================================
+   Design tokens — repris a l'identique du prototype approuve
+   (A4 / TNP_DEMO_FINAL_v226_114.html, bloc :root).
+   Navy / or / rouge du logo, zone principale claire, barre
+   laterale sombre independante du theme clair.
+
+   La seconde moitie du fichier remappe les anciens noms
+   (--surface, --ink-900, --line-strong...) sur ces tokens :
+   dispatch.css continue de fonctionner et adopte la nouvelle
+   palette sans etre reecrit ligne a ligne.
+   ============================================================ */
+:root {
+  /* marque TNP */
+  --tnp-navy: #0d1b3e;
+  --tnp-navy-2: #1b2d6b;
+  --tnp-gold: #c9a227;
+  --tnp-red: #c8202f;
+
+  /* zone principale — claire */
+  --bg: #eef0f4;
+  --bg-panel: #ffffff;
+  --bg-panel-2: #f5f6f9;
+  --bg-raised: #eef0f5;
+  --line: #e1e4ec;
+  --line-soft: #ececf1;
+  --text: #16203d;
+  --text-dim: #5b6178;
+  --text-faint: #939aad;
+  --gold: #a9811d;
+  --gold-dim: #d9c384;
+
+  /* statuts operationnels */
+  --status-scheduled: #2f6fb0;
+  --status-enroute: #1f9d5c;
+  --status-delayed: #b8790a;
+  --status-aog: #c8202f;
+  --status-maint: #7b4fc9;
+  --status-off: #c7cbd6;
+
+  --radius: 4px;
+
+  --mono: 'JetBrains Mono', 'SFMono-Regular', ui-monospace, Consolas, monospace;
+  --display: 'Space Grotesk', 'Segoe UI', system-ui, sans-serif;
+  --body: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+
+  /* barre laterale — navy fixe */
+  --sb-bg: #0a1530;
+  --sb-bg-2: #0f1c3d;
+  --sb-line: rgba(255, 255, 255, 0.08);
+  --sb-text: #c7cede;
+  --sb-text-dim: #8e97b8;
+  --sb-label: #d1a53d;
+  --sb-active-bg: rgba(201, 162, 39, 0.16);
+  --sb-gold: #d1a53d;
+
+  --sidebar-width: 240px;
+
+  /* ---------- alias de compatibilite ----------
+     Ces noms viennent de la premiere version du front. Ils sont
+     conserves pour que dispatch.css et les composants existants
+     n'aient pas a etre reecrits, mais ils pointent maintenant sur
+     les couleurs du prototype. */
+  --navy-900: var(--tnp-navy);
+  --navy-800: var(--tnp-navy);
+  --navy-700: var(--tnp-navy-2);
+  --navy-500: var(--tnp-navy-2);
+  --navy: var(--tnp-navy);
+
+  --paper: var(--bg);
+  --surface: var(--bg-panel);
+  --surface-sunken: var(--bg-panel-2);
+
+  --ink-900: var(--text);
+  --ink-700: var(--text-dim);
+  --ink-500: var(--text-dim);
+  --ink-400: var(--text-faint);
+  --line-strong: #d2d7e3;
+
+  --ready-fg: #15803d;
+  --ready-bg: #e9f6ee;
+  --ready-line: #bfe3cc;
+
+  --pending-fg: var(--status-delayed);
+  --pending-bg: #fdf4e5;
+  --pending-line: #f0d9ad;
+
+  --attention-fg: var(--status-aog);
+  --attention-bg: #fdeceb;
+  --attention-line: #f3c8c5;
+
+  --info-fg: #1e4a8f;
+  --info-bg: #e9eef9;
+  --info-line: #c7d5ef;
+
+  --neutral-fg: #55554f;
+  --neutral-bg: #eef0f5;
+  --neutral-line: #dedcd4;
+
+  --accent-orange: #d97706;
+  --accent-teal: #0f766e;
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-pill: 999px;
+
+  --shadow-card: 0 1px 2px rgba(20, 39, 92, 0.05);
+  --shadow-pop: 0 12px 32px rgba(13, 30, 70, 0.16);
+
+  --font-sans: var(--body);
+  --font-mono: var(--mono);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--body);
+  font-size: 13px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--gold-dim);
+  color: #1a2036;
+}
+
+::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c7cbd6;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a7adc4;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--display);
+  font-weight: 600;
+}
+
+/* En-tetes de tableau, libelles de KPI et titres de section. */
+.eyebrow {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.mono {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+}

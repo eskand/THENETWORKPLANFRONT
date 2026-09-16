@@ -1,0 +1,471 @@
+/* ============================================================
+   Simulation Center — sombre, et cantonné au module.
+
+   POURQUOI SOMBRE. Le prototype scope ce module dans sa propre
+   palette bleu nuit (#viewSimulationCenter, l. 88941-89004) et ce
+   n'est pas une fantaisie : on est dans un bac à sable, pas dans
+   l'exploitation. L'écart visuel est l'avertissement. Un dispatcher
+   qui regarde un plan dégradé doit voir au premier coup d'œil qu'il
+   ne regarde pas le vrai.
+
+   COMMENT C'EST CANTONNÉ. Tout descend de .sc-root, qui redéclare
+   ses propres jetons --sc-*. Rien ne fuit vers le reste de
+   l'application : les vingt autres écrans gardent la palette claire.
+
+   D'OÙ VIENNENT LES VALEURS. Du prototype, au pixel et à la teinte :
+   navy #0F1B3D, panel #121F45, panel2 #182757, line #2A3B78,
+   gold #C9A227 / #F5B800, ink #EAF0FF, dim #9FB0DC, faint #6B7BAA.
+   Les quatre couleurs de difficulté aussi.
+   ============================================================ */
+
+.sc-root {
+  --sc-navy: #0f1b3d;
+  --sc-navy2: #1b2d6b;
+  --sc-panel: #121f45;
+  --sc-panel2: #182757;
+  --sc-line: #2a3b78;
+  --sc-lsoft: #22315f;
+  --sc-gold: #c9a227;
+  --sc-gold2: #f5b800;
+  --sc-red: #c8202f;
+  --sc-redsoft: #e85463;
+  --sc-green: #2fa36b;
+  --sc-amber: #e8a13d;
+  --sc-blue: #4f7de0;
+  --sc-ink: #eaf0ff;
+  --sc-dim: #9fb0dc;
+  --sc-faint: #6b7baa;
+
+  background: #0b1430;
+  color: var(--sc-ink);
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.sc-root * { box-sizing: border-box; }
+
+/* La barre de défilement suit le module, sinon une glissière claire
+   traverse un panneau sombre. */
+.sc-root ::-webkit-scrollbar { width: 10px; height: 10px; }
+.sc-root ::-webkit-scrollbar-thumb { background: var(--sc-line); border-radius: 5px; }
+.sc-root ::-webkit-scrollbar-track { background: transparent; }
+
+/* --- bandeau --- */
+.sc-head {
+  background: linear-gradient(180deg, var(--sc-navy2), var(--sc-navy));
+  border-bottom: 2px solid var(--sc-gold);
+  padding: 10px 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.sc-head__t1 {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 2.5px;
+}
+
+.sc-head__t1 b { color: var(--sc-gold2); font-weight: 700; }
+
+.sc-head__t2 {
+  font-size: 10px;
+  letter-spacing: 1.6px;
+  color: var(--sc-faint);
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+.sc-head__spacer { flex: 1; }
+
+.sc-mode {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  background: var(--sc-panel);
+  border: 1px solid var(--sc-line);
+  color: var(--sc-dim);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1.2px;
+  padding: 7px 14px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.sc-mode__led {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--sc-green);
+}
+
+/* --- onglets --- */
+.sc-tabs {
+  display: flex;
+  gap: 2px;
+  background: var(--sc-navy);
+  padding: 0 18px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--sc-lsoft);
+  overflow-x: auto;
+}
+
+.sc-tab {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--sc-faint);
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 11px 14px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.sc-tab:hover { color: var(--sc-dim); }
+.sc-tab--active { color: var(--sc-gold2); border-bottom-color: var(--sc-gold2); }
+
+/* --- corps --- */
+.sc-body {
+  flex: 1;
+  overflow: auto;
+  padding: 16px 18px 40px;
+  min-height: 0;
+}
+
+.sc-panel {
+  background: var(--sc-panel);
+  border: 1px solid var(--sc-lsoft);
+  border-radius: 6px;
+  margin-bottom: 14px;
+}
+
+.sc-panel__head {
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--sc-lsoft);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.sc-panel__title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--sc-gold);
+}
+
+.sc-panel__sub {
+  font-size: 10.5px;
+  color: var(--sc-faint);
+  flex: 1;
+  min-width: 200px;
+  line-height: 1.5;
+}
+
+.sc-panel__body { padding: 14px; }
+
+/* --- cartes de difficulté --- */
+.sc-levels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 10px;
+}
+
+.sc-level {
+  background: var(--sc-panel2);
+  border: 1px solid var(--sc-lsoft);
+  border-radius: 6px;
+  padding: 14px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  transition: border-color 0.15s, transform 0.15s;
+}
+
+.sc-level:hover { border-color: var(--sc-gold); transform: translateY(-1px); }
+
+.sc-level--active {
+  border-color: var(--sc-gold2);
+  box-shadow: 0 0 0 1px var(--sc-gold2);
+}
+
+/* Le filet de 3 px en haut de la carte : c'est lui qui porte la couleur
+   du niveau, le nom la reprend en plus clair. */
+.sc-level__bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+}
+
+.sc-level__name {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+}
+
+.sc-level__desc {
+  font-size: 10.5px;
+  color: var(--sc-dim);
+  line-height: 1.5;
+}
+
+.sc-level__count {
+  font-size: 10px;
+  color: var(--sc-faint);
+  margin-top: 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.sc-level__count b { color: var(--sc-dim); }
+.sc-level__short { color: var(--sc-amber); }
+
+.sc-level--EASY .sc-level__name { color: #6fe3a8; }
+.sc-level--EASY .sc-level__bar { background: var(--sc-green); }
+.sc-level--MEDIUM .sc-level__name { color: #f1c069; }
+.sc-level--MEDIUM .sc-level__bar { background: var(--sc-amber); }
+.sc-level--HARD .sc-level__name { color: #f19a69; }
+.sc-level--HARD .sc-level__bar { background: #e8703d; }
+.sc-level--EXTREME .sc-level__name { color: #f58ba0; }
+.sc-level--EXTREME .sc-level__bar { background: var(--sc-red); }
+.sc-level--CUSTOM .sc-level__name { color: #8aacf5; }
+.sc-level--CUSTOM .sc-level__bar { background: var(--sc-blue); }
+
+/* --- boutons --- */
+.sc-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 14px;
+}
+
+.sc-btn {
+  background: var(--sc-panel2);
+  border: 1px solid var(--sc-line);
+  color: var(--sc-ink);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  padding: 8px 15px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.sc-btn:hover { border-color: var(--sc-gold); }
+.sc-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.sc-btn--gold {
+  background: var(--sc-gold);
+  border-color: var(--sc-gold);
+  color: #1a1503;
+}
+
+.sc-btn--gold:hover { background: var(--sc-gold2); border-color: var(--sc-gold2); }
+
+.sc-btn--red {
+  background: transparent;
+  border-color: var(--sc-red);
+  color: var(--sc-redsoft);
+}
+
+.sc-btn--red:hover { background: var(--sc-red); color: #fff; }
+
+.sc-actions__sep {
+  width: 1px;
+  align-self: stretch;
+  background: var(--sc-lsoft);
+  margin: 0 4px;
+}
+
+/* --- champs dans le module sombre --- */
+.sc-root input,
+.sc-root select {
+  background: var(--sc-navy);
+  border: 1px solid var(--sc-line);
+  color: var(--sc-ink);
+  border-radius: 4px;
+  padding: 7px 10px;
+  font: inherit;
+  font-size: 12px;
+}
+
+.sc-root input:focus,
+.sc-root select:focus { outline: none; border-color: var(--sc-gold2); }
+.sc-root input:disabled { opacity: 0.4; }
+
+.sc-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10.5px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--sc-faint);
+}
+
+/* --- tuiles --- */
+.sc-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.sc-tile {
+  background: #16224e;
+  border: 1px solid var(--sc-lsoft);
+  border-radius: 5px;
+  padding: 10px 12px;
+}
+
+.sc-tile__value {
+  font-size: 21px;
+  font-weight: 700;
+  color: var(--sc-gold2);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+}
+
+.sc-tile__label {
+  font-size: 9.5px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--sc-faint);
+  margin-top: 2px;
+}
+
+/* --- tableaux --- */
+.sc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11.5px;
+}
+
+.sc-table th {
+  text-align: left;
+  padding: 7px 10px;
+  font-size: 9.5px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--sc-faint);
+  border-bottom: 1px solid var(--sc-line);
+  white-space: nowrap;
+}
+
+.sc-table td {
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--sc-lsoft);
+  color: var(--sc-dim);
+  vertical-align: middle;
+}
+
+.sc-table tr:hover td { background: rgba(201, 162, 39, 0.04); }
+.sc-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.sc-table .ref { color: var(--sc-ink); font-variant-numeric: tabular-nums; }
+
+/* La gravité, en pastille sombre — les Badge clairs de l'application
+   seraient illisibles ici. */
+.sc-sev {
+  display: inline-block;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 8px;
+  border: 1px solid;
+}
+
+.sc-sev--CRITICAL { color: #ffd9de; background: #3a1220; border-color: var(--sc-red); }
+.sc-sev--HIGH { color: #ffe2c4; background: #3a2612; border-color: var(--sc-amber); }
+.sc-sev--MEDIUM { color: #d8e3ff; background: #182757; border-color: var(--sc-blue); }
+.sc-sev--LOW { color: var(--sc-dim); background: var(--sc-panel2); border-color: var(--sc-lsoft); }
+
+/* --- résultat d'injection --- */
+.sc-result {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--sc-lsoft);
+  font-size: 12px;
+}
+
+.sc-result:last-child { border-bottom: none; }
+.sc-result__label { flex: 1; min-width: 0; color: var(--sc-ink); }
+.sc-result__key { font-size: 10px; color: var(--sc-faint); }
+
+.sc-result__count {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  width: 84px;
+  text-align: right;
+  color: var(--sc-ink);
+}
+
+.sc-result__count--short { color: var(--sc-amber); }
+.sc-result__count--none { color: var(--sc-faint); font-weight: 500; }
+
+/* --- notes et états --- */
+.sc-note {
+  font-size: 10.5px;
+  color: var(--sc-faint);
+  line-height: 1.6;
+  margin-top: 12px;
+}
+
+.sc-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--sc-faint);
+  font-size: 12px;
+}
+
+.sc-empty h3 {
+  color: var(--sc-ink);
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 6px;
+}
+
+.sc-error {
+  border: 1px solid var(--sc-red);
+  border-left: 3px solid var(--sc-red);
+  background: #2a0f18;
+  border-radius: 5px;
+  padding: 11px 14px;
+  font-size: 12px;
+  color: #ffd9de;
+  margin-bottom: 12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sc-level { transition: none; }
+  .sc-level:hover { transform: none; }
+}
+
+@media (max-width: 900px) {
+  .sc-head, .sc-tabs, .sc-body { padding-left: 14px; padding-right: 14px; }
+}

@@ -1,0 +1,781 @@
+/* ==================================================================
+   Flight Timeline — vue Gantt.
+
+   Repris du prototype : une heure vaut 75 px, la grille deborde et
+   defile horizontalement, la colonne des immatriculations reste collee
+   a gauche. Les couleurs d'etat sont declarees une fois ici et servent
+   a la fois aux barres et a la legende, pour qu'un carre de legende ne
+   puisse jamais annoncer une couleur que les barres n'emploient pas.
+   ================================================================== */
+
+:root {
+  --tl-scheduled: #1e3a8a;
+  --tl-enroute: #1f9d55;
+  --tl-delayed: #d9a406;
+  --tl-aog: #d0342c;
+  --tl-maint: #7c4dd0;
+  --tl-closed: #64748b;
+  --tl-cancelled: #475569;
+  --tl-row-h: 58px;
+}
+
+.page--wide {
+  max-width: none;
+}
+
+/* ------------------------------------------------------------ tuiles */
+
+.kpi__delta {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  font-weight: 800;
+  margin-right: 6px;
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.06);
+  color: var(--text-faint);
+}
+
+.kpi__delta.good {
+  background: rgba(31, 157, 85, 0.12);
+  color: #1f7a47;
+}
+
+.kpi__delta.bad {
+  background: rgba(208, 52, 44, 0.12);
+  color: #b3241d;
+}
+
+.kpi--alarm {
+  border-top: 2px solid var(--tl-aog);
+}
+
+/* -------------------------------------------------------- barre d'outils */
+
+.tltb {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 10px 0 6px;
+}
+
+.tltb__seg {
+  display: flex;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.tltb__seg button {
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border: 0;
+  background: var(--surface);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.tltb__seg button.is-on {
+  background: var(--tnp-navy);
+  color: #fff;
+}
+
+.tltb__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 6px 11px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.tltb__btn:hover {
+  border-color: var(--tnp-navy);
+}
+
+.tltb__btn--icon {
+  padding: 6px 8px;
+}
+
+.tltb__zoom {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 2px 4px;
+  background: var(--surface);
+}
+
+.tltb__zoom button {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.tltb__zoom button:hover:not(:disabled) {
+  background: rgba(15, 23, 42, 0.07);
+  color: var(--text);
+}
+
+.tltb__zoom button:disabled {
+  opacity: 0.32;
+  cursor: default;
+}
+
+.tltb__zoom span {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  min-width: 46px;
+  text-align: center;
+}
+
+.tltb__date {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tltb__date button {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  background: var(--surface);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.tltb__date button:hover {
+  border-color: var(--tnp-navy);
+  color: var(--text);
+}
+
+.tltb__today {
+  font-family: var(--display);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.tltb__date input {
+  font-family: inherit;
+  font-size: 11px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  cursor: pointer;
+}
+
+.tltb__filters {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.tltb__filters select {
+  font-family: inherit;
+  font-size: 11.5px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  min-width: 130px;
+}
+
+.tllegend {
+  display: flex;
+  justify-content: flex-end;
+  gap: 14px;
+  padding-bottom: 8px;
+  font-size: 10.5px;
+  color: var(--text-muted);
+}
+
+.tllegend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.tllegend i {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+
+/* ---------------------------------------------------------- la grille */
+
+.tlg {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.tlg__scroll {
+  overflow-x: auto;
+  overflow-y: visible;
+}
+
+.tlg__grid {
+  position: relative;
+}
+
+.tlg__header {
+  display: flex;
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+
+.tlg__tailcol {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  flex-shrink: 0;
+  width: var(--tl-tail);
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0 12px;
+  background: var(--surface);
+  border-right: 1px solid var(--line);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.tlg__header .tlg__tailcol {
+  height: 34px;
+}
+
+.tlg__hours {
+  display: flex;
+  height: 34px;
+}
+
+.tlg__hour {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  padding-left: 7px;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-faint);
+  border-left: 1px solid var(--line-soft);
+}
+
+.tlg__hour--day {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.tlg__hour b {
+  margin-right: 5px;
+  font-size: 9.5px;
+  letter-spacing: 0.06em;
+}
+
+.tlg__rows {
+  position: relative;
+}
+
+/* Le curseur « maintenant » traverse toutes les lignes. */
+.tlg__now {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: #2f7dff;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.tlg__nowlabel {
+  position: absolute;
+  top: 4px;
+  transform: translateX(-50%);
+  z-index: 5;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+  background: #2f7dff;
+  padding: 2px 7px;
+  border-radius: 4px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.tlg__nowlabel i {
+  font-style: normal;
+  font-size: 8px;
+  opacity: 0.8;
+}
+
+.tlg__section {
+  display: flex;
+  align-items: center;
+  height: 26px;
+  padding-left: 12px;
+  background: var(--surface-2, #f6f8fc);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line-soft);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent-orange);
+  position: sticky;
+  left: 0;
+}
+
+.tlg__section span {
+  position: sticky;
+  left: 12px;
+}
+
+.tlg__row {
+  display: flex;
+  height: var(--tl-row-h);
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.tlg__row .tlg__tailcol {
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* 32px, fond leve, filet : les mesures de `.tail-icon` du prototype
+   (l. 1110-1114). En 26px sans fond, la colonne paraissait vide. */
+.tlg__tailicon {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--bg-raised);
+  color: var(--text-dim);
+}
+
+.tlg__tailicon svg {
+  width: 17px;
+  height: 17px;
+}
+
+.tlg__tailinfo {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.tlg__tailinfo b {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.tlg__tailinfo i {
+  font-style: normal;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  color: var(--text-faint);
+}
+
+.tlg__dot {
+  margin-left: auto;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--tl-enroute);
+  box-shadow: 0 0 6px var(--tl-enroute);
+}
+
+.tlg__dot--aog {
+  background: var(--tl-aog);
+  box-shadow: 0 0 6px var(--tl-aog);
+}
+
+.tlg__dot--maintenance {
+  background: var(--tl-maint);
+  box-shadow: 0 0 6px var(--tl-maint);
+}
+
+.tlg__lane {
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+}
+
+.tlg__cell {
+  flex-shrink: 0;
+  border-left: 1px solid var(--line-soft);
+}
+
+.tlg__idle {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  color: var(--text-faint);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 3px 12px;
+  white-space: nowrap;
+}
+
+/* ----------------------------------------------------------- les barres */
+
+.tlb {
+  position: absolute;
+  top: 7px;
+  height: calc(var(--tl-row-h) - 16px);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 8px;
+  border-radius: 7px;
+  border: 0;
+  overflow: hidden;
+  font-family: inherit;
+  text-align: left;
+  color: #eaf1ff;
+  background: var(--tl-scheduled);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tlb--enroute {
+  background: var(--tl-enroute);
+}
+
+.tlb--delayed {
+  background: var(--tl-delayed);
+  color: #2a1f00;
+}
+
+.tlb--closed {
+  background: var(--tl-closed);
+}
+
+.tlb--cancelled {
+  background: var(--tl-cancelled);
+  text-decoration: line-through;
+}
+
+.tlb--aog {
+  background: var(--tl-aog);
+}
+
+.tlb--maint {
+  background: var(--tl-maint);
+}
+
+/* Une bande AOG ou maintenance prend toute la fenetre : la ligne est vide
+   parce que l'avion ne vole pas, et l'ecran doit dire pourquoi. */
+.tlb--band {
+  top: 6px;
+  height: calc(var(--tl-row-h) - 14px);
+  border-radius: 5px;
+  padding: 0 14px;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: default;
+}
+
+/* Une escale trop courte : un liseré, pas une barre pleine. */
+.tlb--tight {
+  top: auto;
+  bottom: 6px;
+  height: 14px;
+  padding: 0 6px;
+  border-radius: 4px;
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(217, 164, 6, 0.85),
+    rgba(217, 164, 6, 0.85) 4px,
+    rgba(217, 164, 6, 0.5) 4px,
+    rgba(217, 164, 6, 0.5) 8px
+  );
+  color: #2a1f00;
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 800;
+  cursor: default;
+}
+
+.tlb__ico {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.tlb__ico svg {
+  width: 11px;
+  height: 11px;
+}
+
+.tlb__txt {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.25;
+  overflow: hidden;
+}
+
+.tlb__txt b {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.tlb__txt i,
+.tlb__txt u {
+  font-style: normal;
+  text-decoration: none;
+  font-family: var(--mono);
+  font-size: 8.5px;
+  opacity: 0.85;
+}
+
+.tlb__chip,
+.tlb__ftl {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-family: var(--mono);
+  font-size: 8.5px;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.tlb__chip--stop {
+  background: #ffd400;
+  color: #2a1f00;
+}
+
+.tlb__ftl--warning {
+  background: #ffd400;
+  color: #2a1f00;
+}
+
+.tlb__ftl--breach {
+  background: #ff5247;
+  color: #fff;
+}
+
+/* ------------------------------------------------------------- le mode Table */
+
+.tltable {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  overflow: auto;
+}
+
+.tltable table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11.5px;
+}
+
+.tltable th {
+  position: sticky;
+  top: 0;
+  text-align: left;
+  padding: 9px 12px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+
+.tltable td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line-soft);
+  white-space: nowrap;
+}
+
+.tltable tbody tr {
+  cursor: pointer;
+}
+
+.tltable tbody tr:hover {
+  background: rgba(47, 125, 255, 0.05);
+}
+
+.tltable .mono {
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.tltable td i {
+  font-style: normal;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  color: var(--text-faint);
+}
+
+.tltable__warn,
+.tltable__stop {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(217, 164, 6, 0.16);
+  color: #8a6800;
+}
+
+.tltable__stop {
+  background: rgba(208, 52, 44, 0.14);
+  color: #b3241d;
+}
+
+.tltable__empty {
+  padding: 40px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-faint);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+/* ---------- panneau Optimize ---------- */
+
+.rmodal--wide {
+  width: min(680px, calc(100vw - 32px));
+}
+
+.tltb__pill {
+  display: inline-grid;
+  place-items: center;
+  min-width: 17px;
+  height: 17px;
+  margin-left: 5px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--attention-fg);
+  color: #fff;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  font-weight: 800;
+}
+
+.optfind__heading {
+  margin: 16px 0 8px;
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.optfind {
+  padding: 10px 12px;
+  margin-bottom: 7px;
+  border: 1px solid var(--line);
+  border-left-width: 3px;
+  border-radius: var(--radius-md);
+  background: var(--bg-panel);
+}
+
+.optfind__top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 11.5px;
+}
+
+.optfind__top span {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+
+.optfind p {
+  margin-top: 4px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+
+.optfind__rule {
+  margin-top: 5px;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.optfind--blocking { border-left-color: var(--status-aog); }
+.optfind--warning { border-left-color: var(--status-delayed); }
+.optfind--watch { border-left-color: var(--tnp-gold); }
+
+.optfind--none {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  border-left-color: var(--ready-fg);
+  color: var(--ready-fg);
+}
+
+.optfind--none p {
+  color: var(--text-dim);
+}
+
+.optfind__sum {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-faint);
+}

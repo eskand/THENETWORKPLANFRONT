@@ -1,0 +1,166 @@
+/* ============================================================
+   Sales & CRM, Safety (Manager, Reports, Promotion) and ERP.
+   Only the genuinely new pieces: the money figure, the 5x5
+   matrix and the call tree.
+   ============================================================ */
+
+.money {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.money--muted {
+  font-weight: 500;
+  color: var(--text-dim);
+}
+
+/* A warning attached to a computed figure — an unset exchange rate,
+   a total that cannot be trusted. Never hidden behind a tooltip. */
+.fx-warning {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--attention-fg);
+}
+
+/* --- Risk matrix --------------------------------------------- */
+.matrix {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  padding: 14px;
+  box-shadow: var(--shadow-card);
+  overflow-x: auto;
+}
+
+.matrix table {
+  border-collapse: separate;
+  border-spacing: 4px;
+}
+
+.matrix th {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+  font-weight: 600;
+  padding: 2px 6px;
+}
+
+.matrix td {
+  width: 84px;
+  height: 52px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--neutral-line);
+  text-align: center;
+  vertical-align: middle;
+  font-size: 11px;
+  cursor: default;
+}
+
+.matrix .cell--ACCEPTABLE { background: var(--ready-bg); border-color: var(--ready-line); color: var(--ready-fg); }
+.matrix .cell--TOLERABLE { background: var(--pending-bg); border-color: var(--pending-line); color: var(--pending-fg); }
+.matrix .cell--UNACCEPTABLE { background: var(--attention-bg); border-color: var(--attention-line); color: var(--attention-fg); }
+
+.matrix .cell__count {
+  display: block;
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.matrix .cell__label {
+  display: block;
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
+/* --- Distribution bars (Safety Reports) ---------------------- */
+.dist {
+  display: grid;
+  gap: 6px;
+}
+
+.dist__row {
+  display: grid;
+  grid-template-columns: 150px 1fr 40px;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.dist__bar {
+  height: 10px;
+  border-radius: 5px;
+  background: var(--surface-sunken);
+  overflow: hidden;
+}
+
+.dist__fill {
+  height: 100%;
+  background: var(--accent-teal);
+}
+
+.dist__value {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-dim);
+}
+
+/* --- ERP call tree ------------------------------------------- */
+.calltree {
+  display: grid;
+  gap: 8px;
+}
+
+.calltree__row {
+  display: grid;
+  grid-template-columns: 34px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  padding: 10px 14px;
+}
+
+.calltree__order {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--navy-800);
+  color: var(--paper);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.calltree__title {
+  font-weight: 600;
+}
+
+.calltree__detail {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.erp-banner {
+  border: 1px solid var(--attention-line);
+  background: var(--attention-bg);
+  color: var(--attention-fg);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  margin-bottom: 14px;
+  font-weight: 600;
+}
+
+.erp-banner--exercise {
+  border-color: var(--info-line);
+  background: var(--info-bg);
+  color: var(--info-fg);
+}

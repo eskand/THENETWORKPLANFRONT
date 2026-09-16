@@ -1,0 +1,442 @@
+/* ============================================================
+   Settings — configuration de la plateforme.
+
+   D'OU VIENT CETTE FEUILLE. Du bloc « SETTINGS MODULE » de
+   l'annexe A4, l. 660-762 : .set-nav 230px, .set-nav-item avec son
+   liseré doré de 2px à gauche quand il est actif, .set-card à
+   padding 4px 20px, .set-row à 15px de haut séparées d'un filet,
+   l'interrupteur 40x22 avec son pouce de 18px, le segment aux coins
+   arrondis, le pied de page à trois boutons et la pastille de
+   confirmation. Tailles, graisses, interlignes et rayons sont les
+   siens, au pixel.
+
+   CE QUI CHANGE. Les couleurs, comme pour CAMO : cette application
+   est claire, le prototype est sombre. Les rôles sont les mêmes,
+   les jetons viennent de theme.css.
+   ============================================================ */
+
+.set-wrap {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* --- la colonne des rubriques --- */
+.set-nav {
+  width: 230px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--line);
+  background: var(--surface);
+  overflow-y: auto;
+  padding: 14px 10px;
+}
+
+.set-nav__title {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  font-weight: 700;
+  padding: 6px 10px 8px;
+}
+
+.set-nav__item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 9px 10px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: none;
+  cursor: pointer;
+  color: var(--text-dim);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  transition: background 0.12s, color 0.12s;
+  margin-bottom: 2px;
+}
+
+.set-nav__item svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.set-nav__item:hover {
+  background: var(--surface-sunken);
+  color: var(--text);
+}
+
+/* Le liseré remplace 2px de padding gauche : sans cela l'entrée active
+   se décalerait de deux pixels et la colonne « respirerait » au clic. */
+.set-nav__item--active {
+  background: rgba(169, 129, 29, 0.1);
+  color: var(--gold);
+  border-left: 2px solid var(--gold);
+  padding-left: 8px;
+}
+
+.set-nav__item--active svg {
+  opacity: 1;
+}
+
+/* Le compte des réglages que rien ne lit encore, discret, à droite. */
+.set-nav__unread {
+  margin-left: auto;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-faint);
+  background: var(--surface-sunken);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 1px 6px;
+}
+
+/* --- le corps --- */
+.set-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 26px 34px;
+  min-width: 0;
+}
+
+.set-head {
+  margin-bottom: 22px;
+}
+
+.set-head h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+}
+
+.set-head p {
+  font-size: 12.5px;
+  color: var(--text-faint);
+  margin-top: 4px;
+  max-width: 640px;
+  line-height: 1.6;
+}
+
+.set-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 4px 20px;
+  margin-bottom: 18px;
+}
+
+.set-card__title {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--text-dim);
+  padding: 16px 0 4px;
+}
+
+.set-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 15px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.set-card .set-row:last-child {
+  border-bottom: none;
+}
+
+.set-row__label {
+  flex: 1;
+  min-width: 0;
+}
+
+.set-row__label .lbl {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.set-row__label .desc {
+  font-size: 12px;
+  color: var(--text-faint);
+  margin-top: 3px;
+  line-height: 1.5;
+}
+
+/* Le service qui lit la clé, ou son absence. Discret : c'est une
+   information de maintenance, pas une consigne d'exploitation. */
+.set-row__reader {
+  font-size: 10.5px;
+  color: var(--text-faint);
+  margin-top: 3px;
+  font-variant-numeric: tabular-nums;
+}
+
+.set-row__reader--none {
+  color: var(--pending-fg);
+}
+
+.set-row__ctrl {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* --- interrupteur --- */
+.set-toggle {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  flex-shrink: 0;
+  cursor: pointer;
+  display: block;
+}
+
+.set-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.set-toggle .track {
+  position: absolute;
+  inset: 0;
+  background: #c7cbd6;
+  border-radius: 22px;
+  transition: background 0.18s;
+}
+
+.set-toggle .thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.18s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+.set-toggle input:checked + .track { background: var(--gold); }
+.set-toggle input:checked + .track + .thumb { transform: translateX(18px); }
+.set-toggle input:focus-visible + .track { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+/* --- champs --- */
+.set-input,
+.set-select {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 7px 10px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--text);
+  min-width: 120px;
+}
+
+.set-input:focus,
+.set-select:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+
+.set-input--num {
+  width: 90px;
+  min-width: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.set-input--color {
+  width: 52px;
+  min-width: 0;
+  padding: 3px;
+  height: 34px;
+  cursor: pointer;
+}
+
+.set-unit {
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+/* --- segment --- */
+.set-seg {
+  display: flex;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.set-seg button {
+  background: var(--surface);
+  border: none;
+  padding: 7px 13px;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--text-dim);
+  cursor: pointer;
+  border-left: 1px solid var(--line);
+}
+
+.set-seg button:first-child { border-left: none; }
+
+.set-seg button.active {
+  background: var(--gold);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* --- étiquettes --- */
+.set-tags {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.set-tags__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+  max-width: 320px;
+}
+
+.set-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--surface-sunken);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 3px 9px;
+  font-size: 12px;
+  color: var(--text);
+}
+
+.set-tag button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-faint);
+  font-size: 14px;
+  line-height: 1;
+  padding: 0;
+}
+
+.set-tag button:hover { color: var(--attention-fg); }
+
+.set-tags .set-input { margin-top: 6px; }
+
+/* --- pied de page --- */
+.set-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 8px;
+  padding: 16px 0 30px;
+}
+
+.set-footer__note {
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+.set-footer__btns {
+  display: flex;
+  gap: 10px;
+}
+
+.set-btn {
+  padding: 9px 16px;
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text-dim);
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+
+.set-btn:hover { background: var(--surface-sunken); }
+.set-btn:disabled { opacity: 0.5; cursor: default; }
+
+.set-btn--primary {
+  background: var(--tnp-navy);
+  border-color: var(--tnp-navy);
+  color: #fff;
+}
+
+.set-btn--primary:hover { background: var(--tnp-navy-2, var(--tnp-navy)); }
+
+.set-btn--danger {
+  color: var(--attention-fg);
+  border-color: rgba(200, 32, 47, 0.3);
+}
+
+.set-btn--danger:hover { background: rgba(200, 32, 47, 0.07); }
+
+/* --- pastille de confirmation --- */
+.set-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--tnp-navy);
+  color: #fff;
+  padding: 11px 22px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: 0 8px 30px -8px rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s, transform 0.2s;
+  z-index: 9999;
+}
+
+.set-toast--show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .set-toast,
+  .set-toggle .track,
+  .set-toggle .thumb { transition: none; }
+}
+
+/* ============================================================
+   Densité d'affichage — general.density.
+
+   Le prototype pose data-density sur <body> (applyLiveEffects,
+   l. 66398) et s'arrête là : rien dans sa feuille ne lit
+   l'attribut. Ici il resserre vraiment les lignes, sinon le
+   réglage serait le genre de bouton que l'audit reproche.
+   ============================================================ */
+[data-density='compact'] .set-row { padding: 9px 0; }
+[data-density='compact'] .set-card { padding: 2px 16px; }
+[data-density='compact'] .board td { padding-top: 5px; padding-bottom: 5px; }
+[data-density='compact'] .board th { padding-top: 5px; padding-bottom: 5px; }
+
+@media (max-width: 900px) {
+  .set-wrap { flex-direction: column; }
+  .set-nav { width: auto; border-right: none; border-bottom: 1px solid var(--line); }
+  .set-body { padding: 18px 16px; }
+  .set-row { flex-direction: column; align-items: flex-start; gap: 10px; }
+}

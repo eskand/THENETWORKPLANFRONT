@@ -1,0 +1,273 @@
+/* ============================================================
+   Flight Timeline, Flight Following, NetPlus Services and
+   Airports Data. As with crew.css, only what is genuinely new
+   is here; the shell, board, KPI, drawer and badges come from
+   the Dispatch stylesheet unchanged.
+   ============================================================ */
+
+/* --- Timeline ------------------------------------------------ */
+.tl {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  overflow-x: auto;
+  box-shadow: var(--shadow-card);
+}
+
+.tl__head,
+.tl__row {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  align-items: stretch;
+  border-bottom: 1px solid var(--line-soft);
+  min-width: 900px;
+}
+
+.tl__row:last-child {
+  border-bottom: none;
+}
+
+.tl__tail {
+  padding: 8px 12px;
+  border-right: 1px solid var(--line-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  justify-content: center;
+}
+
+.tl__reg {
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.tl__meta {
+  font-size: 11px;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The lane is a positioned strip: each segment is placed by percentage of
+   the window, so the same markup works for one day or for a fortnight. */
+.tl__lane {
+  position: relative;
+  height: 42px;
+  background: repeating-linear-gradient(
+    to right,
+    var(--surface-sunken) 0,
+    var(--surface-sunken) 1px,
+    transparent 1px,
+    transparent calc(100% / 24)
+  );
+}
+
+.tl__hours {
+  position: relative;
+  height: 22px;
+  font-size: 10px;
+  color: var(--text-faint);
+}
+
+.tl__hour {
+  position: absolute;
+  top: 4px;
+  transform: translateX(-50%);
+  font-variant-numeric: tabular-nums;
+}
+
+.tl__seg {
+  position: absolute;
+  top: 8px;
+  height: 26px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--info-line);
+  background: var(--info-bg);
+  color: var(--info-fg);
+  font-size: 11px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  white-space: nowrap;
+  padding: 0 4px;
+  cursor: default;
+}
+
+.tl__seg--ground {
+  top: 15px;
+  height: 12px;
+  background: transparent;
+  border-style: dashed;
+  border-color: var(--line-strong);
+  color: var(--text-faint);
+}
+
+.tl__seg--tight {
+  border-color: var(--attention-line);
+  background: var(--attention-bg);
+  color: var(--attention-fg);
+}
+
+.tl__seg--maintenance {
+  background: var(--neutral-bg);
+  border-color: var(--line-strong);
+  color: var(--text-dim);
+  opacity: 0.75;
+}
+
+.tl__seg--DEPARTED { background: var(--ready-bg); border-color: var(--ready-line); color: var(--ready-fg); }
+.tl__seg--CANCELLED { background: var(--neutral-bg); border-color: var(--neutral-line); text-decoration: line-through; }
+
+/* --- Flight following ---------------------------------------- */
+.ff-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 12px;
+}
+
+.ff-card {
+  border: 1px solid var(--line);
+  border-left-width: 3px;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  padding: 12px 14px;
+  box-shadow: var(--shadow-card);
+}
+
+.ff-card--LIVE { border-left-color: var(--ready-fg); }
+.ff-card--STALE { border-left-color: var(--pending-fg); }
+.ff-card--NO_SOURCE { border-left-color: var(--line-strong); }
+
+.ff-card__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ff-card__flight {
+  font-weight: 700;
+}
+
+.ff-card__route {
+  color: var(--text-dim);
+  font-size: 12px;
+  margin: 4px 0 8px;
+}
+
+.ff-card__grid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 10px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ff-card__grid span:nth-child(odd) {
+  color: var(--text-dim);
+}
+
+.ff-progress {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--surface-sunken);
+  margin-top: 10px;
+  overflow: hidden;
+}
+
+.ff-progress__bar {
+  height: 100%;
+  background: var(--accent-teal);
+}
+
+/* --- Airports ------------------------------------------------ */
+.note-chip {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: var(--radius-pill);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  border: 1px solid var(--neutral-line);
+  background: var(--neutral-bg);
+  color: var(--neutral-fg);
+}
+
+.note-chip--CRITICAL { background: var(--attention-bg); border-color: var(--attention-line); color: var(--attention-fg); }
+.note-chip--ATTENTION { background: var(--pending-bg); border-color: var(--pending-line); color: var(--pending-fg); }
+.note-chip--INFO { background: var(--info-bg); border-color: var(--info-line); color: var(--info-fg); }
+
+/* ---------- annuaire des aerodromes : ecran d accueil ---------- */
+
+/* Un annuaire ne se lit pas, il se cherche. L ecran s ouvre donc vide et dit
+   par ou commencer, comme la maquette. */
+.aptempty {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 6px;
+  min-height: 52vh;
+  padding: 32px 16px;
+  text-align: center;
+  color: var(--text-faint);
+}
+
+.aptempty h2 {
+  margin-top: 10px;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.aptempty p {
+  font-size: 11.5px;
+  color: var(--text-faint);
+}
+
+.aptempty > span {
+  margin-top: 6px;
+  font-size: 11.5px;
+  color: var(--text-dim);
+}
+
+.aptempty__recent {
+  margin-top: 22px;
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+}
+
+.aptempty__recent b {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.aptempty__recent div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+}
+
+.aptempty__recent button {
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--bg-panel);
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.aptempty__recent button:hover {
+  border-color: var(--tnp-navy);
+  background: var(--bg-raised);
+}

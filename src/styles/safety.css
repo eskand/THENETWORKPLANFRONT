@@ -1,0 +1,991 @@
+/* ============================================================
+   Safety Management System.
+
+   D'OU VIENT CETTE FEUILLE. De l'écran Safety Manager de l'annexe A4 :
+   la barre d'onglets sous le bandeau, les bannières d'alerte à filet
+   gauche, les cinq tuiles à barre colorée en bas, les cartes à deux
+   colonnes, les barres empilées du risque opérationnel, et la liste
+   des occurrences à pastille.
+
+   CE QUI CHANGE. Les couleurs — palette claire de theme.css.
+   ============================================================ */
+
+/* --- la barre d'onglets --- */
+.sms-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 0 26px;
+  background: var(--tnp-navy);
+  flex-shrink: 0;
+  overflow-x: auto;
+}
+
+.sms-tab {
+  padding: 10px 14px;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.62);
+  background: none;
+  border: none;
+  border-radius: 6px 6px 0 0;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s, color 0.12s;
+}
+
+.sms-tab:hover { color: #fff; background: rgba(255, 255, 255, 0.08); }
+
+.sms-tab--active {
+  color: var(--tnp-navy);
+  background: var(--bg);
+}
+
+.sms-tab__count {
+  margin-left: 6px;
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+  background: var(--attention-fg);
+  color: #fff;
+  border-radius: 9px;
+  padding: 1px 6px;
+}
+
+/* --- bannières --- */
+.sms-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--text-faint);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+
+.sms-banner--ok { border-left-color: var(--ready-fg); background: var(--ready-bg); }
+.sms-banner--warn { border-left-color: var(--pending-fg); background: var(--pending-bg); }
+.sms-banner--critical { border-left-color: var(--attention-fg); background: var(--attention-bg); }
+
+.sms-banner__icon { flex-shrink: 0; display: flex; }
+.sms-banner__text { flex: 1; min-width: 0; }
+.sms-banner__text b { font-weight: 700; }
+
+.sms-banner__link {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--gold);
+  background: none;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* --- grille deux colonnes --- */
+.sms-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.sms-card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  padding: 16px 18px;
+  min-width: 0;
+}
+
+.sms-card__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.sms-card__title {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.sms-card__link {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gold);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+/* --- profil de risque : les quatre compteurs --- */
+.sms-bands {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.sms-band {
+  border: 1px solid var(--line);
+  border-top: 2px solid var(--text-faint);
+  border-radius: 6px;
+  padding: 10px 8px;
+  text-align: center;
+}
+
+.sms-band--intolerable { border-top-color: var(--attention-fg); }
+.sms-band--high { border-top-color: var(--pending-fg); }
+.sms-band--tolerable { border-top-color: var(--ready-fg); }
+
+.sms-band__value {
+  font-size: 22px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.sms-band__label { font-size: 11.5px; font-weight: 600; margin-top: 2px; }
+.sms-band__hint { font-size: 10px; color: var(--text-faint); margin-top: 1px; }
+
+/* --- indicateurs --- */
+.sms-spi {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.sms-spi:last-child { border-bottom: none; }
+.sms-spi__label { flex: 1; min-width: 0; }
+.sms-spi__name { font-size: 13px; font-weight: 500; }
+.sms-spi__meta { font-size: 11px; color: var(--text-faint); margin-top: 2px; }
+
+/* La barre dit l'ecart a la cible, pas une valeur absolue : deux
+   indicateurs d'unites differentes se comparent alors du regard. */
+.sms-spi__gauge {
+  width: 90px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--line);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.sms-spi__fill { height: 100%; border-radius: 2px; }
+.sms-spi__fill--ok { background: var(--ready-fg); }
+.sms-spi__fill--miss { background: var(--pending-fg); }
+.sms-spi__fill--alert { background: var(--attention-fg); }
+
+.sms-spi__value {
+  width: 58px;
+  text-align: right;
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.sms-spi__value--miss { color: var(--pending-fg); }
+.sms-spi__value--alert { color: var(--attention-fg); }
+.sms-spi__value--none { color: var(--text-faint); font-size: 12px; font-weight: 500; }
+
+/* --- image du risque opérationnel : barres empilées --- */
+.sms-domain {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 7px 0;
+}
+
+.sms-domain__name { width: 132px; flex-shrink: 0; font-size: 12.5px; }
+
+.sms-domain__bar {
+  flex: 1;
+  display: flex;
+  height: 12px;
+  border-radius: 3px;
+  overflow: hidden;
+  background: var(--line);
+  min-width: 0;
+}
+
+.sms-domain__seg { height: 100%; }
+.sms-domain__seg--critical { background: var(--attention-fg); }
+.sms-domain__seg--high { background: var(--pending-fg); }
+.sms-domain__seg--medium { background: #e0c65a; }
+.sms-domain__seg--low { background: var(--ready-fg); }
+
+.sms-domain__count {
+  width: 34px;
+  text-align: right;
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- listes (occurrences, actions, audits) --- */
+.sms-item {
+  display: flex;
+  gap: 11px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--line-soft);
+  align-items: flex-start;
+}
+
+.sms-item:last-child { border-bottom: none; }
+
+.sms-item__icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--pending-fg);
+  display: flex;
+}
+
+.sms-item__body { flex: 1; min-width: 0; }
+.sms-item__title { font-size: 13px; font-weight: 500; }
+.sms-item__meta { font-size: 11px; color: var(--text-faint); margin-top: 2px; }
+
+.sms-item__right {
+  flex-shrink: 0;
+  text-align: right;
+  font-size: 11.5px;
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- panneau de responsabilité --- */
+.sms-account {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--line-soft);
+  font-size: 12.5px;
+}
+
+.sms-account:last-of-type { border-bottom: none; }
+.sms-account__label { color: var(--text-dim); }
+.sms-account__value { font-weight: 600; text-align: right; }
+
+/* --- tendance : le tracé --- */
+.sms-trend { width: 100%; height: 180px; display: block; }
+.sms-trend__grid { stroke: var(--line-soft); stroke-width: 1; }
+.sms-trend__axis { font-size: 9px; fill: var(--text-faint); }
+.sms-trend__line { fill: none; stroke: var(--info-fg); stroke-width: 2; }
+.sms-trend__area { fill: var(--info-bg); opacity: 0.55; }
+.sms-trend__severe { fill: none; stroke: var(--attention-fg); stroke-width: 1.6; stroke-dasharray: 4 3; }
+.sms-trend__dot { fill: var(--info-fg); }
+.sms-trend__dot--severe { fill: var(--attention-fg); }
+
+.sms-legend {
+  display: flex;
+  gap: 16px;
+  justify-content: flex-end;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.sms-legend i {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  margin-right: 5px;
+  vertical-align: -1px;
+}
+
+.sms-note {
+  font-size: 11px;
+  color: var(--text-faint);
+  line-height: 1.6;
+  margin-top: 10px;
+}
+
+@media (max-width: 900px) {
+  .sms-tabs { padding: 0 12px; }
+  .sms-grid { grid-template-columns: 1fr; }
+  .sms-bands { grid-template-columns: repeat(2, 1fr); }
+  .sms-domain__name { width: 96px; }
+}
+
+/* ============================================================
+   REGISTRE DES DANGERS, ENQUETES, PERSONNEL, PROMOTION,
+   REGLAGES ET NOTIFICATIONS.
+
+   D'OU CA VIENT. Des six pages de l'annexe A4 qui manquaient :
+   .matrix-grid (l. 65243), .inv-card (l. 65392), .spi-row et
+   .acc-row (l. 65685), .notif-item (l. 65943), .sett-item
+   (l. 65818). Les proportions sont les siennes ; les couleurs
+   viennent des jetons de theme.css.
+   ============================================================ */
+
+/* --- la matrice 5x5 : six colonnes, l'en-tete puis les cinq
+       probabilites. Sans grille, les vingt-cinq cellules
+       s'empilent en bandes et la matrice ne dit plus rien. --- */
+.rm-grid {
+  display: grid;
+  grid-template-columns: 46px repeat(5, minmax(0, 1fr));
+  gap: 3px;
+  margin: 12px 0 8px;
+}
+
+.rm-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-faint);
+}
+
+.rm-cell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  border-radius: 5px;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+.rm-cell:hover {
+  transform: scale(1.04);
+}
+
+.rm-pop {
+  position: absolute;
+  top: 3px;
+  right: 5px;
+  font-size: 9px;
+  font-weight: 800;
+  padding: 0 4px;
+  border-radius: 7px;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.rm-note {
+  font-size: 10.5px;
+  line-height: 1.6;
+  color: var(--text-faint);
+  margin: 0;
+}
+
+.rm-cell-detail {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--bg-raised);
+}
+
+.rm-cell-detail header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.rm-cell-detail header button {
+  margin-left: auto;
+}
+
+.rm-cell-detail p {
+  font-size: 11.5px;
+  line-height: 1.6;
+  margin: 0 0 6px;
+  color: var(--text-dim);
+}
+
+.rm-action {
+  color: var(--text) !important;
+}
+
+.rm-none {
+  color: var(--text-faint) !important;
+}
+
+.rm-cell-detail ul {
+  margin: 4px 0 0;
+  padding-left: 18px;
+  font-size: 11.5px;
+  line-height: 1.7;
+}
+
+.linkish {
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--gold);
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+}
+
+/* --- le dossier d'un danger --- */
+.sms-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  gap: 14px;
+  align-items: start;
+}
+
+@media (max-width: 1280px) {
+  .sms-split {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.sms-file {
+  position: sticky;
+  top: 8px;
+  padding: 14px 16px;
+}
+
+.sms-file__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.sms-file__ref {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--text-faint);
+}
+
+.sms-file__head h3 {
+  margin: 2px 0 0;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.sms-file__risk {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 14px 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-raised);
+}
+
+.sms-file__risk span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sms-file__risk i {
+  font-style: normal;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-faint);
+}
+
+.sms-file__risk b {
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.sms-file__arrow {
+  color: var(--text-faint);
+}
+
+.sms-file__reduction {
+  margin-left: auto;
+  flex-direction: column;
+  align-items: flex-end !important;
+  gap: 1px !important;
+}
+
+.sms-file__reduction b {
+  font-size: 16px !important;
+  color: var(--ready-fg);
+}
+
+.sms-file__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 0 0 14px;
+}
+
+.sms-file__grid dt {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-faint);
+}
+
+.sms-file__grid dd {
+  margin: 2px 0 0;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.sms-file__grid dd.is-alarm {
+  color: var(--attention-fg);
+}
+
+.sms-file h4 {
+  margin: 14px 0 6px;
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--gold);
+}
+
+.sms-file__text {
+  font-size: 11.5px;
+  line-height: 1.6;
+  margin: 0;
+  color: var(--text-dim);
+}
+
+.sms-file__controls {
+  margin: 0;
+  padding-left: 16px;
+  font-size: 11.5px;
+  line-height: 1.6;
+}
+
+.sms-file__controls li {
+  margin-bottom: 5px;
+}
+
+.sms-file__controls span {
+  display: block;
+  font-size: 10px;
+  color: var(--text-faint);
+}
+
+.sms-file__actions {
+  margin-top: 16px;
+}
+
+/* --- enquetes --- */
+.inv-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.inv-card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  padding: 14px 16px;
+}
+
+.inv-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.inv-card__head > div {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+
+.inv-card__id {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gold);
+}
+
+.inv-card__tag {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  padding: 2px 7px;
+  border-radius: 9px;
+  background: var(--bg-raised);
+  color: var(--text-faint);
+}
+
+.inv-card__meta {
+  font-size: 10.5px;
+  color: var(--text-faint);
+  margin: 6px 0 0;
+}
+
+.inv-card__sec {
+  margin: 14px 0 7px;
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--gold);
+}
+
+.inv-card__text {
+  font-size: 11.5px;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.inv-why {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 5px 0;
+  font-size: 11.5px;
+  line-height: 1.55;
+}
+
+.inv-why__dot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 19px;
+  height: 19px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--info-fg);
+}
+
+/* La derniere etape de la chaine est la condition organisationnelle :
+   c'est elle qu'une action corrective doit attaquer. */
+.inv-why__dot.is-last {
+  background: var(--attention-fg);
+}
+
+/* --- personnel --- */
+.sms-filters {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+
+.sms-ftag {
+  font: inherit;
+  font-size: 10.5px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--text-faint);
+  cursor: pointer;
+}
+
+.sms-ftag:hover {
+  color: var(--text);
+}
+
+.sms-ftag.is-on {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: #12203c;
+  font-weight: 600;
+}
+
+.sms-clock b {
+  display: block;
+  font-size: 11.5px;
+}
+
+.sms-clock b.is-alarm {
+  color: var(--attention-fg);
+}
+
+.sms-clock b.is-warn {
+  color: var(--pending-fg);
+}
+
+.sms-clock i {
+  display: block;
+  font-style: normal;
+  font-size: 10px;
+  color: var(--text-faint);
+}
+
+.sms-note {
+  font-size: 10.5px;
+  line-height: 1.65;
+  color: var(--text-faint);
+  margin: 10px 0 0;
+}
+
+.sms-empty {
+  padding: 34px 16px;
+  text-align: center;
+  font-size: 11.5px;
+  color: var(--text-faint);
+}
+
+.sms-acc {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line-soft);
+  font-size: 11.5px;
+}
+
+.sms-acc:last-of-type {
+  border-bottom: none;
+}
+
+.sms-acc span {
+  color: var(--text-dim);
+}
+
+.sms-acc b {
+  text-align: right;
+  font-size: 10px;
+}
+
+.sms-acc i {
+  display: block;
+  font-style: normal;
+  font-weight: 400;
+  color: var(--text-faint);
+}
+
+/* --- promotion --- */
+.promo-row {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.promo-row:last-of-type {
+  border-bottom: none;
+}
+
+.promo-row header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.promo-row header b {
+  display: block;
+  font-size: 12.5px;
+}
+
+.promo-row header span {
+  display: block;
+  font-size: 10px;
+  color: var(--text-faint);
+  margin-top: 2px;
+}
+
+.promo-row p {
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--text-dim);
+  margin: 8px 0;
+}
+
+.promo-row footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 10px;
+  color: var(--text-faint);
+}
+
+.promo-bar {
+  flex: 1;
+  min-width: 90px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--line);
+  overflow: hidden;
+}
+
+.promo-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+}
+
+.promo-row__ack {
+  font-weight: 700;
+}
+
+/* --- reglages --- */
+.sms-settings {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .sms-settings {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.sms-settnav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  padding: 6px;
+}
+
+.sms-settnav button {
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  padding: 8px 11px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.sms-settnav button:hover {
+  background: var(--bg-raised);
+  color: var(--text);
+}
+
+.sms-settnav button.is-on {
+  background: rgba(169, 129, 29, 0.12);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.sms-setrow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line-soft);
+  font-size: 12px;
+}
+
+.sms-setrow:last-of-type {
+  border-bottom: none;
+}
+
+.sms-setrow span {
+  color: var(--text-dim);
+}
+
+.sms-setrow i {
+  display: block;
+  font-style: normal;
+  font-size: 10px;
+  color: var(--text-faint);
+  margin-top: 2px;
+  max-width: 420px;
+  line-height: 1.5;
+}
+
+.sms-setrow b {
+  text-align: right;
+  font-weight: 600;
+}
+
+.is-warn {
+  color: var(--pending-fg);
+}
+
+/* --- notifications --- */
+.notif-feed {
+  display: flex;
+  flex-direction: column;
+}
+
+.notif {
+  padding: 11px 12px;
+  border-bottom: 1px solid var(--line-soft);
+  cursor: pointer;
+}
+
+.notif:hover {
+  background: var(--bg-raised);
+}
+
+/* Non lue : une barre a gauche, pas seulement une graisse. Une
+   notification critique doit se voir de l'autre bout de la piece. */
+.notif.is-unread {
+  box-shadow: inset 3px 0 0 var(--gold);
+}
+
+.notif header {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.notif__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+.notif header b {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+}
+
+.notif time {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--text-faint);
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.notif time i {
+  display: block;
+  font-style: normal;
+  font-size: 9px;
+}
+
+.notif p {
+  font-size: 11px;
+  line-height: 1.55;
+  color: var(--text-dim);
+  margin: 4px 0 0 16px;
+}
+
+.notif__ref {
+  display: inline-block;
+  margin: 6px 0 0 16px;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  padding: 1px 7px;
+  border-radius: 9px;
+  background: var(--bg-raised);
+  color: var(--text-faint);
+}

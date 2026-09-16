@@ -1,0 +1,201 @@
+/* ============================================================
+   Database — registre de flotte, annuaire aérodromes, carburant.
+
+   D'OU VIENT CETTE FEUILLE. Du bloc #viewDatabase de l'annexe A4
+   (l. 5996-6025) et de dbRenderTable (l. 27910-27965) : les onglets
+   à filet doré de 2 px, la barre de filtres à 16/26 px, le corps à
+   18/26 px, un bloc par famille avec son titre en majuscules et son
+   compte en gris, le tableau à coins arrondis de 10 px et police
+   12,5 px, les colonnes chiffrées à droite.
+
+   CE QUI CHANGE. Les couleurs, comme partout : palette claire de
+   theme.css au lieu du fond sombre du prototype.
+   ============================================================ */
+
+.db-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 0 26px;
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+  background: var(--surface);
+}
+
+.db-tab {
+  padding: 9px 14px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-faint);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: color 0.12s, border-color 0.12s;
+}
+
+.db-tab:hover { color: var(--text-dim); }
+
+.db-tab--active {
+  color: var(--text);
+  border-bottom-color: var(--gold);
+}
+
+.db-filterbar {
+  padding: 16px 26px;
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  background: var(--surface);
+}
+
+.db-search,
+.db-select {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font: inherit;
+  font-size: 13px;
+}
+
+.db-search { width: 240px; }
+.db-search:focus,
+.db-select:focus { outline: none; border-color: var(--gold); }
+
+.db-counts {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.db-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px 26px;
+  min-height: 0;
+}
+
+.db-family { margin-bottom: 26px; }
+
+.db-family__head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 0 0 10px 2px;
+}
+
+.db-family__name {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--tnp-navy);
+}
+
+.db-family__count {
+  font-size: 11px;
+  color: var(--text-faint);
+}
+
+/* Le tableau défile seul : c'est la règle de toutes les tables larges
+   de l'application, la page elle-même ne part jamais de côté. */
+.db-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.db-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+  min-width: 1040px;
+}
+
+.db-table thead tr { background: var(--surface-sunken); }
+
+.db-table th {
+  padding: 9px 12px;
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+
+.db-table td {
+  padding: 9px 12px;
+  border-top: 1px solid var(--line-soft);
+  white-space: nowrap;
+}
+
+.db-table__num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.db-table__reg {
+  font-weight: 600;
+  color: var(--tnp-navy);
+  font-variant-numeric: tabular-nums;
+}
+
+.db-table__muted { color: var(--text-faint); }
+
+/* La composition d'équipage : encadrée, parce que « 2/1 » sans cadre se
+   lit comme une fraction au milieu de colonnes chiffrées. */
+.db-crew {
+  display: inline-block;
+  font-weight: 700;
+  color: var(--tnp-navy);
+  background: rgba(13, 27, 62, 0.06);
+  border: 1px solid var(--line-soft);
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.db-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.db-status__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+/* --- la référence avion --- */
+.db-ref__note {
+  font-size: 12px;
+  color: var(--text-faint);
+  margin: 0 0 12px 2px;
+  line-height: 1.6;
+  max-width: 720px;
+}
+
+.db-ref__wake {
+  font-size: 10px;
+  color: var(--text-faint);
+  display: block;
+  margin-top: 2px;
+}
+
+@media (max-width: 900px) {
+  .db-tabs,
+  .db-filterbar,
+  .db-body { padding-left: 16px; padding-right: 16px; }
+  .db-search { width: 100%; }
+  .db-counts { margin-left: 0; }
+}

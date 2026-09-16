@@ -1,0 +1,234 @@
+/* ============================================================
+   Crew, Training, Roster and Crew Scheduling.
+
+   These screens reuse the shell, the board, the KPI strip, the
+   drawer and the badges of the Dispatch stylesheet without
+   redefining any of them. Only what is genuinely new lives here:
+   the compliance cell, the roster grid and the availability list.
+   ============================================================ */
+
+/* --- Training: one cell of the compliance matrix -------------- */
+.tcell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--neutral-line);
+  background: var(--neutral-bg);
+  color: var(--neutral-fg);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: default;
+}
+
+.tcell--valid {
+  background: var(--ready-bg);
+  border-color: var(--ready-line);
+  color: var(--ready-fg);
+}
+
+.tcell--expiring {
+  background: var(--pending-bg);
+  border-color: var(--pending-line);
+  color: var(--pending-fg);
+}
+
+.tcell--expired {
+  background: var(--attention-bg);
+  border-color: var(--attention-line);
+  color: var(--attention-fg);
+}
+
+.tcell--unknown {
+  background: var(--info-bg);
+  border-color: var(--info-line);
+  color: var(--info-fg);
+}
+
+/* Never recorded: deliberately the emptiest cell on the screen. */
+.tcell--missing {
+  background: transparent;
+  border-style: dashed;
+  color: var(--text-faint);
+}
+
+/* --- Training: the session calendar --------------------------- */
+.session-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.session-card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  padding: 12px 14px;
+  box-shadow: var(--shadow-card);
+}
+
+.session-card__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.session-card__code {
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.session-card__title {
+  color: var(--text-dim);
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+
+.session-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.session-card__seats {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+/* --- Roster: the grid --------------------------------------- */
+.roster-grid {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+.roster-grid table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.roster-grid th,
+.roster-grid td {
+  border-bottom: 1px solid var(--line-soft);
+  padding: 6px 8px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.roster-grid thead th {
+  position: sticky;
+  top: 0;
+  background: var(--surface-sunken);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+  z-index: 1;
+}
+
+.roster-grid th.roster-day--today {
+  color: var(--accent-orange);
+}
+
+.rcode {
+  display: inline-block;
+  min-width: 44px;
+  text-align: center;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--neutral-line);
+  background: var(--neutral-bg);
+  color: var(--neutral-fg);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.rcode--FLT { background: var(--info-bg); border-color: var(--info-line); color: var(--info-fg); }
+.rcode--SBY { background: var(--pending-bg); border-color: var(--pending-line); color: var(--pending-fg); }
+.rcode--TRG { background: var(--neutral-bg); border-color: var(--line-strong); }
+.rcode--LVE,
+.rcode--SICK { background: var(--attention-bg); border-color: var(--attention-line); color: var(--attention-fg); }
+.rcode--OFF { background: transparent; border-style: dashed; color: var(--text-faint); }
+.rcode--RES { background: transparent; color: var(--text-dim); }
+
+.roster-grid td.roster-cell--empty {
+  color: var(--text-faint);
+}
+
+/* --- Crew scheduling: the two columns ------------------------ */
+.sched-split {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 14px;
+  align-items: start;
+}
+
+@media (max-width: 1200px) {
+  .sched-split {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sched-panel {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+
+.sched-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line-soft);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+}
+
+.sched-panel__body {
+  padding: 6px 0;
+  max-height: 620px;
+  overflow-y: auto;
+}
+
+.sched-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.sched-row:last-child {
+  border-bottom: none;
+}
+
+.sched-row__main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.sched-row__name {
+  font-weight: 600;
+}
+
+.sched-row__meta {
+  font-size: 11px;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}

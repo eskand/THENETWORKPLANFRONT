@@ -1,0 +1,1054 @@
+/* ============================================================
+   NetPlus Services / OP-CLEARANCE — peau de l'ecran.
+
+   Reprise de la palette du prototype (A4, bloc `#opc-root`), a une
+   difference pres : tout est porte par `.nps`, jamais par `:root`.
+   Le prototype scopait deja ses styles sous `#opc-root` pour que le
+   module ne deteigne pas sur la suite ; la meme precaution vaut ici,
+   ou 22 autres ecrans partagent theme.css. Aucune regle de ce fichier
+   ne peut sortir de `.nps`.
+
+   Le mode jour est une classe, comme dans le prototype : `.nps.is-day`
+   redefinit les memes variables, rien d'autre ne bouge.
+   ============================================================ */
+
+.nps {
+  /* Nuit — surface grise, pas noire. Le noir n'est garde que derriere
+     la carte, ou il a un sens. */
+  --nps-bg: #262c35;
+  --nps-surf: #333b47;
+  --nps-surf2: #3d4653;
+  --nps-border: #525d6c;
+  --nps-text: #eaf2fb;
+  --nps-text-dim: #c8d8e8;
+  --nps-text-muted: #a9bdd1;
+  --nps-text-vm: #93aec7;
+  --nps-input: #2e3641;
+  --nps-navy: #2b323c;
+  --nps-gold: #e3a93c;
+  --nps-red: #ff4d5e;
+  --nps-cy: #38d9f0;
+  --nps-vi: #8b5cf6;
+  --nps-gr: #2ee88a;
+
+  --nps-mono: 'JetBrains Mono', 'SFMono-Regular', ui-monospace, Consolas, monospace;
+
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--nps-bg);
+  color: var(--nps-text);
+}
+
+.nps.is-day {
+  --nps-bg: #eef4fb;
+  --nps-surf: #ffffff;
+  --nps-surf2: #f4f8fd;
+  --nps-border: #bcd4e6;
+  --nps-text: #0a1a2b;
+  --nps-text-dim: #28455f;
+  --nps-text-muted: #4d6c88;
+  --nps-text-vm: #6a89a5;
+  --nps-input: #f7fbff;
+  --nps-navy: #0a1a2b;
+  --nps-gold: #b07c13;
+  --nps-red: #d43244;
+  --nps-cy: #0e93b8;
+  --nps-vi: #6d43e0;
+  --nps-gr: #18a065;
+}
+
+.nps * {
+  box-sizing: border-box;
+}
+
+/* ---------- en-tete du module ---------- */
+
+/* L'en-tete de marque reste navy dans les deux modes, comme la barre
+   laterale de l'application : theme.css pose la meme regle (« barre
+   laterale sombre independante du theme clair »). Ses couleurs de texte
+   sont donc fixes, jamais prises aux variables de mode — sinon le mode
+   jour ecrit du texte sombre sur un fond sombre. */
+.nps__top {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 9px 16px;
+  background: #16203d;
+  color: #eaf2fb;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  flex-shrink: 0;
+}
+
+.nps__logo {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.nps__logo-mark {
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(140deg, var(--nps-cy), var(--nps-vi));
+  color: #08121e;
+  font-size: 16px;
+}
+
+.nps__logo-1 {
+  font-family: var(--nps-mono);
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  line-height: 1.1;
+}
+
+.nps__logo-2 {
+  font-family: var(--nps-mono);
+  font-size: 8.5px;
+  letter-spacing: 0.28em;
+  color: #93aec7;
+  text-transform: uppercase;
+}
+
+.nps__sep {
+  width: 1px;
+  align-self: stretch;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.nps__title {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: 0.01em;
+}
+
+.nps__sub {
+  font-family: var(--nps-mono);
+  font-size: 8.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #93aec7;
+  margin-top: 2px;
+}
+
+.nps__spacer {
+  flex: 1;
+}
+
+/* Pastilles de l'en-tete. Chacune dit d'ou vient sa donnee et a quelle
+   date : une pastille muette ne vaut rien en exploitation. */
+.nps__chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: 6px;
+  border: 1px solid var(--nps-border);
+  background: var(--nps-surf);
+  color: var(--nps-text-dim);
+  font-family: var(--nps-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: default;
+  white-space: nowrap;
+}
+
+.nps__chip small {
+  font-size: 8px;
+  color: var(--nps-text-vm);
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
+
+.nps__chip--action {
+  cursor: pointer;
+}
+
+.nps__chip--warn {
+  border-color: rgba(227, 169, 60, 0.55);
+  color: var(--nps-gold);
+}
+
+.nps__chip--tag {
+  border-color: rgba(139, 92, 246, 0.5);
+  color: var(--nps-vi);
+}
+
+/* ---------- onglets ---------- */
+
+.nps__tabs {
+  display: flex;
+  gap: 2px;
+  padding: 0 12px;
+  background: var(--nps-surf);
+  border-bottom: 1px solid var(--nps-border);
+  flex-shrink: 0;
+  overflow-x: auto;
+}
+
+.nps__tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--nps-text-vm);
+  font-family: var(--nps-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  padding: 11px 15px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.nps__tab:hover {
+  color: var(--nps-text);
+}
+
+.nps__tab.is-on {
+  color: var(--nps-cy);
+  border-bottom-color: var(--nps-cy);
+  background: rgba(56, 217, 240, 0.08);
+}
+
+/* ---------- corps : trois colonnes ---------- */
+
+.nps__body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.nps__col-form {
+  width: 300px;
+  min-width: 268px;
+  max-width: 320px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--nps-surf);
+  border-right: 1px solid var(--nps-border);
+  overflow-y: auto;
+}
+
+.nps__col-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.nps__col-side {
+  width: 288px;
+  min-width: 258px;
+  max-width: 310px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--nps-surf);
+  border-left: 1px solid var(--nps-border);
+  overflow-y: auto;
+}
+
+.nps__panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 11px 15px;
+  border-bottom: 1px solid var(--nps-border);
+  background: var(--nps-surf2);
+  flex-shrink: 0;
+}
+
+.nps__panel-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--nps-mono);
+  font-size: 11.5px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--nps-cy);
+}
+
+.nps__panel-title--plain {
+  color: var(--nps-text);
+}
+
+/* ---------- formulaire ---------- */
+
+.nps__form {
+  padding: 13px 15px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+
+.nps__grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+}
+
+.nps__grid3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+
+.nps__label {
+  display: block;
+  font-family: var(--nps-mono);
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--nps-text-vm);
+  margin-bottom: 4px;
+}
+
+.nps__label--danger {
+  color: var(--nps-red);
+}
+
+.nps input,
+.nps select,
+.nps textarea {
+  width: 100%;
+  background: var(--nps-input);
+  border: 1px solid var(--nps-border);
+  border-radius: 6px;
+  color: var(--nps-text);
+  font-family: var(--nps-mono);
+  font-size: 12px;
+  padding: 8px 10px;
+  outline: none;
+}
+
+.nps input::placeholder,
+.nps textarea::placeholder {
+  color: var(--nps-text-vm);
+  opacity: 0.6;
+}
+
+.nps input:focus,
+.nps select:focus,
+.nps textarea:focus {
+  border-color: var(--nps-cy);
+  box-shadow: 0 0 0 3px rgba(56, 217, 240, 0.16);
+}
+
+.nps input[type='date'],
+.nps input[type='time'] {
+  color-scheme: dark;
+}
+
+.nps.is-day input[type='date'],
+.nps.is-day input[type='time'] {
+  color-scheme: light;
+}
+
+/* Les codes OACI se lisent en gros : c'est la donnee qu'on verifie le
+   plus souvent d'un coup d'oeil. */
+.nps__icao input {
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-align: center;
+  padding: 9px 6px;
+}
+
+.nps__icao--dep input {
+  color: var(--nps-cy);
+}
+
+.nps__icao--dest input {
+  color: var(--nps-red);
+}
+
+.nps__swap {
+  align-self: end;
+  height: 38px;
+  width: 30px;
+  flex-shrink: 0;
+  border: 1px solid var(--nps-border);
+  border-radius: 6px;
+  background: var(--nps-surf2);
+  color: var(--nps-text-vm);
+  cursor: pointer;
+}
+
+.nps__swap:hover {
+  color: var(--nps-cy);
+  border-color: var(--nps-cy);
+}
+
+.nps__row-icao {
+  display: flex;
+  align-items: end;
+  gap: 7px;
+}
+
+.nps__row-icao > div:first-child,
+.nps__row-icao > div:last-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.nps__seg {
+  display: flex;
+  gap: 5px;
+}
+
+.nps__seg button {
+  flex: 1;
+  border: 1px solid var(--nps-border);
+  border-radius: 6px;
+  background: var(--nps-surf2);
+  color: var(--nps-text-vm);
+  font-family: var(--nps-mono);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 7px 4px;
+  cursor: pointer;
+  line-height: 1.25;
+}
+
+.nps__seg button.is-on {
+  background: rgba(56, 217, 240, 0.14);
+  border-color: var(--nps-cy);
+  color: var(--nps-cy);
+}
+
+/* Liste de suggestions d'aerodromes : elle ne propose que des terrains
+   qui existent dans refdata.airports. Rien n'est invente. */
+.nps__ac {
+  position: relative;
+}
+
+.nps__ac-list {
+  position: absolute;
+  z-index: 900;
+  top: calc(100% + 3px);
+  left: 0;
+  right: 0;
+  max-height: 216px;
+  overflow-y: auto;
+  background: var(--nps-surf2);
+  border: 1px solid var(--nps-border);
+  border-radius: 7px;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.4);
+}
+
+.nps__ac-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: none;
+  color: var(--nps-text-dim);
+  padding: 7px 10px;
+  cursor: pointer;
+  font-size: 11px;
+  border-bottom: 1px solid var(--nps-border);
+}
+
+.nps__ac-item:last-child {
+  border-bottom: none;
+}
+
+.nps__ac-item:hover {
+  background: rgba(56, 217, 240, 0.12);
+  color: var(--nps-text);
+}
+
+.nps__ac-item b {
+  font-family: var(--nps-mono);
+  color: var(--nps-cy);
+  margin-right: 7px;
+}
+
+/* ---------- boutons ---------- */
+
+.nps__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--nps-border);
+  border-radius: 6px;
+  background: var(--nps-surf2);
+  color: var(--nps-text-vm);
+  font-family: var(--nps-mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 6px 11px;
+  cursor: pointer;
+}
+
+.nps__btn:hover {
+  color: var(--nps-text);
+  border-color: var(--nps-cy);
+}
+
+.nps__btn.is-on {
+  background: var(--nps-red);
+  border-color: var(--nps-red);
+  color: #fff;
+}
+
+.nps__btn--primary {
+  width: 100%;
+  padding: 10px 14px;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  background: linear-gradient(135deg, var(--nps-cy), #1f9fc0);
+  border-color: transparent;
+  color: #06202b;
+}
+
+.nps__btn--primary:disabled {
+  background: var(--nps-surf2);
+  color: var(--nps-text-vm);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* ---------- carte ---------- */
+
+.nps__map-wrap {
+  position: relative;
+  flex: 1;
+  min-height: 300px;
+  background: #07101c;
+  isolation: isolate;
+  z-index: 0;
+}
+
+.nps__map {
+  position: absolute;
+  inset: 0;
+}
+
+.nps__basemap {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  z-index: 800;
+  display: flex;
+  border: 1px solid var(--nps-border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(10, 22, 40, 0.92);
+}
+
+.nps__basemap button {
+  border: none;
+  border-right: 1px solid var(--nps-border);
+  background: transparent;
+  color: #8fa2bd;
+  font-family: var(--nps-mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.nps__basemap button:last-child {
+  border-right: none;
+}
+
+.nps__basemap button.is-on {
+  background: var(--nps-gold);
+  color: #0a1628;
+}
+
+.nps__layers {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 800;
+}
+
+.nps__layers-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid var(--nps-border);
+  border-radius: 6px;
+  background: rgba(10, 22, 40, 0.92);
+  color: #8fa2bd;
+  font-family: var(--nps-mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.nps__layers-btn.is-open {
+  color: var(--nps-gold);
+  border-color: var(--nps-gold);
+}
+
+.nps__layers-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  width: 214px;
+  z-index: 1200;
+  background: rgba(10, 22, 40, 0.97);
+  border: 1px solid var(--nps-border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+}
+
+.nps__layers-head {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--nps-border);
+  font-family: var(--nps-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: var(--nps-gold);
+}
+
+.nps__layers-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--nps-border);
+  font-family: var(--nps-mono);
+  font-size: 11px;
+  color: #dfe8f5;
+}
+
+.nps__layers-item:last-child {
+  border-bottom: none;
+}
+
+.nps__switch {
+  width: 30px;
+  height: 16px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 20px;
+  background: #22354f;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.nps__switch.is-on {
+  background: #c98900;
+}
+
+.nps__switch::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #fff;
+  transition: left 0.2s;
+}
+
+.nps__switch.is-on::after {
+  left: 16px;
+}
+
+/* Etat vide de la carte : on dit quoi faire, on ne laisse pas un vide. */
+.nps__map-empty {
+  position: absolute;
+  inset: 0;
+  z-index: 700;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: rgba(8, 12, 18, 0.55);
+  pointer-events: none;
+  font-family: var(--nps-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--nps-text-vm);
+}
+
+/* ---------- colonne de droite : mini briefing ---------- */
+
+.nps__brief {
+  padding: 13px 15px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.nps__brief-eyebrow {
+  font-family: var(--nps-mono);
+  font-size: 8.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--nps-text-muted);
+  margin-bottom: 6px;
+}
+
+.nps__itin {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--nps-border);
+  border-radius: 8px;
+  background: var(--nps-surf2);
+}
+
+.nps__itin-dep,
+.nps__itin-dest {
+  font-family: var(--nps-mono);
+  font-weight: 900;
+  font-size: 18px;
+}
+
+.nps__itin-dep {
+  color: var(--nps-cy);
+}
+
+.nps__itin-dest {
+  color: var(--nps-red);
+}
+
+.nps__itin-arrow {
+  flex: 1;
+  text-align: center;
+  color: var(--nps-text-muted);
+}
+
+.nps__tiles {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px;
+  margin-top: 8px;
+  text-align: center;
+}
+
+.nps__tile {
+  border: 1px solid var(--nps-border);
+  border-radius: 6px;
+  background: var(--nps-surf2);
+  padding: 6px 4px;
+}
+
+.nps__tile-k {
+  font-family: var(--nps-mono);
+  font-size: 7px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--nps-text-vm);
+}
+
+.nps__tile-v {
+  font-family: var(--nps-mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--nps-text-muted);
+  margin-top: 3px;
+}
+
+.nps__card {
+  border: 1px solid var(--nps-border);
+  border-radius: 9px;
+  background: var(--nps-surf2);
+  padding: 10px 13px;
+}
+
+.nps__card-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 9px;
+  font-family: var(--nps-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.nps__kv {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.nps__kv:last-child {
+  margin-bottom: 0;
+}
+
+.nps__kv span:first-child {
+  font-size: 11px;
+  color: var(--nps-text-dim);
+}
+
+.nps__kv span:last-child {
+  font-family: var(--nps-mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--nps-text-muted);
+}
+
+/* ---------- bandeau d'honnetete ---------- */
+
+/* Il dit ce qui n'est pas calcule, et pourquoi. Un ecran qui affiche une
+   structure vide sans l'expliquer se lit comme un ecran en panne. */
+.nps__notice {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+  padding: 9px 12px;
+  border: 1px dashed rgba(227, 169, 60, 0.7);
+  border-radius: 8px;
+  background: rgba(227, 169, 60, 0.08);
+  color: var(--nps-text-dim);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.nps__notice b {
+  color: var(--nps-gold);
+}
+
+.nps__notice code {
+  font-family: var(--nps-mono);
+  font-size: 10.5px;
+  color: var(--nps-gold);
+}
+
+/* ---------- tableaux ---------- */
+
+.nps__scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 14px 16px 24px;
+}
+
+.nps__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.nps__table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  text-align: left;
+  padding: 8px 10px;
+  background: var(--nps-surf2);
+  border-bottom: 1px solid var(--nps-border);
+  font-family: var(--nps-mono);
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--nps-text-vm);
+  white-space: nowrap;
+}
+
+.nps__table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--nps-border);
+  color: var(--nps-text-dim);
+  vertical-align: top;
+}
+
+.nps__table tbody tr:hover td {
+  background: rgba(56, 217, 240, 0.06);
+}
+
+.nps__mono {
+  font-family: var(--nps-mono);
+}
+
+.nps__pill {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 4px;
+  border: 1px solid var(--nps-border);
+  font-family: var(--nps-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--nps-text-vm);
+}
+
+.nps__pill--ok {
+  border-color: rgba(46, 232, 138, 0.5);
+  color: var(--nps-gr);
+}
+
+.nps__pill--warn {
+  border-color: rgba(227, 169, 60, 0.6);
+  color: var(--nps-gold);
+}
+
+.nps__pill--bad {
+  border-color: rgba(255, 77, 94, 0.6);
+  color: var(--nps-red);
+}
+
+.nps__empty {
+  padding: 30px 12px;
+  text-align: center;
+  color: var(--nps-text-vm);
+  font-family: var(--nps-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* ---------- generateur SCR ---------- */
+
+.nps__scr {
+  display: grid;
+  grid-template-columns: minmax(320px, 1fr) minmax(280px, 380px);
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 1100px) {
+  .nps__scr {
+    grid-template-columns: 1fr;
+  }
+}
+
+.nps__scr-out {
+  border: 1px solid var(--nps-border);
+  border-radius: 8px;
+  background: #10151c;
+  color: var(--nps-gr);
+  font-family: var(--nps-mono);
+  font-size: 12px;
+  line-height: 1.65;
+  padding: 12px 14px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  min-height: 190px;
+}
+
+.nps.is-day .nps__scr-out {
+  background: #0d1b2a;
+}
+
+.nps__days {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.nps__days button {
+  width: 34px;
+  border: 1px solid var(--nps-border);
+  border-radius: 5px;
+  background: var(--nps-surf2);
+  color: var(--nps-text-vm);
+  font-family: var(--nps-mono);
+  font-size: 9px;
+  padding: 6px 0;
+  cursor: pointer;
+}
+
+.nps__days button.is-on {
+  background: rgba(56, 217, 240, 0.16);
+  border-color: var(--nps-cy);
+  color: var(--nps-cy);
+}
+
+.nps__leg {
+  border: 1px solid var(--nps-border);
+  border-radius: 8px;
+  background: var(--nps-surf);
+  padding: 12px 13px;
+  margin-bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.nps__leg-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--nps-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--nps-text-vm);
+}
+
+/* ---------- entry requirement ---------- */
+
+.nps__countries {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 7px;
+}
+
+.nps__country {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border: 1px solid var(--nps-border);
+  border-radius: 7px;
+  background: var(--nps-surf2);
+  color: var(--nps-text-dim);
+  padding: 9px 11px;
+  cursor: pointer;
+  font-size: 12px;
+  text-align: left;
+}
+
+.nps__country:hover {
+  border-color: var(--nps-cy);
+  color: var(--nps-text);
+}
+
+.nps__country.is-on {
+  border-color: var(--nps-cy);
+  background: rgba(56, 217, 240, 0.1);
+  color: var(--nps-text);
+}
+
+.nps__country span:last-child {
+  font-family: var(--nps-mono);
+  font-size: 10px;
+  color: var(--nps-text-vm);
+}

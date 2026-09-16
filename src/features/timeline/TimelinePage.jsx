@@ -1,0 +1,120 @@
+import { useMemo, useRef, useState } from 'react'
+import TopBar from '../../components/TopBar'
+import { ErrorState, LoadingState } from '../../components/States'
+import { useTimeline } from '../../hooks/useOperations'
+import { isoDate } from '../../lib/format'
+import { findTimelineIssues } from '../../lib/timelineFindings'
+import TimelineGrid from './components/TimelineGrid'
+import TimelineKpiStrip from './components/TimelineKpiStrip'
+import TimelineTable from './components/TimelineTable'
+import FlightLabel from './components/FlightLabel'
+import OptimizePanel from './components/OptimizePanel'
+import TimelineToolbar from './components/TimelineToolbar'
+
+/**
+ * Flight Timeline — vue Gantt temps reel, toutes flottes, UTC.
+ *
+ * Tout ce que l'ecran montre vient d'un seul appel, GET /v1/timeline. Les
+ * trois selecteurs partent au serveur avec la fenetre : les tuiles comptent
+ * la flotte entiere pendant que les lignes se reduisent, ce qu'un filtrage
+ * dans le navigateur ne saurait pas faire sans mentir sur l'un ou sur
+ * l'autre.
+ */
+export default function TimelinePage() {
+  const todayIso = useMemo(() => isoDate(new Date()), [])
+  const [from, setFrom] = useState(todayIso)
+  const [days, setDays] = useState(3)
+  const [mode, setMode] = useState('timeline')
+  const [fleet, setFleet] = useState('')
+  const [base, setBase] = useState('')
+  const [status, setStatus] = useState('')
+  const [optimizeOpen, setOptimizeOpen] = useState(false)
+  const [selectedLeg, setSelectedLeg] = useState(null)
+  const gridRef = useRef(null)
+
+  const filters = useMemo(
+    () => ({ from, days, includeIdle: true, fleet, base, status }),
+    [from, days, fleet, base, status],
+  )
+  const timeline = useTimeline(filters)
+  const data = timeline.data
+
+  // La pastille du bouton compte les memes constats que le panneau : ils
+  // viennent de la meme fonction, appelee une fois.
+  const findings = useMemo(() => findTimelineIssues(data), [data])
+
+  /**
+   * Ouvrir une etape depuis la barre du Gantt.
+   *
+   * Elle ouvre l'etiquette de vol (FlightLabel), celle du prototype : huit
+   * onglets, la carte de route, les heures avec ATD/ATA et l'envoi du MVT.
+   *
+   * Seul l'identifiant de l'etape est passe. L'etiquette lit l'etape elle-meme
+   * sur GET /legs/{id} plutot que de recevoir les quelques champs que porte la
+   * barre du Gantt : une fiche de vol qui se contente de ce que l'appelant lui
+   * tend finit par afficher moins que ce que la base sait.
+   */
+  function openLeg(segment) {
+    if (segment?.legId) setSelectedLeg(segment.legId)
+  }
+
+  return (
+    <>
+      <TopBar
+        title="Operations — Flight Timeline"
+        subtitle="Real-time Gantt view · all fleets · UTC timezone"
+      />
+
+      <div className="shell__scroll">
+        <main className="page page--wide">
+          {timeline.isError ? (
+            <ErrorState error={timeline.error} onRetry={() => timeline.refetch()} />
+          ) : !data ? (
+            <LoadingState label="Loading the timeline…" />
+          ) : (
+            <>
+              <TimelineKpiStrip data={data} />
+
+              <TimelineToolbar
+                mode={mode}
+                onModeChange={setMode}
+                from={from}
+                onFromChange={setFrom}
+                todayIso={todayIso}
+                days={days}
+                onDaysChange={setDays}
+                fleet={fleet}
+                onFleetChange={setFleet}
+                base={base}
+                onBaseChange={setBase}
+                status={status}
+                onStatusChange={setStatus}
+                options={{ fleetSections: data.fleetSections, bases: data.bases }}
+                onJumpToNow={() => gridRef.current?.scrollToNow()}
+                onOptimize={() => setOptimizeOpen(true)}
+                findingCount={findings.length}
+              />
+
+              {data.rows.length === 0 ? (
+                <div className="tltable__empty">
+                  No tail matches these selectors. The fleet still has{' '}
+                  {data.fleetSize} registrations.
+                </div>
+              ) : mode === 'timeline' ? (
+                <TimelineGrid ref={gridRef} data={data} onSelectLeg={openLeg} />
+              ) : (
+                <TimelineTable data={data} onSelectLeg={openLeg} />
+              )}
+
+              <FlightLabel legId={selectedLeg} onClose={() => setSelectedLeg(null)} />
+
+              {optimizeOpen ? (
+                <OptimizePanel data={data} onClose={() => setOptimizeOpen(false)} />
+              ) : null}
+            </>
+          )}
+        </main>
+      </div>
+    </>
+  )
+}

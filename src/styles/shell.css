@@ -1,0 +1,611 @@
+/* ============================================================
+   Coquille de l'application — geometrie et habillage du
+   prototype approuve : grille 240px + 1fr, barre laterale navy
+   texturee, en-tete degrade navy souligne d'un filet or.
+   ============================================================ */
+.shell {
+  display: grid;
+  grid-template-columns: var(--sidebar-width) 1fr;
+  grid-template-rows: 100vh;
+}
+
+.shell > .shell__main {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.shell__scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* ---------------------------------------------------------- sidebar */
+.sidebar {
+  position: relative;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(10, 21, 48, 0.72) 0%,
+      rgba(10, 21, 48, 0.6) 40%,
+      rgba(10, 21, 48, 0.78) 100%
+    ),
+    url('../assets/occ/sidebar-texture.jpg') center top / cover no-repeat;
+  border-right: 1px solid var(--sb-line);
+  display: flex;
+  flex-direction: column;
+  padding: 20px 0 12px;
+  overflow-y: auto;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 20px 22px;
+  border-bottom: 1px solid var(--sb-line);
+  margin-bottom: 14px;
+}
+
+.brand-mark {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--sb-gold);
+  background: #f4f1e8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+  box-shadow: 0 0 16px -4px rgba(209, 165, 61, 0.5);
+}
+
+.brand-mark img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 4px;
+}
+
+.brand-text {
+  line-height: 1.15;
+}
+
+.brand-text .t1 {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 13.5px;
+  letter-spacing: 0.03em;
+  color: #fff;
+}
+
+.brand-text .t2 {
+  font-size: 9.5px;
+  color: #e2586a;
+  letter-spacing: 0.1em;
+  text-transform: lowercase;
+  margin-top: 2px;
+  font-style: italic;
+  font-weight: 500;
+}
+
+.nav-group {
+  padding: 4px 12px 14px;
+}
+
+.nav-label {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--sb-label);
+  padding: 8px 10px 6px;
+  font-weight: 700;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--radius);
+  color: var(--sb-text-dim);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background 0.12s ease,
+    color 0.12s ease;
+}
+
+.nav-item svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  opacity: 0.8;
+}
+
+.nav-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+}
+
+.nav-item.active {
+  background: var(--sb-active-bg);
+  color: var(--sb-gold);
+  border-left: 2px solid var(--sb-gold);
+  padding-left: 8px;
+}
+
+.nav-item.active svg {
+  opacity: 1;
+}
+
+.nav-badge {
+  margin-left: auto;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 5px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  background: var(--status-aog);
+  color: #fff;
+  font-size: 9.5px;
+  font-weight: 700;
+}
+
+.nav-group-settings {
+  margin-top: auto;
+  padding-top: 10px;
+  border-top: 1px solid var(--sb-line);
+}
+
+.nav-item-settings svg {
+  transition: transform 0.5s ease;
+}
+
+.nav-item-settings:hover svg {
+  transform: rotate(90deg);
+}
+
+/* ---------------------------------------------------------- topbar */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 26px;
+  border-bottom: 2px solid var(--tnp-gold);
+  background: linear-gradient(
+    135deg,
+    var(--tnp-navy) 0%,
+    var(--tnp-navy-2) 62%,
+    #223e86 100%
+  );
+  flex-shrink: 0;
+  position: relative;
+  z-index: 200;
+  color: #fff;
+  backdrop-filter: saturate(1.15) blur(6px);
+}
+
+.topbar-left {
+  margin-right: auto;
+  min-width: 0;
+}
+
+/* Titre et sous-titre sur une ligne : sur le Dispatch le sous-titre est long
+   et un retour a la ligne poussait la barre de recherche hors de l'en-tete. */
+.topbar-left h1,
+.topbar-left p {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.topbar-left h1 {
+  font-family: var(--display);
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.topbar-left p {
+  font-size: 12px;
+  color: #aeb9d9;
+  margin-top: 3px;
+}
+
+.topbar-right {
+  position: relative; /* repere du panneau des alertes */
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.topbar__back {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  margin-right: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.07);
+  color: #dbe4ff;
+  flex-shrink: 0;
+  transition:
+    background 0.16s ease,
+    border-color 0.16s ease;
+}
+
+.topbar__back:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(201, 162, 39, 0.55);
+}
+
+.search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  width: 280px;
+  color: #c3cbe6;
+  font-size: 12.5px;
+}
+
+.search svg {
+  width: 14px;
+  height: 14px;
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+
+.search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: none;
+  outline: none;
+  font: inherit;
+  color: #eef1fa;
+}
+
+.search input::placeholder {
+  color: #8e97b8;
+}
+
+/* ------------------------------------------------------------------
+   VIGIL — repris du prototype (#vigilTopBtn) : pastille navy en degrade,
+   liseré bleu, mot en mono espace avec le V en cyan, et une pastille d'etat
+   en haut a droite. Ce n'est pas un bouton de barre d'outils ordinaire :
+   c'est une marque, et elle doit se reconnaitre.
+   ------------------------------------------------------------------ */
+
+.vigil-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 10px 4px 6px;
+  border-radius: 8px;
+  border: 1px solid rgba(47, 125, 255, 0.35);
+  background: linear-gradient(180deg, #0b1c3f, #050d1f);
+  margin-right: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.vigil-btn:hover {
+  border-color: rgba(57, 193, 255, 0.7);
+}
+
+.vigil-btn svg {
+  flex-shrink: 0;
+}
+
+.vigil-btn .vgl-word {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  color: #cfe4ff;
+}
+
+.vigil-btn .vgl-word b {
+  color: #39c1ff;
+}
+
+.vgl-dot {
+  position: absolute;
+  top: 3px;
+  right: 4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.vgl-dot.ok {
+  background: #22c88a;
+  box-shadow: 0 0 6px #22c88a;
+}
+
+.vgl-dot.warn {
+  background: #f0a500;
+  box-shadow: 0 0 6px #f0a500;
+}
+
+.vgl-dot.crit {
+  background: #f85149;
+  box-shadow: 0 0 7px #f85149;
+  animation: vglPulse 1.6s ease-in-out infinite;
+}
+
+@keyframes vglPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+.icon-btn {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: #c3cbe6;
+}
+
+.icon-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+/* Le bouton reste allume tant que son panneau est ouvert. */
+.icon-btn.on {
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+}
+
+.icon-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.badge-pip {
+  position: absolute;
+  top: -2px;
+  right: -3px;
+  background: var(--status-aog);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  min-width: 15px;
+  height: 15px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 3px;
+}
+
+.badge-pip--amber {
+  background: var(--accent-orange);
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--tnp-navy-2), var(--tnp-navy));
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: #f0d68a;
+  flex-shrink: 0;
+}
+
+/* ---------------------------------------------------------- page */
+.page {
+  padding: 22px 26px 48px;
+}
+
+@media (max-width: 1100px) {
+  .search {
+    width: 190px;
+  }
+}
+
+@media (max-width: 900px) {
+  .search,
+  .vigil-btn .vgl-word {
+    display: none;
+  }
+}
+
+/* ------------------------------------------------------------------
+   Panneau des alertes (triangle et cloche de l'en-tete).
+
+   Les deux boutons affichaient un compte sans rien ouvrir. Un chiffre
+   qu'on ne peut pas deplier inquiete sans informer : ils deroulent
+   desormais la liste que GET /v1/alerts renvoie.
+   ------------------------------------------------------------------ */
+
+.ntf-panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 60;
+  width: 380px;
+  max-height: 460px;
+  display: flex;
+  flex-direction: column;
+  background: #0b1730;
+  border: 1px solid rgba(47, 125, 255, 0.32);
+  border-radius: 10px;
+  box-shadow: 0 18px 40px rgba(2, 6, 16, 0.55);
+  overflow: hidden;
+  color: #dbe6f7;
+}
+
+.ntf-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 11px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+  font-size: 12px;
+  font-weight: 700;
+  background: linear-gradient(180deg, #0d1f44, #0b1730);
+}
+
+.ntf-count {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(200, 215, 242, 0.6);
+}
+
+.ntf-list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.ntf-empty {
+  padding: 22px 14px;
+  text-align: center;
+  font-size: 11.5px;
+  color: rgba(200, 215, 242, 0.55);
+}
+
+.ntf-row {
+  display: flex;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-left: 3px solid transparent;
+}
+
+.ntf-row:last-child {
+  border-bottom: none;
+}
+
+.ntf-row.sev-critical {
+  border-left-color: #f85149;
+}
+
+.ntf-row.sev-attention {
+  border-left-color: #f0a500;
+}
+
+.ntf-sev {
+  flex-shrink: 0;
+  margin-top: 1px;
+  font-family: var(--mono);
+  font-size: 8.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 2px 5px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(214, 226, 248, 0.75);
+}
+
+.ntf-row.sev-critical .ntf-sev {
+  background: rgba(248, 81, 73, 0.16);
+  color: #ff9a9a;
+}
+
+.ntf-row.sev-attention .ntf-sev {
+  background: rgba(240, 165, 0, 0.16);
+  color: #ffcc66;
+}
+
+.ntf-body {
+  min-width: 0;
+  flex: 1;
+}
+
+.ntf-rule {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #eaf1ff;
+}
+
+.ntf-cause {
+  margin-top: 2px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: rgba(200, 215, 242, 0.78);
+}
+
+.ntf-meta {
+  margin-top: 3px;
+  display: flex;
+  gap: 5px;
+  font-size: 9.5px;
+  color: rgba(200, 215, 242, 0.45);
+}
+
+.ntf-acts {
+  margin-top: 6px;
+  display: flex;
+  gap: 6px;
+}
+
+.ntf-acts button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: inherit;
+  font-size: 9.5px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 5px;
+  border: 1px solid rgba(47, 125, 255, 0.35);
+  background: transparent;
+  color: #9fb6e2;
+  cursor: pointer;
+}
+
+.ntf-acts button:hover:not(:disabled) {
+  border-color: #2f7dff;
+  color: #fff;
+}
+
+.ntf-acts button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.ntf-spin {
+  animation: ntfSpin 0.9s linear infinite;
+}
+
+@keyframes ntfSpin {
+  to { transform: rotate(360deg); }
+}
+
+.ntf-foot {
+  padding: 8px 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.09);
+  font-size: 9.5px;
+  color: rgba(200, 215, 242, 0.45);
+}
+
+.ntf-foot code {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  color: rgba(200, 215, 242, 0.62);
+}

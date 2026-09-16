@@ -1,0 +1,626 @@
+/* ============================================================
+   CAMO — navigabilite continue.
+
+   D'OU VIENT CETTE FEUILLE. Des regles de l'annexe A4 : .camo-layout
+   et .camo-table l. 1894-1920, .arc-badge et .mini-bar l. 1921-1930,
+   .ad-badge l. 1931-1937, .llp-row l. 1939-1943, .event-item
+   l. 1945-1949, .gendec-doc l. 2035-2050. Les proportions, les tailles
+   de police, les graisses et les espacements sont les siens.
+
+   CE QUI CHANGE, ET POURQUOI. Les couleurs. Le prototype est sombre
+   (fond bleu nuit) ; cette application est claire, et l'a toujours
+   ete sur ses vingt autres ecrans. Reprendre son fond ici aurait
+   donne un module noir au milieu d'une application blanche — meme
+   feuille de style, ecran depareille. Les valeurs sont donc prises
+   dans les jetons de theme.css, qui portent les memes roles.
+   ============================================================ */
+
+/* --- la vue en deux volets : tableau a gauche, dossier a droite --- */
+.camo-split {
+  display: grid;
+  /* Le prototype fixe le volet a 380px (.detail-panel l. 1453). Ici il
+     est en fraction pour ne pas ecraser le tableau sur un portable. */
+  grid-template-columns: minmax(0, 1fr) 380px;
+  gap: 14px;
+  align-items: start;
+}
+
+@media (max-width: 1280px) {
+  .camo-split {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* --- le tableau --- */
+.camo-table tbody tr {
+  cursor: pointer;
+}
+
+.camo-table tbody tr.row--selected {
+  background: var(--gold-wash, rgba(169, 129, 29, 0.06));
+}
+
+/* Deux lignes dans une cellule : la valeur, puis ce qu'elle veut dire. */
+.camo-sub {
+  font-size: 10px;
+  color: var(--text-faint);
+  margin-top: 2px;
+}
+
+/* --- pastille d'echeance ARC --- */
+.arc-badge {
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.arc-badge--VALID { color: var(--ready-fg); }
+.arc-badge--DUE_SOON { color: var(--pending-fg); }
+.arc-badge--CRITICAL { color: var(--pending-fg); }
+.arc-badge--EXPIRED { color: var(--attention-fg); }
+.arc-badge--NONE { color: var(--text-faint); }
+
+/* --- jauge de vie restante ---
+   70x5, exactement comme .mini-bar du prototype (l. 1926). Une jauge
+   plus haute se lirait comme une barre de progression, alors qu'elle
+   dit l'inverse : ce qui reste, pas ce qui est fait. */
+.mini-bar {
+  width: 70px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--line);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.mini-bar__fill {
+  height: 100%;
+  border-radius: 3px;
+}
+
+.mini-bar__fill--CRITICAL { background: var(--attention-fg); }
+.mini-bar__fill--WATCH { background: var(--pending-fg); }
+.mini-bar__fill--OK { background: var(--ready-fg); }
+
+.gauge-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gauge-cell__value {
+  font-size: 11px;
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- le dossier de navigabilite --- */
+.camo-file {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  padding: 16px;
+  position: sticky;
+  top: 8px;
+}
+
+.camo-file__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.camo-file__reg {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.camo-file__type {
+  font-size: 11.5px;
+  color: var(--text-faint);
+  margin-top: 2px;
+}
+
+.camo-file__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.camo-file__cell .lbl {
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-faint);
+}
+
+.camo-file__cell .val {
+  font-size: 13px;
+  font-weight: 600;
+  margin-top: 3px;
+  font-variant-numeric: tabular-nums;
+}
+
+.camo-file__divider {
+  height: 1px;
+  background: var(--line-soft);
+  margin: 16px 0;
+}
+
+.camo-file__title {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--gold);
+  margin: 0 0 8px;
+}
+
+/* --- une piece a vie limitee dans le dossier (.llp-row, l. 1939) --- */
+.llp-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.llp-row__name {
+  font-size: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.llp-row__pos {
+  font-size: 10px;
+  color: var(--text-faint);
+}
+
+.llp-row__value {
+  font-size: 11px;
+  color: var(--text-faint);
+  width: 80px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- une echeance dans le dossier (.event-item, l. 1945) --- */
+.event-item {
+  display: flex;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.event-item__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  margin-top: 5px;
+  flex-shrink: 0;
+}
+
+.event-item__t {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.event-item__d {
+  font-size: 10.5px;
+  color: var(--text-faint);
+  margin-top: 2px;
+}
+
+/* --- les trois boutons du bas, dans l'ordre du prototype --- */
+.camo-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.camo-actions button {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 10px 6px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--text-dim);
+  background: var(--surface-sunken);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: border-color 0.12s ease, color 0.12s ease;
+}
+
+.camo-actions button:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+/* ============================================================
+   Les trois documents (ARC File / AD-SB / Work Order).
+
+   Transposition de .gendec-doc, l. 2035-2050 : un en-tete a filet
+   epais, un tableau de champs a deux colonnes, un tableau de lignes,
+   puis la mention reglementaire encadree.
+   ============================================================ */
+.camo-doc {
+  font-size: 12.5px;
+  color: var(--text);
+}
+
+.camo-doc__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  border-bottom: 2px solid var(--tnp-navy, #16203d);
+  padding-bottom: 12px;
+  margin-bottom: 14px;
+}
+
+.camo-doc__org {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.camo-doc__sub {
+  font-size: 11px;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-top: 2px;
+}
+
+table.camo-doc__info {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 16px;
+}
+
+table.camo-doc__info td {
+  padding: 5px 8px;
+  font-size: 11.5px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+table.camo-doc__info td:nth-child(odd) {
+  color: var(--text-faint);
+  width: 190px;
+}
+
+table.camo-doc__info td:nth-child(even) {
+  font-weight: 600;
+}
+
+.camo-doc__section {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--gold);
+  margin: 14px 0 8px;
+}
+
+table.camo-doc__rows {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+table.camo-doc__rows th {
+  text-align: left;
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-faint);
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+table.camo-doc__rows td {
+  padding: 6px 8px;
+  font-size: 11.5px;
+  border-bottom: 1px solid var(--line-soft);
+  vertical-align: top;
+}
+
+.camo-doc__decl {
+  font-size: 10.5px;
+  color: var(--text-dim);
+  line-height: 1.6;
+  background: var(--surface-sunken);
+  border: 1px solid var(--line-soft);
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-top: 16px;
+}
+
+.camo-doc__empty {
+  font-size: 12px;
+  color: var(--text-faint);
+  padding: 24px 0;
+  text-align: center;
+}
+
+.camo-doc__num {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+/* ============================================================
+   MEL / CDL / HIL — la liste des elements en report.
+
+   D'OU CA VIENT. Du prototype : la barre de filtre et les trois
+   compteurs alignes a droite (l. 5983-5993), .fd-section (l. 1633),
+   .cm-table (l. 2125-2135), .fd-badge (l. 1582-1587). La liste est
+   groupee par immatriculation, puis le catalogue MEL par type
+   d'aeronef — deux tableaux qui ne disent pas la meme chose : ce qui
+   EST reporte, et ce qui PEUT l'etre.
+   ============================================================ */
+
+.hil-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 14px;
+}
+
+.hil-bar select {
+  background: var(--bg-panel);
+  border: 1px solid var(--line);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.hil-kpis {
+  display: flex;
+  gap: 22px;
+  margin-left: auto;
+}
+
+.hil-kpi {
+  text-align: right;
+}
+
+.hil-kpi b {
+  display: block;
+  font-size: 20px;
+  font-weight: 800;
+  font-family: var(--mono);
+  line-height: 1.1;
+  color: var(--kpi-colour, var(--text));
+}
+
+.hil-kpi span {
+  display: block;
+  font-size: 10px;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Le titre de groupe : un avion, puis ses reports. */
+.hil-section {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  margin: 18px 0 8px;
+}
+
+.hil-section:first-child {
+  margin-top: 0;
+}
+
+.hil-section em {
+  font-style: normal;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 11px;
+}
+
+.hil-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.hil-table thead th {
+  text-align: left;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--text-faint);
+  font-weight: 600;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+.hil-table tbody tr {
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.hil-table tbody tr:hover {
+  background: var(--bg-raised);
+}
+
+.hil-table td {
+  padding: 10px 12px;
+  font-size: 12.5px;
+  vertical-align: top;
+}
+
+.hil-table td.mono {
+  font-family: var(--mono);
+  white-space: nowrap;
+}
+
+.hil-table td.ref {
+  font-family: var(--mono);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.hil-table td.wide {
+  max-width: 340px;
+}
+
+.hil-src {
+  font-size: 10.5px;
+  color: var(--text-faint);
+}
+
+/* Le reste du delai, a cote de la date. Rouge quand il est passe. */
+.hil-left {
+  color: var(--text-faint);
+}
+
+.hil-left.soon {
+  color: var(--pending-fg);
+}
+
+.hil-left.over {
+  color: var(--attention-fg);
+}
+
+.hil-cat-note {
+  font-size: 10.5px;
+  color: var(--text-faint);
+  margin: -4px 0 8px;
+  line-height: 1.6;
+}
+
+.hil-type-head {
+  font-weight: 700;
+  font-size: 12px;
+  margin: 12px 0 4px;
+}
+
+.hil-type-head span {
+  font-weight: 400;
+  color: var(--text-faint);
+  font-size: 10.5px;
+}
+
+/* ============================================================
+   TECH LOG — le dossier d'une panne.
+
+   Le volet reprend .camo-file : c'est le meme geste — une liste a
+   gauche, le dossier a droite — et le prototype le dessine pareil
+   (.detail-panel, l. 1453). Ce qui s'ajoute ici est le formulaire :
+   reporter une panne au MEL ou la clore. Le prototype n'a que deux
+   boutons ; la ligne MEL qui porte le report se choisit, elle ne se
+   tape pas.
+   ============================================================ */
+
+.defect-file__text {
+  font-size: 12.5px;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.defect-file__note {
+  font-size: 11px;
+  color: var(--text-faint);
+  line-height: 1.55;
+  margin: 8px 0 0;
+}
+
+.defect-file__error {
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--attention-fg);
+  background: var(--attention-bg);
+  border: 1px solid var(--attention-line, var(--line));
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  margin: 0;
+}
+
+.defect-file__actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+.defect-file__form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.defect-file__form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.defect-file__form label > span {
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-faint);
+}
+
+.defect-file__form select,
+.defect-file__form textarea {
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--text);
+  background: var(--bg-panel, var(--surface));
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 7px 9px;
+  width: 100%;
+}
+
+.defect-file__form textarea {
+  resize: vertical;
+  line-height: 1.55;
+}
+
+.defect-file__check {
+  flex-direction: row !important;
+  align-items: center;
+  gap: 8px !important;
+}
+
+.defect-file__check > span {
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  font-size: 12px !important;
+  color: var(--text) !important;
+}
+
+/* La colonne "Aircraft" du tableau : immatriculation puis code OACI. */
+.tail b {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.tail span {
+  display: block;
+  font-size: 10.5px;
+  color: var(--text-faint);
+  font-family: var(--mono);
+}
