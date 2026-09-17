@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   acknowledgeAlert,
   fetchDispatchBoard,
+  fetchDispatchLeg,
   fetchLegReadiness,
   fetchOpenAlerts,
 } from '../api/dispatch'
@@ -19,6 +20,23 @@ export function useDispatchBoard(filters) {
     refetchOnWindowFocus: true,
     staleTime: 15_000,
     placeholderData: (previous) => previous,
+  })
+}
+
+/**
+ * Une etape, dans la forme du tableau — pour le dossier ouvert depuis la
+ * Flight Timeline, qui n'a que l'identifiant sous la main.
+ *
+ * <p>Meme clef de cache que le tableau ne conviendrait pas : le tableau est
+ * une journee entiere, celle-ci une etape. Mais la meme forme, donc le meme
+ * composant derriere.
+ */
+export function useDispatchLeg(legId) {
+  return useQuery({
+    queryKey: ['dispatch-leg', legId],
+    queryFn: () => fetchDispatchLeg(legId),
+    enabled: Boolean(legId),
+    staleTime: 15_000,
   })
 }
 

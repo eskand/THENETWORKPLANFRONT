@@ -22,11 +22,13 @@ export default function EntryRequirementTab() {
 
   // usedOnly : les terrains que l'exploitant utilise vraiment, pas l'annuaire
   // mondial. C'est la meme regle que l'ecran Airports Data.
-  const airports = useAirports({ search: '', usedOnly: true })
+  /* Seulement les escales ou l'exploitant va : le serveur resout cette
+     liste depuis ops.legs avant le select, quelques dizaines de codes. */
+  const airports = useAirports({ usedOnly: true })
 
   const countries = useMemo(() => {
     const tally = new Map()
-    for (const row of airports.data ?? []) {
+    for (const row of airports.data?.rows ?? []) {
       const iso = row.airport.countryIso2
       if (!iso) continue
       const entry = tally.get(iso) ?? { iso, airports: [] }

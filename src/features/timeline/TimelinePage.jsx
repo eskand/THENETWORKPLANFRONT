@@ -7,7 +7,7 @@ import { findTimelineIssues } from '../../lib/timelineFindings'
 import TimelineGrid from './components/TimelineGrid'
 import TimelineKpiStrip from './components/TimelineKpiStrip'
 import TimelineTable from './components/TimelineTable'
-import FlightLabel from './components/FlightLabel'
+import FlightFile from '../../components/flightfile/FlightFile'
 import OptimizePanel from './components/OptimizePanel'
 import TimelineToolbar from './components/TimelineToolbar'
 
@@ -46,13 +46,15 @@ export default function TimelinePage() {
   /**
    * Ouvrir une etape depuis la barre du Gantt.
    *
-   * Elle ouvre l'etiquette de vol (FlightLabel), celle du prototype : huit
-   * onglets, la carte de route, les heures avec ATD/ATA et l'envoi du MVT.
+   * Elle ouvre LE dossier de vol — le meme composant que le tableau de
+   * dispatch et que l'OCC, parce que l'annexe n'en a qu'un et le pose sur
+   * deux hotes (prototype l. 9389). Huit onglets, le bandeau de route, les
+   * heures avec ATD/ATA et l'envoi du MVT.
    *
-   * Seul l'identifiant de l'etape est passe. L'etiquette lit l'etape elle-meme
-   * sur GET /legs/{id} plutot que de recevoir les quelques champs que porte la
-   * barre du Gantt : une fiche de vol qui se contente de ce que l'appelant lui
-   * tend finit par afficher moins que ce que la base sait.
+   * Seul l'identifiant de l'etape est passe. Le dossier lit la ligne lui-meme
+   * sur GET /dispatch/legs/{id} plutot que de recevoir les quelques champs que
+   * porte la barre du Gantt : une fiche de vol qui se contente de ce que
+   * l'appelant lui tend finit par afficher moins que ce que la base sait.
    */
   function openLeg(segment) {
     if (segment?.legId) setSelectedLeg(segment.legId)
@@ -106,7 +108,10 @@ export default function TimelinePage() {
                 <TimelineTable data={data} onSelectLeg={openLeg} />
               )}
 
-              <FlightLabel legId={selectedLeg} onClose={() => setSelectedLeg(null)} />
+              {/* LE MEME dossier que le tableau de dispatch et que l'OCC : l'annexe
+                  n'en a qu'un, ouvert sur deux hotes (l. 9389). La timeline n'a
+                  que l'identifiant sous la main ; le panneau lit la ligne. */}
+              <FlightFile legId={selectedLeg} onClose={() => setSelectedLeg(null)} />
 
               {optimizeOpen ? (
                 <OptimizePanel data={data} onClose={() => setOptimizeOpen(false)} />

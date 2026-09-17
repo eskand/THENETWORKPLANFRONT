@@ -67,10 +67,22 @@ export async function createServiceRequest(legId, command) {
   return data
 }
 
-/** GET /v1/airports?search&country&usedOnly */
-export async function fetchAirports({ search, country, usedOnly = false } = {}) {
+/**
+ * GET /v1/airports — une page de l'annuaire.
+ *
+ * Le serveur borne toujours la reponse et dit combien la recherche a
+ * reellement trouve : { rows, matched, capped }. La table porte 9 584
+ * aerodromes, et aucun appel ne doit pouvoir les demander tous.
+ */
+export async function fetchAirports({ search, country, region, usedOnly = false, limit } = {}) {
   const { data } = await client.get('/airports', {
-    params: { search: search || undefined, country: country || undefined, usedOnly },
+    params: {
+      search: search || undefined,
+      country: country || undefined,
+      region: region || undefined,
+      usedOnly,
+      limit: limit || undefined,
+    },
   })
   return data
 }
@@ -102,5 +114,24 @@ export async function fetchLeg(legId) {
 /** POST /v1/legs/{id}/mvt — marks the movement message as sent. */
 export async function sendMvt(legId) {
   const { data } = await client.post(`/legs/${legId}/mvt`)
+  return data
+}
+
+/**
+ * POST /v1/legs/{id}/movements — l'heure reelle, telle qu'elle est arrivee.
+ *
+ * <p>OUT et IN sont les deux mouvements que le dossier de vol saisit : le
+ * bloc quitte et le bloc rejoint. OFF et ON (envol, toucher) viennent du
+ * suivi de vol, pas d'une saisie au clavier — c'est pourquoi le panneau ne
+ * propose que les deux premiers.
+ */
+export async function recordMovement(legId, kind, at) {
+  const { data } = await client.post(`/legs/${legId}/movements`, { kind, at })
+  return data
+}
+
+/** POST /v1/legs/{id}/close — la cloture du dossier de vol. */
+export async function closeLeg(legId) {
+  const { data } = await client.post(`/legs/${legId}/close`)
   return data
 }

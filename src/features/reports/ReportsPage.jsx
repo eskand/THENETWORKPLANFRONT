@@ -24,7 +24,8 @@ import '../../styles/reports.css'
  */
 
 /** L'ordre des modules dans le menu, celui du prototype. */
-const MODULE_ORDER = ['Flights', 'Maintenance', 'Crew', 'Sales', 'Safety', 'Trip support']
+const MODULE_ORDER = ['Flights', 'Crew', 'Sales', 'Maintenance', 'Safety (SMS)',
+  'Trip support']
 
 const PERIODS = [
   ['7', 'Last 7 days'],
@@ -41,6 +42,9 @@ export default function ReportsPage() {
   const catalogue = useReportCatalogue()
   const run = useRunReport()
 
+  /* Le serveur renvoie deja les definitions dans l ordre du menu ; on ne
+     regroupe que par module, sans retrier — l ordre a l interieur d un module
+     est celui du prototype, et il ne se deduit d aucun champ. */
   const grouped = useMemo(() => {
     const out = new Map()
     ;(catalogue.data ?? []).forEach((report) => {
@@ -55,13 +59,18 @@ export default function ReportsPage() {
 
   const definition = (catalogue.data ?? []).find((report) => report.code === selected) ?? null
 
-  /* Le premier rapport executable s'ouvre tout seul : un ecran de rapports
-     qui s'ouvre vide demande un clic pour ne rien apprendre. */
+  /* Le premier rapport du menu s'ouvre tout seul : un ecran de rapports qui
+     s'ouvre vide demande un clic pour ne rien apprendre. C'est le premier du
+     MENU, pas le premier du catalogue — l'API renvoie les definitions triees
+     par code, et « COM-PIPE » ouvrirait sur la seule question que personne ne
+     pose en arrivant. */
   useEffect(() => {
-    if (selected || !catalogue.data?.length) return
-    const first = catalogue.data.find((report) => report.runnable)
+    if (selected || !grouped.length) return
+    const first = grouped
+      .flatMap(([, reports]) => reports)
+      .find((report) => report.runnable)
     if (first) setSelected(first.code)
-  }, [catalogue.data, selected])
+  }, [grouped, selected])
 
   /* On depend du CODE, pas de l objet : chaque execution invalide le
      catalogue, qui se recharge, ce qui donne un nouvel objet `definition`.
@@ -220,8 +229,11 @@ export default function ReportsPage() {
                         <table className="rp__table">
                           <thead>
                             <tr>
-                              {result.columns.map((column) => (
-                                <th key={column}>{column}</th>
+                              {result.columns.map((column, index) => (
+                                /* La cle est la position : « Crew Currency »
+                                   porte trois colonnes « Days », et une cle
+                                   tiree du libelle en ferait disparaitre deux. */
+                                <th key={`${column}-${index}`}>{column}</th>
                               ))}
                             </tr>
                           </thead>
@@ -229,7 +241,10 @@ export default function ReportsPage() {
                             {result.rows.map((row, index) => (
                               <tr key={`${result.code}-${index}`}>
                                 {row.map((cell, cellIndex) => (
-                                  <td key={`${result.columns[cellIndex]}-${cellIndex}`}>
+                                  <td
+                                    key={`${result.columns[cellIndex]}-${cellIndex}`}
+                                    className={numeric(cell) ? 'is-num' : undefined}
+                                  >
                                     {cell || EMPTY}
                                   </td>
                                 ))}
@@ -265,6 +280,18 @@ export default function ReportsPage() {
       </div>
     </>
   )
+}
+
+/**
+ * Whether a cell is a figure.
+ *
+ * <p>The prototype declares an alignment per column; here it is derived from
+ * the value, which reaches the same place with no extra field to keep in step:
+ * a count, a percentage and an h:mm duration all right-align, a registration
+ * and a status do not.
+ */
+function numeric(cell) {
+  return typeof cell === 'string' && /^[+-]?[\d.,:]+\s*(%|min|h|d)?$/.test(cell.trim())
 }
 
 function order(module) {

@@ -38,7 +38,7 @@ const REFRESH = [
 
 /** Objet stable : recree a chaque rendu, il changerait la cle de requete
  *  de TanStack Query a chaque passage et relancerait la lecture sans fin. */
-const NO_FILTER = {}
+const USED_STATIONS = { usedOnly: true }
 
 const BASEMAPS = [
   ['SATELLITE', 'Satellite'],
@@ -140,10 +140,15 @@ export default function FlightFollowingPage() {
   const board = useFollowingBoard(date, interval)
   const data = board.data
 
-  // Le reseau dessine sous les appareils : les aerodromes que l'exploitant
-  // connait, avec leurs coordonnees, depuis refdata.airports. Sans eux la
-  // carte n'est qu'une photo satellite.
-  const airports = useAirports(NO_FILTER)
+  /* Le reseau dessine sous les appareils : les aerodromes que l'exploitant
+     CONNAIT, avec leurs coordonnees, depuis refdata.airports. Sans eux la
+     carte n'est qu'une photo satellite.
+
+     « Connait » veut dire « ou il va » : usedOnly. Le filtre etait inutile tant
+     que refdata.airports tenait vingt-six lignes, parce que les deux voulaient
+     dire la meme chose. V51 en a pose 9 584, et la couche est devenue neuf
+     mille marqueurs Leaflet sur une carte qui en montre trente. */
+  const airports = useAirports(USED_STATIONS)
 
   // Le trafic tiers reellement entendu dans la boite de l exploitant. Une
   // couche a part : ce ne sont pas nos vols, et la carte ne doit pas laisser
@@ -330,7 +335,7 @@ export default function FlightFollowingPage() {
               <div className="fw__map">
                 <FlightWatchMap
                   flights={flights}
-                  airports={airports.data ?? []}
+                  airports={airports.data?.rows ?? []}
                   bases={bases}
                   traffic={traffic.data ?? []}
                   showTraffic={showTraffic}

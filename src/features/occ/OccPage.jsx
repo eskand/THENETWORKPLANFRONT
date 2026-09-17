@@ -5,7 +5,7 @@ import { useDispatchBoard } from '../../hooks/useDispatchBoard'
 import { useCrewExpiries } from '../../hooks/useCrew'
 import { useStationWeather } from '../../hooks/useWeather'
 import { hhmm, isoDate } from '../../lib/format'
-import LegDrawer from '../dispatch/components/LegDrawer'
+import FlightFile from '../../components/flightfile/FlightFile'
 import CrewAlertsPanel from './components/CrewAlertsPanel'
 import DeparturesPanel from './components/DeparturesPanel'
 import OccHero from './components/OccHero'
@@ -98,7 +98,7 @@ export default function OccPage() {
 
       <div className="shell__scroll">{body}</div>
 
-      <LegDrawer row={selected} onClose={() => setSelected(null)} />
+      <FlightFile row={selected} onClose={() => setSelected(null)} />
     </>
   )
 }

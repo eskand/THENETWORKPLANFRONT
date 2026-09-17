@@ -1,239 +1,309 @@
-import { AlertTriangle, CalendarCheck, CheckSquare, ClipboardList, ShieldCheck } from 'lucide-react'
-import Badge from '../../../components/Badge'
+import {
+  Activity, AlertCircle, AlertTriangle, Calendar, CheckCheck, CheckSquare, Clock, Plus,
+} from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import Chart from '../../../components/Chart'
+import { Empty, KpiCard, RiskBadge, SEV_COLOUR } from './SafeOps'
 import { EMPTY, dayMonthYear } from '../../../lib/format'
 
-const AUDIT_TONE = { CLOSED: 'READY', IN_PROGRESS: 'PENDING', PLANNED: 'INFO', CANCELLED: 'NEUTRAL' }
-
 /**
- * Le tableau de bord du Safety Manager.
+ * Safety Overview — the accountable manager's view.
  *
- * <b>Aucun chiffre de cet écran n'est stocké.</b> Les compteurs viennent du
- * registre des occurrences, les indicateurs du module qui détient la réponse,
- * et les constats du balayage lancé au moment où la page s'ouvre. C'est la
- * différence que relevait l'audit : le prototype écrit ses chiffres de tableau
- * de bord dans son propre code, ce qui lui fait annoncer quatre constats
- * d'audit ouverts quand sa liste d'audits en porte cinq.
+ * <b>Nothing on this screen is stored.</b> The counters come from the
+ * occurrence register, the indicators from the module that owns each answer,
+ * and the findings from the scan that runs when the page opens. That is the
+ * difference the audit drew: the prototype writes its dashboard figures into
+ * its own code, which is how it announces four open audit findings while its
+ * own audit list carries five.
+ *
+ * <b>The rows are the annexe's, in its order.</b> What happened, then what we
+ * measure of it, then what we are doing about it — two cards, two cards, two
+ * cards, three cards. A free grid reorders them at every window width and puts
+ * « corrective actions » above the risk profile that justifies them.
  */
 export default function SafetyOverview({ data, onScan, scanning, onOpenTab }) {
-  const tiles = [
-    {
-      label: 'Occurrences this month', value: data.occurrencesThisMonth,
-      hint: `${data.occurrencesStillOpen} still open`, accent: 'var(--info-fg)',
-      icon: AlertTriangle,
-    },
-    {
-      label: 'Risks above tolerance', value: data.risksAboveTolerance,
-      hint: 'residual index ≥ 15', accent: 'var(--attention-fg)',
-      alert: data.risksAboveTolerance > 0, icon: AlertTriangle,
-    },
-    {
-      label: 'Overdue actions', value: data.overdueActions,
-      hint: 'escalation required', accent: 'var(--pending-fg)',
-      alert: data.overdueActions > 0, icon: ClipboardList,
-    },
-    {
-      label: 'Open audit findings', value: data.openAuditFindings,
-      hint: `${data.auditsPlanned} audits planned`, accent: 'var(--accent-teal)',
-      icon: CheckSquare,
-    },
-    {
-      label: 'Live monitoring findings', value: data.monitoring.total,
-      hint: `${data.monitoring.critical} critical · ${data.monitoring.high} high`,
-      accent: 'var(--ready-fg)', alert: data.monitoring.critical > 0, icon: ShieldCheck,
-    },
-  ]
+  const navigate = useNavigate()
 
   return (
     <>
-      <div className="page__head">
+      <div className="page-hdr">
         <div>
-          <h1>Safety Overview</h1>
-          <p>ICAO Annex 19 · EASA ORO.GEN.200 · IS-BAO Stage 2 — accountable manager view</p>
+          <div className="page-title">Safety Overview</div>
+          <div className="page-sub">
+            ICAO Annex 19 · EASA ORO.GEN.200 · IS-BAO Stage 2 — accountable manager view
+          </div>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button type="button" className="toolbar__button" disabled={scanning} onClick={onScan}>
+        <div className="btn-row">
+          <button className="btn-o" disabled={scanning} onClick={onScan}>
             {scanning ? 'Scanning…' : 'Run safety scan'}
+          </button>
+          {/* Enregistrer une occurrence se fait sur l'ecran de declaration : un
+              deuxieme formulaire ici finirait par diverger du premier, et c'est
+              le brouillon de l'un qui manquerait a l'autre. */}
+          <button className="btn-p" onClick={() => navigate('/safety-reports')}>
+            <Plus size={12} strokeWidth={2.4} /> Record occurrence
           </button>
         </div>
       </div>
 
-      <Banners data={data} onOpenTab={onOpenTab} />
+      <Alerts data={data} onOpenTab={onOpenTab} />
 
-      <div className="kpi-strip">
-        {tiles.map((tile) => (
-          <div className="kpi" key={tile.label}
-               style={{ '--kpi-accent': tile.accent,
-                        '--kpi-value': tile.alert ? tile.accent : undefined }}>
-            <span className="kpi__corners" />
-            <div className="eyebrow">{tile.label}</div>
-            <div className="kpi__value">{tile.value}</div>
-            <div className="kpi__hint">{tile.hint}</div>
-          </div>
-        ))}
+      <div className="kpi-row">
+        <KpiCard tone="c1" ico="ic-b" icon={AlertTriangle}
+                 label="Occurrences this month" value={data.occurrencesThisMonth}
+                 sub={`${data.occurrencesStillOpen} still open`}
+                 onOpen={() => onOpenTab('OCCURRENCES')} />
+        <KpiCard tone="c2" ico="ic-r" icon={AlertCircle}
+                 label="Risks above tolerance" value={data.risksAboveTolerance}
+                 sub="residual index ≥ 10" onOpen={() => onOpenTab('RISK')} />
+        <KpiCard tone="c5" ico="ic-o" icon={Clock}
+                 label="Overdue actions" value={data.overdueActions}
+                 sub={data.overdueActions ? 'escalation required' : 'all within date'}
+                 onOpen={() => onOpenTab('ASSURANCE')} />
+        <KpiCard tone="c3" ico="ic-s" icon={CheckSquare}
+                 label="Open audit findings" value={data.openAuditFindings}
+                 sub={`${data.auditsPlanned} audits planned`}
+                 onOpen={() => onOpenTab('ASSURANCE')} />
+        <KpiCard tone="c4" ico="ic-g" icon={Activity}
+                 label="Live monitoring findings" value={data.monitoring.total}
+                 sub={`${data.monitoring.critical} critical · ${data.monitoring.high} high`}
+                 onOpen={() => onOpenTab('MONITORING')} />
       </div>
 
-      <div className="sms-grid">
-        <RiskProfile profile={data.riskProfile} />
+      <div className="row-chart">
+        <RiskProfile profile={data.riskProfile} onOpenTab={onOpenTab} />
         <Trend points={data.trend} />
-        <Indicators indicators={data.indicators} />
+      </div>
+
+      <div className="row-wide">
+        <Indicators indicators={data.indicators} onOpenTab={onOpenTab} />
         <OperationalRisk domains={data.monitoring.byDomain} onOpenTab={onOpenTab} />
-        <RecentOccurrences occurrences={data.recentOccurrences} />
-        <CorrectiveActions actions={data.correctiveActions} />
-        <AuditProgramme audits={data.auditProgramme} />
-        <Accountability accountability={data.accountability} />
+      </div>
+
+      <div className="row-wide">
+        <RecentOccurrences occurrences={data.recentOccurrences} onOpenTab={onOpenTab} />
+        <ResidualVsInitial domains={data.riskByDomain} />
+      </div>
+
+      <div className="row3">
+        <CorrectiveActions actions={data.correctiveActions} onOpenTab={onOpenTab} />
+        <AuditProgramme audits={data.auditProgramme} onOpenTab={onOpenTab} />
+        <Accountability accountability={data.accountability} changes={data.changes}
+                        onOpenTab={onOpenTab} />
       </div>
     </>
   )
 }
 
-/* ---------- bannières ---------- */
+/* ─────────────────────────────── les bannieres ─────────────────────────── */
 
-function Banners({ data, onOpenTab }) {
+/**
+ * Les quatre choses qu'un dirigeant responsable doit voir en premier.
+ *
+ * <p>Dans l'ordre de l'annexe : le roster publie, les constats critiques, les
+ * actions correctives en retard, puis les notifications obligatoires. L'ordre
+ * n'est pas decoratif — il va du plus contraignant (un roster illegal arrete
+ * des vols) au plus administratif (un depot a l'autorite).
+ */
+function Alerts({ data, onOpenTab }) {
+  const roster = data.rosterCheck
   const critical = data.monitoring.critical
+  const overdue = (data.correctiveActions ?? []).filter((action) => action.overdue)
+  const mor = morOutstanding(data)
+
   return (
     <>
-      {critical === 0 ? (
-        <div className="sms-banner sms-banner--ok">
-          <span className="sms-banner__icon"><ShieldCheck size={16} /></span>
-          <span className="sms-banner__text">
-            <b>No critical safety finding</b> — the scan found nothing that prevents safe operation.
-          </span>
-        </div>
-      ) : (
-        <div className="sms-banner sms-banner--critical">
-          <span className="sms-banner__icon"><AlertTriangle size={16} /></span>
-          <span className="sms-banner__text">
-            <b>{critical} critical safety finding{critical > 1 ? 's' : ''}</b> — conditions that
-            prevent safe operation are active across the fleet or crew.
-          </span>
-          <button type="button" className="sms-banner__link" onClick={() => onOpenTab('MONITORING')}>
-            Open →
-          </button>
-        </div>
-      )}
+      {roster && roster.months.length ? (
+        roster.exceedances === 0 ? (
+          /* Le texte de l'annexe, au point final pres. Le cas « zero garde
+             controlee » ne se presente pas ici : une version de roster publiee
+             sans aucune garde enregistree est traitee plus bas, et une banniere
+             verte ne peut donc jamais annoncer un resultat propre sur rien. */
+          roster.dutiesChecked === 0 ? (
+            <div className="alert"
+                 style={{ background: 'rgba(224,194,42,.08)', borderColor: 'rgba(224,194,42,.3)' }}>
+              <div className="alert-txt" style={{ color: '#8a6d0b', fontWeight: 600 }}>
+                📋 Published Roster: {roster.months.join(', ')} is published but holds no recorded
+                duty, so no FTL check could be run against it.
+              </div>
+            </div>
+          ) : (
+            <div className="alert"
+                 style={{ background: 'rgba(34,197,94,.06)', borderColor: 'rgba(34,197,94,.2)' }}>
+              <div className="alert-txt" style={{ color: '#166534', fontWeight: 600 }}>
+                📋 Published Roster: no FTL/currency exceedances found across{' '}
+                {roster.months.join(', ')}.
+              </div>
+            </div>
+          )
+        ) : (
+          <Alert colour="#C0392B" onOpen={() => onOpenTab('PERSONNEL')}
+                 title={`${roster.exceedances} Published Roster FTL exceedance${
+                   roster.exceedances > 1 ? 's' : ''}`}
+                 detail={`${roster.crewAffected.join(', ')} — from the published crew roster.`} />
+        )
+      ) : null}
 
-      {data.overdueActions > 0 ? (
-        <div className="sms-banner sms-banner--warn">
-          <span className="sms-banner__icon"><AlertTriangle size={16} /></span>
-          <span className="sms-banner__text">
-            <b>{data.overdueActions} overdue corrective action
-              {data.overdueActions > 1 ? 's' : ''}</b>
-            {' — '}
-            {data.correctiveActions.filter((a) => a.overdue).slice(0, 2)
-              .map((a) => `${a.reference} — ${a.title}`).join(' · ') || 'past their due date'}
-          </span>
-        </div>
+      {critical ? (
+        <Alert colour="#C0392B" onOpen={() => onOpenTab('MONITORING')}
+               title={`${critical} critical safety finding${critical > 1 ? 's' : ''}`}
+               detail="Conditions that prevent safe operation are active across the fleet or crew." />
+      ) : null}
+
+      {overdue.length ? (
+        <Alert colour="#E67E22" onOpen={() => onOpenTab('ASSURANCE')}
+               title={`${overdue.length} overdue corrective action${
+                 overdue.length > 1 ? 's' : ''}`}
+               detail={overdue.slice(0, 2)
+                 .map((action) => `${action.reference} — ${action.title}`).join(' · ')} />
+      ) : null}
+
+      {mor ? (
+        <Alert colour="#C0392B" onOpen={() => onOpenTab('OCCURRENCES')}
+               title={`${mor} mandatory occurrence report${mor > 1 ? 's' : ''} not yet filed`}
+               detail="Regulation (EU) 376/2014 requires notification within 72 hours of becoming aware of the occurrence." />
       ) : null}
     </>
   )
 }
 
-/* ---------- profil de risque ---------- */
+function Alert({ colour, title, detail, onOpen }) {
+  return (
+    <div className="alert" style={{ borderColor: `${colour}33`, background: `${colour}0f` }}>
+      <div className="alert-ico" style={{ background: `${colour}1a` }}>
+        <AlertTriangle size={13} style={{ stroke: colour }} />
+      </div>
+      <div className="alert-txt" style={{ color: colour }}>
+        <b>{title}</b> — {detail}
+      </div>
+      <div className="alert-cta" style={{ color: colour }} onClick={onOpen}
+           role="button" tabIndex={0}
+           onKeyDown={(event) => { if (event.key === 'Enter') onOpen() }}>
+        Open →
+      </div>
+    </div>
+  )
+}
 
-function RiskProfile({ profile }) {
+/**
+ * Les occurrences a notification obligatoire qui n'ont pas ete deposees.
+ *
+ * <p>Une occurrence classee autrement que « occurrence » par ECCAIRS doit etre
+ * notifiee ; tant que la date d'export est vide, elle ne l'est pas. Le compte
+ * se derive de l'etat reel, jamais d'un drapeau qu'on oublierait de lever.
+ */
+function morOutstanding(data) {
+  return (data.recentOccurrences ?? []).filter((occurrence) => {
+    const kind = occurrence.eccairsOccurrenceClass
+    return Boolean(kind) && kind.toUpperCase() !== 'OCCURRENCE'
+      && occurrence.eccairsExportedAt == null
+  }).length
+}
+
+/* ─────────────────────────── profil de risque ──────────────────────────── */
+
+function RiskProfile({ profile, onOpenTab }) {
   const bands = [
-    ['', 'Recorded', 'all classes', profile.recorded],
-    ['intolerable', 'Intolerable', 'index ≥ 15', profile.intolerable],
-    ['high', 'High', 'index 10–14', profile.high],
-    ['tolerable', 'Tolerable', 'index ≤ 9', profile.tolerable],
+    ['Recorded', profile.recorded, 'var(--navy)', 'all classes'],
+    ['Intolerable', profile.intolerable, '#C0392B', 'index ≥ 15'],
+    ['High', profile.high, '#E67E22', 'index 10–14'],
+    ['Tolerable', profile.tolerable, '#27AE60', 'index ≤ 9'],
   ]
 
   return (
-    <section className="sms-card">
-      <div className="sms-card__head">
-        <h3 className="sms-card__title">Occurrence risk profile</h3>
+    <div className="card">
+      <div className="card-hdr">
+        <div className="card-title">Occurrence risk profile</div>
+        <div className="viewall" onClick={() => onOpenTab('OCCURRENCES')}
+             role="button" tabIndex={0}
+             onKeyDown={(event) => { if (event.key === 'Enter') onOpenTab('OCCURRENCES') }}>
+          Register ›
+        </div>
       </div>
-      <div className="sms-bands">
-        {bands.map(([modifier, label, hint, value]) => (
-          <div className={modifier ? `sms-band sms-band--${modifier}` : 'sms-band'} key={label}>
-            <div className="sms-band__value">{value}</div>
-            <div className="sms-band__label">{label}</div>
-            <div className="sms-band__hint">{hint}</div>
+
+      <div className="mini-kpis">
+        {bands.map(([label, value, colour, hint]) => (
+          <div className="mini-kpi" key={label} style={{ borderBottomColor: colour }}>
+            <div className="mini-v" style={{ color: colour }}>{value}</div>
+            <div className="mini-l">{label}</div>
+            <div className="mini-s">{hint}</div>
           </div>
         ))}
       </div>
+
+      <Chart chart={{
+        id: 'ov-donut', title: 'Occurrences by risk band', kind: 'donut', width: 'full',
+        labels: ['High (10–14)', 'Intolerable (≥ 15)', 'Tolerable (≤ 9)'],
+        series: [{
+          label: 'Occurrences',
+          data: [profile.high, profile.intolerable, profile.tolerable],
+          colours: ['#E67E22', '#C0392B', '#27AE60'],
+        }],
+      }} bare />
+
       {/* Une occurrence sans severite ni probabilite n'est pas « a faible
-          risque » : elle n'a pas ete evaluee, et le dire est le point de
-          depart de l'evaluation. */}
+          risque » : elle n'a pas ete evaluee, et le dire est le point de depart
+          de l'evaluation. */}
       {profile.unassessed > 0 ? (
-        <p className="sms-note">
+        <div className="mtx-note">
           {profile.unassessed} occurrence{profile.unassessed > 1 ? 's have' : ' has'} no risk
           assessment on file and {profile.unassessed > 1 ? 'are' : 'is'} counted in none of the
           three bands.
-        </p>
+        </div>
       ) : null}
-    </section>
+    </div>
   )
 }
 
-/* ---------- tendance ---------- */
+/* ───────────────────────────── la tendance ─────────────────────────────── */
 
 function Trend({ points }) {
-  const width = 460
-  const height = 150
-  const pad = { left: 26, right: 8, top: 10, bottom: 22 }
-  const max = Math.max(4, ...points.map((p) => p.occurrences))
-  const stepX = (width - pad.left - pad.right) / Math.max(1, points.length - 1)
-  const y = (value) => pad.top + (height - pad.top - pad.bottom) * (1 - value / max)
-  const x = (index) => pad.left + index * stepX
-
-  const line = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${x(i)},${y(p.occurrences)}`).join(' ')
-  const area = `${line} L${x(points.length - 1)},${y(0)} L${x(0)},${y(0)} Z`
-  const severe = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${x(i)},${y(p.highAndIntolerable)}`).join(' ')
-
   return (
-    <section className="sms-card">
-      <div className="sms-card__head">
-        <h3 className="sms-card__title">Safety trend analysis</h3>
-        <div className="sms-legend">
-          <span><i style={{ background: 'var(--info-fg)' }} />Occurrences reported</span>
-          <span><i style={{ background: 'var(--attention-fg)' }} />High &amp; intolerable</span>
+    <div className="card">
+      <div className="card-hdr">
+        <div className="card-title">Safety trend analysis</div>
+        <div className="rleg">
+          <span><i style={{ background: '#1B2D6B' }} />Occurrences reported</span>
+          <span><i style={{ background: '#C0392B' }} />High &amp; intolerable</span>
         </div>
       </div>
 
-      <svg className="sms-trend" viewBox={`0 0 ${width} ${height}`} role="img"
-           aria-label="Occurrences reported over the last six months">
-        {[0, 0.25, 0.5, 0.75, 1].map((fraction) => (
-          <g key={fraction}>
-            <line className="sms-trend__grid" x1={pad.left} x2={width - pad.right}
-                  y1={y(max * fraction)} y2={y(max * fraction)} />
-            <text className="sms-trend__axis" x={pad.left - 6} y={y(max * fraction) + 3}
-                  textAnchor="end">{Math.round(max * fraction)}</text>
-          </g>
-        ))}
-        <path className="sms-trend__area" d={area} />
-        <path className="sms-trend__line" d={line} />
-        <path className="sms-trend__severe" d={severe} />
-        {points.map((p, i) => (
-          <g key={p.month}>
-            <circle className="sms-trend__dot" cx={x(i)} cy={y(p.occurrences)} r="3" />
-            <circle className="sms-trend__dot sms-trend__dot--severe" cx={x(i)}
-                    cy={y(p.highAndIntolerable)} r="2.5" />
-            <text className="sms-trend__axis" x={x(i)} y={height - 6} textAnchor="middle">
-              {p.month}
-            </text>
-          </g>
-        ))}
-      </svg>
+      <Chart chart={{
+        id: 'ov-trend', title: 'Six month occurrence and high-risk trend', kind: 'line',
+        width: 'full',
+        labels: points.map((point) => point.month),
+        series: [
+          { label: 'Occurrences reported',
+            data: points.map((point) => point.occurrences), colour: '#1B2D6B' },
+          { label: 'High & intolerable',
+            data: points.map((point) => point.highAndIntolerable), colour: '#C0392B' },
+        ],
+      }} bare />
 
-      <p className="sms-note">
+      <div className="mtx-note">
         Rolling six months, every month counted from the occurrence register. These two series are
         the inputs to SPI-01 (occurrence rate) and SPI-02 (high and critical risk occurrences).
-      </p>
-    </section>
+      </div>
+    </div>
   )
 }
 
-/* ---------- indicateurs ---------- */
+/* ──────────────────────────── les indicateurs ──────────────────────────── */
 
-function Indicators({ indicators }) {
+function Indicators({ indicators, onOpenTab }) {
   return (
-    <section className="sms-card">
-      <div className="sms-card__head">
-        <h3 className="sms-card__title">Safety performance indicators — against target</h3>
+    <div className="card">
+      <div className="card-hdr">
+        <div className="card-title">Safety performance indicators — against target</div>
+        <div className="viewall" onClick={() => onOpenTab('ASSURANCE')}
+             role="button" tabIndex={0}
+             onKeyDown={(event) => { if (event.key === 'Enter') onOpenTab('ASSURANCE') }}>
+          Safety assurance ›
+        </div>
       </div>
+
       {indicators.map((spi) => {
-        const state = spi.breachesAlert ? 'alert' : spi.meetsTarget ? 'ok' : 'miss'
+        const colour = spi.breachesAlert ? '#C0392B' : spi.meetsTarget ? '#27AE60' : '#E67E22'
         /* La barre montre l'atteinte de la cible, bornee a 100 % : au-dela,
            depasser la cible n'est pas « plus vert », c'est atteint. */
         const ratio = spi.value == null || Number(spi.target) === 0
@@ -243,181 +313,265 @@ function Indicators({ indicators }) {
             : Math.min(1, Number(spi.target) / Math.max(Number(spi.value), 0.01))
 
         return (
-          <div className="sms-spi" key={spi.code}>
-            <div className="sms-spi__label">
-              <div className="sms-spi__name">{spi.name}</div>
-              <div className="sms-spi__meta">
+          <div className="spi-row" key={spi.code}>
+            <div className="spi-name">
+              <b>{spi.name}</b>
+              <span>
                 {spi.code} · target {spi.direction === 'LOWER' ? '≤' : '≥'} {Number(spi.target)}
                 {spi.unit ? ` ${spi.unit}` : ''}
-                {spi.computedBy ? ` · ${spi.computedBy}` : ''}
-              </div>
+              </span>
             </div>
-            <div className="sms-spi__gauge">
-              <div className={`sms-spi__fill sms-spi__fill--${state}`}
-                   style={{ width: `${Math.round(ratio * 100)}%` }} />
+            <div className="spi-bar">
+              <div className="spi-fill"
+                   style={{ width: `${Math.round(ratio * 100)}%`, background: colour }} />
             </div>
-            {/* Null n'est pas zero : « pas mesurable » et « aucun evenement »
-                ne veulent pas dire la meme chose sur un indicateur de securite. */}
-            <div className={spi.value == null
-              ? 'sms-spi__value sms-spi__value--none'
-              : `sms-spi__value sms-spi__value--${state === 'ok' ? 'ok' : state}`}
-                 title={spi.value == null ? 'No exposure figure to measure this against yet' : undefined}>
-              {spi.value == null ? 'not measured' : Number(spi.value)}
+            {/* Null n'est pas zero : « pas mesurable » et « aucun evenement » ne
+                veulent pas dire la meme chose sur un indicateur de securite. */}
+            <div className="spi-val"
+                 style={{ color: spi.value == null ? '#64748b' : colour }}
+                 title={spi.value == null ? 'No exposure figure to measure this against yet'
+                   : spi.computedBy}>
+              {spi.value == null ? 'n/m' : Number(spi.value)}
             </div>
           </div>
         )
       })}
-    </section>
+    </div>
   )
 }
 
-/* ---------- risque opérationnel ---------- */
+/* ────────────────────── le risque operationnel vivant ──────────────────── */
 
 function OperationalRisk({ domains, onOpenTab }) {
   return (
-    <section className="sms-card">
-      <div className="sms-card__head">
-        <h3 className="sms-card__title">Live operational risk picture</h3>
-        <button type="button" className="sms-card__link" onClick={() => onOpenTab('MONITORING')}>
+    <div className="card">
+      <div className="card-hdr">
+        <div className="card-title">Live operational risk picture</div>
+        <div className="viewall" onClick={() => onOpenTab('MONITORING')}
+             role="button" tabIndex={0}
+             onKeyDown={(event) => { if (event.key === 'Enter') onOpenTab('MONITORING') }}>
           Open monitoring ›
-        </button>
+        </div>
       </div>
+
       {domains.length === 0 ? (
-        <p className="sms-note">The scan found nothing outstanding in any domain.</p>
-      ) : null}
-      {domains.map((domain) => (
-        <div className="sms-domain" key={domain.domain}>
-          <div className="sms-domain__name">{domain.label}</div>
-          <div className="sms-domain__bar">
-            {[['critical', domain.critical], ['high', domain.high],
-              ['medium', domain.medium], ['low', domain.low]].map(([kind, count]) => (
-                count > 0 ? (
-                  <div key={kind} className={`sms-domain__seg sms-domain__seg--${kind}`}
-                       style={{ width: `${(count / domain.total) * 100}%` }}
-                       title={`${count} ${kind}`} />
-                ) : null
-              ))}
+        <Empty>No open findings in any operational module.</Empty>
+      ) : domains.map((domain) => (
+        <div className="domrow" key={domain.domain}
+             onClick={() => onOpenTab('MONITORING')} role="button" tabIndex={0}
+             onKeyDown={(event) => { if (event.key === 'Enter') onOpenTab('MONITORING') }}>
+          <span className="domrow-n">{domain.label}</span>
+          <div className="domrow-bars">
+            {['critical', 'high', 'medium', 'low'].map((sev) => (
+              domain[sev] ? (
+                <div className="db" key={sev}
+                     style={{ background: SEV_COLOUR[sev], flex: domain[sev] }}
+                     title={`${domain[sev]} ${sev}`} />
+              ) : null
+            ))}
           </div>
-          <div className="sms-domain__count">{domain.total}</div>
+          <span className="domrow-c">{domain.total}</span>
         </div>
       ))}
-    </section>
+    </div>
   )
 }
 
-/* ---------- listes ---------- */
+/* ──────────────────────── residuel contre initial ──────────────────────── */
 
-function RecentOccurrences({ occurrences }) {
+/**
+ * Ce que les barrieres ont reellement enleve, par domaine.
+ *
+ * <b>Deux series sur les memes categories, pas une.</b> Un registre qui ne
+ * montrerait que le residuel laisserait croire que le domaine est calme ; c'est
+ * l'ecart entre les deux qui dit ce que les controles achetent, et un ecart nul
+ * dit qu'ils n'achetent rien.
+ */
+function ResidualVsInitial({ domains }) {
+  const rows = domains ?? []
   return (
-    <section className="sms-card">
-      <div className="sms-card__head">
-        <h3 className="sms-card__title">Recent occurrences</h3>
-      </div>
-      {occurrences.map((occurrence) => (
-        <div className="sms-item" key={occurrence.id}>
-          <span className="sms-item__icon"><AlertTriangle size={14} /></span>
-          <div className="sms-item__body">
-            <div className="sms-item__title">{occurrence.title}</div>
-            <div className="sms-item__meta">
-              {occurrence.reference} · {occurrence.category}
-              {occurrence.registration ? ` · ${occurrence.registration}` : ''}
-              {occurrence.eccairsReference ? ` · ${occurrence.eccairsReference}` : ''}
-            </div>
-          </div>
-          <div className="sms-item__right">{dayMonthYear(occurrence.occurredAt)}</div>
+    <div className="card">
+      <div className="card-hdr">
+        <div className="card-title">Risk profile — residual vs initial</div>
+        <div className="dots">
+          <div className="dot" /><div className="dot" /><div className="dot" />
         </div>
-      ))}
-      {occurrences.length === 0 ? <p className="sms-note">Nothing recorded yet.</p> : null}
-    </section>
+      </div>
+
+      {rows.length === 0 ? (
+        <Empty>No hazard is on the register yet.</Empty>
+      ) : (
+        <Chart chart={{
+          id: 'ov-riskchart', title: 'Risk index by domain', kind: 'bar', width: 'full',
+          labels: rows.map((row) => row.label),
+          series: [
+            { label: 'Initial risk', data: rows.map((row) => row.initialIndex), colour: '#C0392B' },
+            { label: 'Residual after controls',
+              data: rows.map((row) => row.residualIndex), colour: '#27AE60' },
+          ],
+        }} bare />
+      )}
+
+      <div className="mtx-note">
+        Both figures are the ICAO Doc 9859 index — severity times likelihood. The residual is what
+        the recorded controls leave behind; where the two bars are the same height, the controls on
+        file are not yet reducing the risk.
+      </div>
+    </div>
   )
 }
 
-function CorrectiveActions({ actions }) {
+/* ──────────────────────────────── les listes ───────────────────────────── */
+
+function RecentOccurrences({ occurrences, onOpenTab }) {
+  const open = () => onOpenTab('OCCURRENCES')
   return (
-    <section className="sms-card">
-      <div className="sms-card__head">
-        <h3 className="sms-card__title">Corrective actions</h3>
+    <div className="card">
+      <div className="card-hdr">
+        <div className="card-title">Recent occurrences</div>
+        <div className="viewall" onClick={open} role="button" tabIndex={0}
+             onKeyDown={(event) => { if (event.key === 'Enter') open() }}>
+          View register ›
+        </div>
       </div>
-      {actions.map((action) => (
-        <div className="sms-item" key={action.id}>
-          <span className="sms-item__icon"><CheckSquare size={14} /></span>
-          <div className="sms-item__body">
-            <div className="sms-item__title">{action.title}</div>
-            <div className="sms-item__meta">
-              {action.reference}{action.ownerName ? ` · ${action.ownerName}` : ''}
+
+      {occurrences.length === 0 ? <Empty>No occurrences recorded.</Empty> : null}
+
+      {occurrences.slice(0, 6).map((occurrence) => {
+        const index = occurrence.riskSeverity && occurrence.riskProbability
+          ? severityValue(occurrence.riskSeverity) * occurrence.riskProbability
+          : null
+        const band = index == null ? 'l'
+          : index >= 15 ? 'c' : index >= 10 ? 'h' : index >= 5 ? 'm' : 'l'
+        return (
+          <div className="fi" key={occurrence.id} onClick={open} role="button" tabIndex={0}
+               onKeyDown={(event) => { if (event.key === 'Enter') open() }}>
+            <div className={`fi-d ${band}`}><AlertTriangle size={12} /></div>
+            <div className="fi-info">
+              <div className="fi-t">{occurrence.title}</div>
+              <div className="fi-m">
+                {occurrence.reference} · {occurrence.category}
+                {occurrence.registration ? ` · ${occurrence.registration}` : ''}
+                {occurrence.eccairsOccurrenceClass
+                  && occurrence.eccairsOccurrenceClass.toUpperCase() !== 'OCCURRENCE'
+                  ? <> · <b>MOR</b></> : null}
+              </div>
+            </div>
+            <div className="fi-r">
+              <RiskBadge index={index} />
+              <span className="fi-time">{dayMonthYear(occurrence.occurredAt)}</span>
             </div>
           </div>
-          <div className="sms-item__right">
-            {action.overdue ? (
-              <Badge tone="ATTENTION" warn>{action.daysLate} d late</Badge>
-            ) : (
-              <>{action.dueOn ? dayMonthYear(action.dueOn) : EMPTY}</>
-            )}
-          </div>
-        </div>
-      ))}
-      {actions.length === 0 ? <p className="sms-note">No action outstanding.</p> : null}
-    </section>
+        )
+      })}
+    </div>
   )
 }
 
-function AuditProgramme({ audits }) {
+/** La valeur numerique d'une severite ICAO : A vaut 5, E vaut 1. */
+function severityValue(severity) {
+  return { A: 5, B: 4, C: 3, D: 2, E: 1 }[String(severity).toUpperCase()] ?? 3
+}
+
+function CorrectiveActions({ actions, onOpenTab }) {
+  const open = () => onOpenTab('ASSURANCE')
   return (
-    <section className="sms-card">
-      <div className="sms-card__head">
-        <h3 className="sms-card__title">Audit programme</h3>
+    <div className="card">
+      <div className="card-hdr">
+        <div className="card-title">Corrective actions</div>
+        <div className="viewall" onClick={open} role="button" tabIndex={0}
+             onKeyDown={(event) => { if (event.key === 'Enter') open() }}>
+          All ›
+        </div>
       </div>
-      {audits.map((audit) => (
-        <div className="sms-item" key={audit.id}>
-          <span className="sms-item__icon"><CalendarCheck size={14} /></span>
-          <div className="sms-item__body">
-            <div className="sms-item__title">{audit.name}</div>
-            <div className="sms-item__meta">
-              {audit.standard} · {dayMonthYear(audit.plannedOn)}
-              {audit.externalAudit ? ' · external' : ' · internal'}
-              {audit.scorePercent != null ? ` · ${audit.scorePercent}% conformity` : ''}
-            </div>
+
+      {actions.length === 0 ? <Empty>No corrective actions.</Empty> : null}
+
+      {actions.slice(0, 5).map((action) => (
+        <div className="ai" key={action.id} onClick={open} role="button" tabIndex={0}
+             onKeyDown={(event) => { if (event.key === 'Enter') open() }}>
+          <div className="ai-ico"><CheckCheck size={12} /></div>
+          <div>
+            <div className="ai-name">{action.title}</div>
+            <div className="ai-sub">{action.reference} · {action.ownerName ?? 'unassigned'}</div>
           </div>
-          <div className="sms-item__right">
-            <Badge tone={AUDIT_TONE[audit.status] ?? 'NEUTRAL'}>
-              {audit.status.replace('_', ' ').toLowerCase()}
-            </Badge>
-            <div style={{ marginTop: 3 }}>
-              {audit.openFindings > 0 ? `${audit.openFindings} open` : EMPTY}
+          <div className="ai-r">
+            <div className={`ai-b ${action.overdue ? 'due' : 'soon'}`}>
+              {action.overdue ? `${action.daysLate} d late`
+                : action.dueOn ? dayMonthYear(action.dueOn) : 'no date'}
             </div>
+            <div className="ai-pc">{String(action.status ?? '').toLowerCase()}</div>
           </div>
         </div>
       ))}
-    </section>
+    </div>
   )
 }
 
-function Accountability({ accountability }) {
+function AuditProgramme({ audits, onOpenTab }) {
+  const open = () => onOpenTab('ASSURANCE')
+  return (
+    <div className="card">
+      <div className="card-hdr">
+        <div className="card-title">Audit programme</div>
+        <div className="viewall" onClick={open} role="button" tabIndex={0}
+             onKeyDown={(event) => { if (event.key === 'Enter') open() }}>
+          All ›
+        </div>
+      </div>
+
+      {audits.length === 0 ? <Empty>No audits in the programme.</Empty> : null}
+
+      {audits.slice(0, 5).map((audit) => (
+        <div className="ai" key={audit.id} onClick={open} role="button" tabIndex={0}
+             onKeyDown={(event) => { if (event.key === 'Enter') open() }}>
+          <div className="ai-ico"><Calendar size={12} /></div>
+          <div>
+            <div className="ai-name">{audit.name}</div>
+            <div className="ai-sub">{audit.standard} · {dayMonthYear(audit.plannedOn)}</div>
+          </div>
+          <div className="ai-r">
+            <div className={`ai-b ${audit.status === 'CLOSED' ? 'closed'
+              : audit.status === 'IN_PROGRESS' ? 'due' : 'soon'}`}>
+              {String(audit.status).replace('_', ' ').toLowerCase()}
+            </div>
+            <div className="ai-pc">{audit.openFindings ? `${audit.openFindings} open` : EMPTY}</div>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function Accountability({ accountability, changes, onOpenTab }) {
+  const active = (changes ?? []).filter((change) => change.active).length
   const rows = [
-    ['Accountable Manager', accountability.accountableManager],
-    ['Safety Manager', accountability.safetyManager],
-    ['Operator', accountability.operator],
-    ['AOC reference', accountability.aocReference],
-    ['Management of change', `${accountability.activeChanges} active`],
+    ['Accountable Manager', accountability?.accountableManager],
+    ['Safety Manager', accountability?.safetyManager],
+    ['Operator', accountability?.operator],
+    ['AOC reference', accountability?.aocReference],
+    ['Management of change', `${active} active`],
+    ['Last safety scan', accountability?.lastScanAt
+      ? `${new Date(accountability.lastScanAt).toISOString().slice(11, 16)} UTC` : EMPTY],
   ]
+
   return (
-    <section className="sms-card">
-      <div className="sms-card__head">
-        <h3 className="sms-card__title">SMS accountability</h3>
+    <div className="card">
+      <div className="card-hdr">
+        <div className="card-title">SMS accountability</div>
       </div>
       {rows.map(([label, value]) => (
-        <div className="sms-account" key={label}>
-          <span className="sms-account__label">{label}</span>
-          <span className="sms-account__value">{value ?? EMPTY}</span>
+        <div className="acc-row" key={label}>
+          <span>{label}</span>
+          <b>{value || 'not set'}</b>
         </div>
       ))}
-      <p className="sms-note">
-        {/* Le panneau du prototype affiche ces noms en dur. Ici ils sont des
-            reglages : ils se saisissent dans Settings, et l'ecran dit d'ou ils
-            viennent plutot que de les affirmer. */}
-        Declared in Settings → Safety (SMS). Last scan{' '}
-        {new Date(accountability.lastScanAt).toISOString().slice(11, 16)} UTC.
-      </p>
-    </section>
+      <div style={{ marginTop: 10 }}>
+        <button className="btn-nav" style={{ width: '100%' }}
+                onClick={() => onOpenTab('SETTINGS')}>
+          SMS configuration
+        </button>
+      </div>
+    </div>
   )
 }

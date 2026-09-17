@@ -1,0 +1,1008 @@
+/* ============================================================================
+   Dossier de vol — DESIGN MASTER de l'annexe A4 (« FLIGHT LABEL · MASTER DESIGN »,
+   prototype l. 75786-76630), copie ici SANS RETOUCHE.
+
+   Ce bloc ne cree presque aucun element : il RE-HABILLE le DOM que le panneau
+   emettait deja (.detail-head, .fd-tabs, .detail-grid, .detail-cell, .atd-row,
+   .action-btn, .fd-btn-solid). C'est pourquoi la parite se joue ici et non dans
+   le JSX : le panneau « ordinaire » et le panneau « master » ont le meme DOM,
+   seule la feuille change. Le JSX ajoute uniquement ce que TNPFL.decorate()
+   injectait cote prototype — le heros de route (.fl-hero) et les bandeaux de
+   section (.fl-banner).
+
+   Une seule substitution a ete faite : le selecteur racine de l'annexe
+   (.detail-panel.fl-master, ouvert dans #viewFlightDispatch) devient .fd-root
+   .fl-master, qui est le tiroir de Dispatch. Rien d'autre n'est touche.
+
+   Les images sont celles de l'annexe (TNPFL.ASSETS), decodees en fichiers dans
+   /public/flabel plutot que laissees en base64 : 200 ko de data-URI dans le
+   paquet JS seraient re-telecharges a chaque visite, un .jpg est mis en cache.
+   ============================================================================ */
+
+/* Les tokens d'image que TNPFL.ensure() posait en style inline sur le panneau.
+   Ils sont ici parce qu'ils ne dependent pas du vol : la texture de fond et les
+   quatre tuiles OFP / NOTAM / Meteo / GENDEC sont les memes pour tous. */
+.fd-root.fl-master{
+  --fl-tex: url(/flabel/texture.jpg);
+  --fl-tile-ofp: url(/flabel/ofp.jpg);
+  --fl-tile-notam: url(/flabel/notams.jpg);
+  --fl-tile-wx: url(/flabel/weather.jpg);
+  --fl-tile-gendec: url(/flabel/gendec.jpg);
+}
+
+/* NetPlus AOC — FLIGHT LABEL · MASTER DESIGN (maquette approuvée = référence visuelle, données = logiciel)
+   Le DOM et les gestionnaires existants des 8 onglets sont conservés ; seule l'apparence change, plus
+   des blocs décoratifs (bandeaux de section, héros, VIGIL) injectés par TNPFL.decorate(). */
+.fd-root.fl-master{ --fl-navy:#0f2a5c; --fl-navy2:#163a78; --fl-blue:#2f7bff; --fl-blue2:#1c5fd6; --fl-ink:#12305e; --fl-mut:#5b6b86; --fl-line:rgba(28,60,120,.16); --fl-card:rgba(255,255,255,.82); --fl-glass:rgba(236,244,252,.78);
+  width:600px !important; padding:14px 14px 18px !important; background:#c9d7e8 var(--fl-tex) center/cover !important; color:var(--fl-ink); font-family:'Inter',system-ui,sans-serif; border-left:1px solid rgba(255,255,255,.7) !important; }
+.drawer.fd-root.fl-master{ width:600px !important; }
+.fd-root.fl-master *{ box-sizing:border-box; }
+.fd-root.fl-master ::-webkit-scrollbar{ width:8px; } .fd-root.fl-master ::-webkit-scrollbar-thumb{ background:rgba(28,60,120,.28); border-radius:6px; }
+/* ---------- en-tête ---------- */
+.fl-master .detail-head{ position:static !important; margin:0 0 9px !important; padding:0 14px !important; min-height:64px; border-radius:14px; background:linear-gradient(180deg,rgba(233,241,250,.96),rgba(214,228,244,.94)) !important; border:1px solid rgba(255,255,255,.9); box-shadow:0 10px 22px -16px rgba(15,42,92,.6), inset 0 1px 0 rgba(255,255,255,.95); gap:11px !important; }
+.fl-master .detail-close-btn{ width:38px !important; height:38px !important; border-radius:10px !important; background:linear-gradient(180deg,#1b3f7d,#0f2a5c) !important; color:#fff !important; border:1px solid rgba(255,255,255,.35) !important; font-size:18px !important; box-shadow:0 6px 14px -8px rgba(15,42,92,.9), inset 0 1px 0 rgba(255,255,255,.25); }
+.fl-master .detail-close-btn:hover{ filter:brightness(1.15); }
+.fl-master .flight-id{ font-family:'Inter',system-ui,sans-serif !important; font-size:26px !important; font-weight:800 !important; color:var(--fl-ink) !important; letter-spacing:-.01em; }
+.fl-master .occ-dispatch-btn{ height:30px; padding:0 12px 0 9px !important; border-radius:15px !important; background:rgba(255,255,255,.75) !important; border:1px solid rgba(28,60,120,.25) !important; color:var(--fl-ink) !important; font-size:12px !important; font-weight:600 !important; gap:6px !important; }
+.fl-master .occ-dispatch-btn svg{ width:14px !important; height:14px !important; }
+.fl-master .status-pill{ height:30px; display:flex; align-items:center; gap:8px; padding:0 14px !important; border-radius:15px !important; font-size:12.5px !important; font-weight:700 !important; letter-spacing:.06em !important; text-transform:uppercase; color:#fff !important; background:linear-gradient(180deg,#3b8bff,#1c5fd6) !important; box-shadow:0 0 0 1px rgba(255,255,255,.5), 0 6px 16px -6px rgba(47,123,255,.9); }
+.fl-master .status-pill::before{ content:''; width:8px; height:8px; border-radius:50%; background:#fff; box-shadow:0 0 6px #fff; }
+.fl-master .status-pill.enroute{ background:linear-gradient(180deg,#34c27a,#1f9d5c) !important; } .fl-master .status-pill.delayed{ background:linear-gradient(180deg,#f0a83a,#d08210) !important; }
+.fl-master .status-pill.aog,.fl-master .status-pill.cancelled{ background:linear-gradient(180deg,#e0505f,#b8202e) !important; } .fl-master .status-pill.option,.fl-master .status-pill.maint{ background:linear-gradient(180deg,#8a97ad,#5e6d86) !important; }
+.fl-more{ width:38px; height:38px; border-radius:10px; border:1px solid rgba(28,60,120,.22); background:rgba(255,255,255,.75); color:var(--fl-ink); font-size:22px; font-weight:800; line-height:1; display:flex; align-items:center; justify-content:center; cursor:pointer; flex-shrink:0; position:relative; }
+.fl-more:hover{ background:#fff; }
+.fl-menu{ position:absolute; right:0; top:46px; min-width:230px; background:#fff; border:1px solid var(--fl-line); border-radius:12px; box-shadow:0 18px 40px -16px rgba(15,42,92,.6); padding:6px; display:none; z-index:30; font-size:13px; font-weight:600; color:var(--fl-ink); text-align:left; }
+.fl-menu.open{ display:block; } .fl-menu div{ padding:9px 12px; border-radius:8px; cursor:pointer; display:flex; align-items:center; gap:9px; } .fl-menu div:hover{ background:rgba(47,123,255,.08); } .fl-menu svg{ width:15px; height:15px; color:var(--fl-blue2); }
+.fl-master .detail-head + div{ margin:0 0 10px !important; padding:7px 14px !important; border-radius:11px; background:rgba(255,255,255,.55); border:1px solid rgba(255,255,255,.8); font-size:12px !important; color:var(--fl-mut) !important; font-weight:600; }
+/* ---------- onglets ---------- */
+.fl-master .fd-tabs{ margin:12px 0 0 !important; padding:6px !important; gap:2px !important; border:1px solid rgba(255,255,255,.8) !important; border-radius:14px; background:linear-gradient(180deg,rgba(255,255,255,.72),rgba(226,236,248,.7)) !important; box-shadow:0 10px 24px -18px rgba(15,42,92,.6), inset 0 1px 0 #fff; }
+.fl-master .fd-tab{ flex:1 1 0 !important; min-width:0; padding:10px 2px 9px !important; border-radius:11px !important; border-bottom:none !important; margin:0 !important; color:var(--fl-ink) !important; font-size:10.5px !important; font-weight:700 !important; letter-spacing:.04em !important; gap:7px !important; box-shadow:none !important; background:transparent !important; position:relative; }
+.fl-master .fd-tab svg{ width:24px !important; height:24px !important; opacity:1 !important; stroke-width:1.7; }
+.fl-master .fd-tab:hover{ background:rgba(47,123,255,.08) !important; }
+.fl-master .fd-tab.active{ background:linear-gradient(180deg,#3b8bff 0%,#1c5fd6 100%) !important; color:#fff !important; box-shadow:0 8px 20px -8px rgba(47,123,255,.95), 0 0 0 1px rgba(255,255,255,.55), inset 0 1px 0 rgba(255,255,255,.35) !important; transform:translateY(-2px); }
+.fl-master .fd-tab.active svg{ transform:none !important; }
+.fl-master .fd-tab-sep{ display:block; background:rgba(28,60,120,.18) !important; height:34px !important; margin:0 1px !important; }
+.fl-master .fd-tab-badge{ background:#e0353f !important; color:#fff !important; border:2px solid #fff; top:2px !important; right:8px !important; min-width:20px !important; height:20px !important; border-radius:10px !important; font-size:11px !important; font-weight:800; display:flex; align-items:center; justify-content:center; }
+.fl-master .fd-body{ padding-top:12px !important; }
+/* ---------- bandeau de section + héros ---------- */
+.fl-banner{ position:relative; height:72px; border-radius:12px; overflow:hidden; margin:0 0 12px; background:#10284f center right/auto 100% no-repeat; box-shadow:0 10px 24px -14px rgba(15,42,92,.9), 0 0 0 1px rgba(255,255,255,.35); }
+.fl-banner.split{ display:flex; align-items:center; padding-left:16px; background:linear-gradient(90deg,#0b1f45,#163a78); }
+.fl-banner.split img{ position:absolute; right:0; top:0; height:100%; }
+.fl-banner.split > div{ max-width:52%; } .fl-banner.split small{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.fl-banner.split b{ font-size:17px; letter-spacing:.14em; color:#fff; font-weight:700; text-transform:uppercase; display:block; } .fl-banner.split b i{ font-style:normal; color:#7cc4ff; margin-left:8px; } .fl-banner.split small{ display:block; font-size:10.5px; letter-spacing:.06em; color:#c9d8ee; margin-top:3px; }
+/* ---------- bandeau de route (la maquette est la référence : verre bleu clair, un seul bandeau continu) ---------- */
+.fl-hero{ position:relative; width:100%; aspect-ratio:507/117; container-type:inline-size; margin:0 0 11px; border-radius:13px; overflow:hidden; font-family:'Inter',system-ui,sans-serif;
+  background:linear-gradient(158deg,#bfd7ee 0%,#cee3f6 20%,#d9ebfa 44%,#cbe0f4 68%,#bcd3ec 100%);
+  box-shadow:0 12px 26px -16px rgba(15,42,92,.55), 0 0 0 1px rgba(255,255,255,.9), inset 0 1px 0 rgba(255,255,255,.95); }
+.fl-hero-wash{ position:absolute; inset:0; pointer-events:none;
+  background:
+   radial-gradient(38% 60% at 26% 40%, rgba(126,158,196,.16), transparent 70%),
+   radial-gradient(30% 46% at 52% 22%, rgba(126,158,196,.13), transparent 72%),
+   radial-gradient(34% 52% at 74% 52%, rgba(126,158,196,.12), transparent 72%),
+   radial-gradient(24% 40% at 40% 82%, rgba(126,158,196,.10), transparent 74%),
+   repeating-linear-gradient(90deg, rgba(255,255,255,.22) 0 1px, transparent 1px 38px),
+   repeating-linear-gradient(0deg, rgba(255,255,255,.18) 0 1px, transparent 1px 30px),
+   linear-gradient(108deg, transparent 31%, rgba(255,255,255,.42) 38%, transparent 44%),
+   linear-gradient(108deg, transparent 56%, rgba(255,255,255,.3) 62%, transparent 67%),
+   linear-gradient(72deg, transparent 78%, rgba(255,255,255,.26) 85%, transparent 91%),
+   radial-gradient(160% 130% at 20% 132%, rgba(255,255,255,.42), transparent 58%); }
+.fl-hero::after{ content:''; position:absolute; inset:3px; border-radius:10px; border:1px solid rgba(255,255,255,.55); border-bottom-color:rgba(255,255,255,.2); border-right-color:rgba(255,255,255,.2); pointer-events:none; }
+.fl-place{ position:absolute; top:0; bottom:0; width:24%; pointer-events:none; } .fl-place.l{ left:0; } .fl-place.r{ right:0; }
+.fl-place svg{ width:100%; height:100%; display:block; }
+.fl-dot{ position:absolute; top:48.7%; width:1.05cqw; height:1.05cqw; margin:-.52cqw 0 0; border-radius:50%; background:#0c75fe; box-shadow:0 0 0 2px rgba(255,255,255,.85), 0 0 7px rgba(12,117,254,.8); }
+.fl-dot.l{ left:30%; } .fl-dot.r{ left:64.5%; }
+.fl-rline{ position:absolute; top:48.7%; left:30.4%; width:34.4%; height:1px; background:linear-gradient(90deg,#4f8ed2,#84a5c9 18%,#8fb0d2 82%,#4f8ed2); opacity:.85; }
+.fl-plane{ position:absolute; left:34%; top:13.5%; width:29%; height:auto; }
+.fl-nat{ position:absolute; left:49%; transform:translateX(-50%); bottom:4%; padding:.35cqw 1.6cqw; border-radius:1.4cqw; background:rgba(255,255,255,.72); border:1px solid rgba(28,60,120,.14);
+  font-size:1.49cqw; font-weight:800; letter-spacing:.1em; color:#12305e; white-space:nowrap; box-shadow:0 3px 8px -4px rgba(15,42,92,.5); }
+.fl-side{ position:absolute; top:18%; display:flex; flex-direction:column; }
+.fl-side.l{ left:11.6%; align-items:flex-start; } .fl-side.r{ right:12.4%; align-items:flex-end; text-align:right; }
+.fl-side b{ font-size:5.42cqw; font-weight:800; line-height:1; color:#0f1c3c; letter-spacing:-.01em; }
+.fl-side span{ margin-top:1.05cqw; font-size:2.62cqw; font-weight:700; color:#173a72; line-height:1.1; }
+.fl-side small{ margin-top:.52cqw; font-size:2.27cqw; font-weight:500; color:#5b7ba6; line-height:1.15; white-space:nowrap; max-width:34cqw; overflow:hidden; text-overflow:ellipsis; }
+.fl-flagrow{ margin-top:1.05cqw; display:flex; align-items:center; gap:6px; white-space:nowrap; }
+.fl-flag{ width:4.55cqw; height:2.97cqw; border-radius:3px; overflow:hidden; display:block; box-shadow:0 1px 3px rgba(15,42,92,.45), 0 0 0 .5px rgba(255,255,255,.7); }
+.fl-flag svg{ width:100%; height:100%; display:block; }
+.fl-flagrow em{ font-style:normal; font-size:1.66cqw; font-weight:700; letter-spacing:.1em; color:#6d8cb5; }
+.fl-master .route-visual{ display:none !important; }
+/* ---------- bloc « carte » générique ---------- */
+.fl-master .fd-section{ display:flex; align-items:center; gap:10px; margin:12px 0 8px !important; padding:10px 14px !important; border-radius:12px; background:linear-gradient(90deg,#0f2a5c,#1b4a94) !important; color:#fff !important; font-size:13px !important; letter-spacing:.12em !important; font-weight:700 !important; text-transform:uppercase; box-shadow:0 10px 22px -14px rgba(15,42,92,.9), 0 0 0 1px rgba(255,255,255,.35); }
+.fl-master .fd-section > span:first-child{ display:flex; align-items:center; gap:10px; } .fl-master .fd-section > span:first-child::before{ content:''; width:20px; height:20px; background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M2.5 19h19'/><path d='M3.5 15.5 21 9.5l-1.2-2.3-6.2 1.9-6.5-4.1-2 .7 4 4.6-4.4 1.4-2.3-1.6-1.6.5 2.7 5z'/></svg>") center/contain no-repeat; flex-shrink:0; }
+.fl-master .fd-section .fd-badge{ margin-left:auto; height:28px; padding:0 14px !important; border-radius:9px !important; font-size:12.5px !important; font-weight:800 !important; letter-spacing:.06em; text-transform:uppercase; }
+.fl-master .fd-badge.green{ background:linear-gradient(180deg,#34c27a,#1f9d5c) !important; color:#fff !important; } .fl-master .fd-badge.red{ background:linear-gradient(180deg,#e0505f,#b8202e) !important; color:#fff !important; }
+.fl-master .fd-badge.amber{ background:#ffe6a3 !important; color:#7a5200 !important; } .fl-master .fd-badge.blue{ background:#dbe8ff !important; color:#1d4fb8 !important; } .fl-master .fd-badge.gray{ background:#e6ebf2 !important; color:var(--fl-mut) !important; }
+.fl-master .fd-badge{ border-radius:8px !important; font-weight:700 !important; }
+.fl-master .fd-grid{ gap:10px !important; }
+.fl-master .fd-card{ background:var(--fl-card) !important; border:1px solid rgba(255,255,255,.9); border-radius:12px !important; padding:12px 14px 12px 50px !important; position:relative; box-shadow:0 8px 20px -14px rgba(15,42,92,.6), inset 0 1px 0 #fff; min-height:64px; }
+.fl-master .fd-card::before{ content:''; position:absolute; left:14px; top:14px; width:26px; height:26px; background:var(--fl-ico,url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231c5fd6' stroke-width='1.8' stroke-linecap='round'><circle cx='12' cy='12' r='9'/><path d='M12 7v5l3.5 2'/></svg>")) center/contain no-repeat; }
+.fl-master .fd-card .lbl{ font-size:10.5px !important; letter-spacing:.08em !important; color:var(--fl-mut) !important; font-weight:600; margin-bottom:4px !important; } .fl-master .fd-card .val{ font-size:17px !important; font-weight:800 !important; color:var(--fl-ink) !important; }
+.fl-master .fd-card .val.mono{ font-family:'JetBrains Mono',ui-monospace,monospace !important; }
+.fl-master .fd-card:nth-child(1){ --fl-ico:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231c5fd6' stroke-width='1.8' stroke-linecap='round'><circle cx='12' cy='12' r='9'/><path d='M12 7v5l3.5 2'/></svg>"); }
+.fl-master .fd-card:nth-child(2){ --fl-ico:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231c5fd6' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M12 3 3 8l9 5 9-5-9-5z'/><path d='M3 12l9 5 9-5'/><path d='M3 16l9 5 9-5'/></svg>"); }
+.fl-master .fd-card:nth-child(3){ --fl-ico:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231c5fd6' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M12 3 3 8l9 5 9-5-9-5z'/><path d='M3 12l9 5 9-5'/></svg>"); }
+.fl-master .fd-card:nth-child(4){ --fl-ico:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231c5fd6' stroke-width='1.8' stroke-linecap='round'><path d='M6 21 10 3M18 21 14 3M12 8v3M12 14v3'/></svg>"); }
+.fl-master .fd-banner{ border-radius:12px !important; padding:11px 14px 11px 52px !important; font-size:12.5px !important; font-weight:600; position:relative; border:1px solid rgba(31,157,92,.25) !important; background:linear-gradient(90deg,#d9f5e3,#e9faf0) !important; color:#14532d !important; margin:8px 0 !important; box-shadow:0 8px 18px -14px rgba(15,42,92,.5); }
+.fl-master .fd-banner::before{ content:''; position:absolute; left:10px; top:50%; transform:translateY(-50%); width:32px; height:32px; border-radius:9px; background:#1f9d5c url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><path d='m5 12 5 5L20 7'/></svg>") center/18px no-repeat; }
+.fl-master .fd-banner.warn{ background:linear-gradient(90deg,#ffe3e3,#fff0f0) !important; color:#8a1d25 !important; border-color:rgba(200,32,47,.3) !important; } .fl-master .fd-banner.warn::before{ background-color:#c8202f; background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.2' stroke-linecap='round'><path d='M12 9v4M12 17h.01M10.3 3.9 2.5 18a1.5 1.5 0 0 0 1.3 2.2h16.4a1.5 1.5 0 0 0 1.3-2.2L13.7 3.9a1.5 1.5 0 0 0-2.6 0z'/></svg>"); }
+.fl-master .fd-banner.vigilance{ background:linear-gradient(90deg,#ffe9c4,#fff4dc) !important; color:#7a4a00 !important; border-color:rgba(240,110,15,.35) !important; } .fl-master .fd-banner.vigilance::before{ background-color:#e08a1e; background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.2' stroke-linecap='round'><path d='M12 9v4M12 17h.01M10.3 3.9 2.5 18a1.5 1.5 0 0 0 1.3 2.2h16.4a1.5 1.5 0 0 0 1.3-2.2L13.7 3.9a1.5 1.5 0 0 0-2.6 0z'/></svg>"); }
+.fl-master .fd-banner.info{ background:linear-gradient(90deg,#dbe8ff,#eaf1ff) !important; color:#1d4fb8 !important; border-color:rgba(47,123,255,.3) !important; } .fl-master .fd-banner.info::before{ background-color:#2f7bff; background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.2' stroke-linecap='round'><circle cx='12' cy='12' r='9'/><path d='M12 11v5M12 8h.01'/></svg>"); }
+/* ---------- AIRPORT INFO : carte du terrain (maquette approuvée) ----------
+   La photographie réelle du terrain couvre TOUTE la carte ; voile clair à gauche pour le texte,
+   panneau météo translucide à droite, drapeau national dessiné. Sans photographie : mêmes
+   dimensions, fond de verre clair (aucune image neutre, jamais un autre aéroport). */
+.fl-apt{ position:relative; display:grid; grid-template-columns:1fr 208px; align-items:stretch; margin:0 0 10px;
+  min-height:116px; border-radius:12px; overflow:hidden; box-shadow:0 10px 24px -14px rgba(15,42,92,.8), 0 0 0 1px rgba(255,255,255,.6); background:#e6eef8; }
+.fl-apt img.bg{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:center 42%; display:block; z-index:0; }
+.fl-apt .veil{ position:absolute; inset:0; z-index:1; pointer-events:none;
+  background:linear-gradient(135deg,#dfe9f5,#eef4fb 60%,#d3e1f1); }
+.fl-apt.ph-on .veil{ background:
+  linear-gradient(90deg, rgba(240,247,253,.90) 0%, rgba(238,245,252,.72) 22%, rgba(233,242,252,.30) 38%, rgba(228,240,252,.04) 50%, rgba(10,30,70,.05) 70%, rgba(10,30,70,.16) 100%),
+  linear-gradient(180deg, rgba(130,170,215,.08), rgba(10,30,70,.12)); }
+.fl-apt .id{ position:relative; z-index:2; display:flex; align-items:center; gap:14px; padding:14px 16px; min-width:0; }
+.fl-apt .id .flag{ width:38px; height:26px; border-radius:4px; overflow:hidden; display:block; flex-shrink:0; box-shadow:0 2px 6px rgba(15,42,92,.5), 0 0 0 1px rgba(255,255,255,.85); background:#fff; }
+.fl-apt .id .flag svg{ width:100%; height:100%; display:block; }
+.fl-apt .id .flag.iso{ width:auto; min-width:34px; height:24px; display:flex; align-items:center; justify-content:center; padding:0 7px; font-size:12px; font-weight:800; letter-spacing:.06em; color:var(--fl-ink); }
+.fl-apt .id b{ display:block; font-size:31px; font-weight:800; color:#0f1c3c; line-height:1; letter-spacing:-.01em; text-shadow:0 1px 0 rgba(255,255,255,.7); }
+.fl-apt .id span{ display:block; font-size:14px; font-weight:700; color:#173a72; margin-top:4px; text-shadow:0 1px 0 rgba(255,255,255,.7); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.fl-apt .id small{ display:block; font-size:11.5px; font-weight:600; color:#5b7ba6; margin-top:3px; text-shadow:0 1px 0 rgba(255,255,255,.7); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.fl-apt .id small i{ font-style:normal; margin:0 7px; color:#9fb0c8; }
+/* panneau météo : translucide sur la photo, opaque sans photo */
+.fl-apt .wx{ position:relative; z-index:2; background:linear-gradient(180deg,#123166,#0b2250); color:#fff; padding:11px 13px; display:flex; flex-direction:column; gap:6px; font-size:12px; }
+.fl-apt.ph-on .wx{ background:linear-gradient(180deg, rgba(12,36,84,.74), rgba(8,24,60,.82)); backdrop-filter:blur(2px) saturate(1.1); -webkit-backdrop-filter:blur(2px) saturate(1.1); box-shadow:inset 1px 0 0 rgba(255,255,255,.14); }
+.fl-apt .wx .t{ display:flex; align-items:center; gap:9px; } .fl-apt .wx .t svg{ width:19px; height:19px; color:#8ec1ff; flex-shrink:0; }
+.fl-apt .wx .t b{ font-size:19px; font-weight:800; display:block; line-height:1.05; font-family:'JetBrains Mono',ui-monospace,monospace; }
+.fl-apt .wx .t small{ font-size:10px; letter-spacing:.06em; color:#c9d8ee; display:block; }
+.fl-apt .wx .now{ display:flex; align-items:center; gap:9px; } .fl-apt .wx .now svg{ width:24px; height:24px; color:#ffd66b; flex-shrink:0; }
+.fl-apt .wx .now b{ font-size:22px; font-weight:800; line-height:1; display:block; } .fl-apt .wx .now span{ font-size:11.5px; color:#d6e4f7; display:block; margin-top:1px; }
+.fl-apt .wx .now .sim{ font-style:normal; display:inline-block; font-size:9px; font-weight:800; letter-spacing:.08em; background:#f2a100; color:#1d2b4f; padding:1px 5px; border-radius:4px; margin-left:5px; vertical-align:1px; }
+.fl-apt .wx .g{ display:grid; grid-template-columns:auto 1fr; gap:2px 10px; } .fl-apt .wx .g span{ color:#8fa8cf; font-size:10.5px; letter-spacing:.04em; } .fl-apt .wx .g em{ font-style:normal; font-size:11.5px; font-weight:600; font-family:'JetBrains Mono',ui-monospace,monospace; }
+.fl-apt .wx .src{ font-size:9px; color:#8fa8cf; line-height:1.3; margin-top:auto; }
+.fl-apt .wx .na{ font-size:11.5px; color:#c9d8ee; line-height:1.4; } .fl-apt .wx .na b{ color:#8ec1ff; cursor:pointer; font-weight:700; }
+/* attribution, nouvelle recherche, clés */
+.fl-apt .cr{ position:absolute; z-index:3; left:9px; bottom:5px; max-width:52%; font-size:8.5px; font-weight:600; color:#4a6b93; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.fl-apt.ph-on .cr{ color:rgba(255,255,255,.92); text-shadow:0 1px 3px rgba(0,0,0,.8); }
+.fl-apt .cr[data-href]{ cursor:pointer; text-decoration:underline; text-decoration-color:rgba(255,255,255,.4); }
+.fl-apt .rf,.fl-apt .kb{ position:absolute; z-index:3; bottom:5px; width:17px; height:17px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; line-height:1; color:#fff; background:rgba(11,34,80,.5); cursor:pointer; opacity:0; transition:opacity .15s; }
+.fl-apt .rf{ right:calc(208px + 8px); } .fl-apt .kb{ right:calc(208px + 30px); font-size:10px; }
+.fl-apt:hover .rf,.fl-apt:hover .kb{ opacity:1; } .fl-apt .rf:hover,.fl-apt .kb:hover{ background:rgba(11,34,80,.85); } .fl-apt .rf.busy{ opacity:1; animation:flSpin 1s linear infinite; }
+@keyframes flSpin{ to{ transform:rotate(360deg); } }
+/* rangée basse de la maquette : quatre cellules sur une ligne */
+.fl-master .fd-grid.fl-arow{ grid-template-columns:repeat(4,1fr) !important; gap:8px !important; }
+/* Alignement en haut, et hauteur du titre reservee sur deux lignes : sans cela un
+   titre court (AIRPORT CAT) tient sur une ligne et sa valeur remonte par rapport
+   aux trois autres -- les quatre cartes ne se lisaient plus comme une rangee. */
+.fl-master .fl-arow .fd-card{ padding:11px 11px 10px 39px !important; min-height:72px;
+  display:flex !important; flex-direction:column; justify-content:flex-start; }
+.fl-master .fl-arow .fd-card::before{ left:11px !important; top:50% !important; transform:translateY(-50%); width:21px !important; height:21px !important; opacity:.92; }
+/* Titre agrandi (9 -> 11 px) : c'est lui qui doit se lire en premier. Couleur assombrie
+   a #41536f -- 6,85:1 sur le fond de carte, contre 4,74:1 pour --fl-mut. */
+.fl-master .fl-arow .fd-card .lbl{ font-size:11px !important; letter-spacing:.045em !important;
+  font-weight:800 !important; color:#41536f !important; line-height:1.15;
+  margin-bottom:5px !important; min-height:25px; display:flex; align-items:flex-start; }
+/* `.fd-grid.fl-arow` : specificite (0,5,0), superieure a la regle a 22 px de plus bas
+   dans la feuille -- l'ordre de declaration ne decide plus. */
+.fl-master .fd-grid.fl-arow .fd-card .val{ font-size:15px !important; line-height:1.15;
+  font-weight:800 !important; }
+/* valeur longue (horaires detailles) : un cran plus bas, pose par tnpArowCardText */
+.fl-master .fd-grid.fl-arow .fd-card .val.fl-val-long{ font-size:12.5px !important; line-height:1.2; }
+.fl-master .fl-arow .fd-card .val u{ display:block; text-decoration:none; font-size:10px;
+  font-weight:600; color:var(--fl-mut); margin-top:3px; line-height:1.25; white-space:normal;
+  /* trois lignes au plus : une note bavarde ne doit plus etirer la rangee.
+     Le texte complet reste dans l'infobulle posee par tnpArowCardText. */
+  display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+.fl-master .fl-arow .fd-card .val .fd-badge{ font-size:11px !important; padding:2px 9px !important;
+  font-weight:800 !important; }
+/* ---------- ALERTE DE RISQUE VIGIL (iteration 25) ----------
+   Fond blanc et encre sombre : lisible sur l'etiquette claire comme sur un panneau
+   sombre. Le filet de gauche porte la couleur du niveau, le texte porte son encre. */
+.fl-riskbanner{ margin:8px 0; padding:9px 12px 9px 13px; border-radius:10px;
+  background:#fff; border:1px solid rgba(28,60,120,.16);
+  border-left:4px solid var(--rk,#e67e22);
+  box-shadow:0 6px 16px -12px rgba(15,42,92,.6);
+  color:#28405f; font-size:12.5px; line-height:1.45; }
+.fl-riskbanner b{ color:var(--rki,#9a4d00); font-weight:800; letter-spacing:.01em; }
+.fl-riskbanner .sub{ color:#5b6b86; font-size:11px; margin-top:3px; }
+/* panneau des clés d'API (jamais dans le fichier : conservé par le navigateur) */
+.fl-keys{ position:absolute; z-index:60; right:8px; top:-8px; width:270px; background:#fff; border:1px solid var(--fl-line); border-radius:11px; box-shadow:0 18px 40px -14px rgba(15,42,92,.7); padding:11px 12px; text-align:left; }
+.fl-keys h5{ margin:0 0 8px; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--fl-mut); }
+.fl-keys label{ display:block; font-size:10.5px; font-weight:700; color:var(--fl-ink); margin-bottom:7px; }
+.fl-keys input{ display:block; width:100%; margin-top:3px; height:28px; border:1px solid var(--fl-line); border-radius:7px; background:#f4f8fd; font:inherit; font-size:11.5px; padding:0 8px; color:var(--fl-ink); }
+.fl-keys p{ margin:2px 0 8px; font-size:9.5px; line-height:1.45; color:var(--fl-mut); }
+.fl-keys .row{ display:flex; gap:6px; flex-wrap:wrap; }
+.fl-keys .row button{ min-width:calc(50% - 3px); }
+.fl-keys em{ font-style:normal; font-weight:700; color:var(--fl-blue2); } .fl-keys button{ flex:1; height:28px; border-radius:7px; border:1px solid rgba(37,99,201,.3); background:#eaf1ff; color:var(--fl-blue2); font:inherit; font-size:10.5px; font-weight:700; cursor:pointer; }
+.fl-keys button:hover{ background:#dce7fb; }
+/* ---------- FLIGHT : grille de détail, tuiles ---------- */
+.fl-master .detail-grid{ margin-top:0 !important; gap:0 !important; background:var(--fl-card); border:1px solid rgba(255,255,255,.9); border-radius:14px; padding:6px 0; box-shadow:0 10px 24px -14px rgba(15,42,92,.7), inset 0 1px 0 #fff; }
+.fl-master .detail-cell{ padding:12px 14px 12px 52px; position:relative; border-bottom:1px solid rgba(28,60,120,.08); min-height:74px; }
+.fl-master .detail-cell:nth-child(odd){ border-right:1px solid rgba(28,60,120,.08); } .fl-master .detail-cell:nth-last-child(-n+2){ border-bottom:none; }
+.fl-master .detail-cell::before{ content:''; position:absolute; left:14px; top:14px; width:26px; height:26px; background:var(--fl-ico) center/contain no-repeat; }
+.fl-master .detail-cell:nth-child(1){ --fl-ico:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%231c5fd6'><path d='M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z'/></svg>"); }
+.fl-master .detail-cell:nth-child(2){ --fl-ico:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%231c5fd6'><path d='M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z' transform='rotate(45 12 12)'/></svg>"); }
+.fl-master .detail-cell:nth-child(3){ --fl-ico:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231c5fd6' stroke-width='1.8' stroke-linecap='round'><circle cx='12' cy='12' r='9'/><path d='M12 7v5l3.5 2'/></svg>"); }
+.fl-master .detail-cell:nth-child(4){ --fl-ico:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231c5fd6' stroke-width='1.8' stroke-linecap='round'><rect x='3' y='5' width='18' height='16' rx='2'/><path d='M3 10h18M8 3v4M16 3v4'/></svg>"); }
+.fl-master .detail-cell:nth-child(5){ --fl-ico:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231c5fd6' stroke-width='1.8' stroke-linecap='round'><rect x='4' y='3' width='16' height='18' rx='2'/><path d='M8 8h8M8 12h8M8 16h5'/></svg>"); }
+.fl-master .detail-cell:nth-child(6){ --fl-ico:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231c5fd6' stroke-width='1.8' stroke-linecap='round'><circle cx='12' cy='12' r='3'/><path d='M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z'/></svg>"); }
+.fl-master .detail-cell .lbl{ font-size:11px !important; letter-spacing:.1em !important; color:var(--fl-mut) !important; font-weight:600; margin-bottom:5px !important; }
+.fl-master .detail-cell .val{ font-family:'JetBrains Mono',ui-monospace,monospace !important; font-size:20px !important; font-weight:800 !important; color:var(--fl-ink) !important; }
+.fl-master .detail-cell:nth-child(-n+2) .val{ color:var(--fl-blue2) !important; }
+.fl-master .detail-cell .val.time-overdue{ color:#c8202f !important; } .fl-master .detail-cell .val.time-overdue::after{ content:'⚠'; font-family:system-ui; font-size:15px; margin-left:8px; color:#e0353f; vertical-align:2px; }
+.fl-master .detail-cell .val .revised-time{ font-size:14px; }
+.fl-master .detail-cell .atd-row{ margin-top:8px !important; gap:8px !important; } .fl-master .detail-cell .atd-lbl{ font-size:11px !important; color:var(--fl-mut) !important; width:30px !important; }
+.fl-master .tnp-time-mask input.tnp-time-h,.fl-master .tnp-time-mask input.tnp-time-m{ width:38px !important; height:30px; border:1px solid rgba(28,60,120,.25) !important; border-radius:8px !important; background:#fff !important; font-family:'JetBrains Mono',ui-monospace,monospace !important; font-size:14px !important; font-weight:700; color:var(--fl-ink); }
+.fl-master .atd-row > button[onclick*="SendMvt"]{ height:30px; padding:0 12px !important; border-radius:9px !important; font-size:12px !important; background:linear-gradient(180deg,#ffc633,#e6a800) !important; color:#1d2b4f !important; box-shadow:0 6px 14px -8px rgba(230,168,0,.9); }
+.fl-master .detail-cell .atd-row img{ width:22px; height:22px; }
+.fl-master .action-row{ margin-top:12px !important; gap:10px !important; flex-wrap:nowrap !important; }
+/* ================= ASSIGNED CREW -- ajustements (iteration 27) =============
+   En-tete : titre sur toute la largeur, puis UNE rangee de trois boutons de
+   largeur egale (grille 1fr 1fr 1fr), meme hauteur, meme rayon, meme corps.
+   Le lien Crew Roster est deplace dans cette rangee par le script. */
+.fl-master .fl-crew-hd{ display:block !important; margin:12px 0 4px !important; }
+.fl-master .fl-crew-hd .fd-section{ width:100%; flex:none !important; }
+.fl-master .flc-hdacts{ display:grid !important; grid-template-columns:1fr 1fr 1fr;
+  gap:8px; margin:8px 0 12px !important; }
+.fl-master .flc-hdacts > *{ height:38px !important; margin:0 !important; width:100%;
+  box-sizing:border-box; display:inline-flex !important; align-items:center;
+  justify-content:center; gap:7px; padding:0 10px !important; border-radius:10px !important;
+  font-size:12px !important; font-weight:800 !important; letter-spacing:.02em;
+  white-space:nowrap; box-shadow:0 6px 14px -10px rgba(15,42,92,.55) !important; }
+.fl-master .flc-hdacts .fl-lnk svg{ width:15px; height:15px; }
+/* Badges : une seule rangee en pied d'en-tete, sur toute la largeur de la carte,
+   en gabarit compact -- le gabarit du theme (36 px, min-width 108 px) les faisait
+   passer un par ligne dans la colonne d'identite. */
+.fl-master .flc-hd{ display:grid !important; grid-template-columns:minmax(0,1fr) auto auto;
+  column-gap:14px; row-gap:9px; align-items:start; }
+/* Placement explicite : sans cela, une carte sans bandeau de statistiques
+   (siege vide) renvoie le menu a la ligne suivante par placement automatique. */
+.fl-master .flc-id{ grid-column:1; grid-row:1; }
+.fl-master .flc-stats{ grid-column:2; grid-row:1; }
+.fl-master .flc-menu-wrap{ grid-column:3; grid-row:1; }
+.fl-master .flc-badges{ grid-column:1 / -1; grid-row:2; display:flex; align-items:center;
+  gap:6px; flex-wrap:wrap; margin:0 !important; padding-top:2px;
+  border-top:1px solid rgba(28,60,120,.10); }
+.fl-master .flc-badges .fd-badge,
+.fl-master .flc-badges .crew-status-pill,
+.fl-master .flc-badges .crew-duty-pill{ height:22px !important; min-width:0 !important;
+  padding:0 9px !important; border-radius:7px !important; font-size:10.5px !important;
+  font-weight:800 !important; letter-spacing:.02em !important; text-transform:none !important;
+  margin:0 !important; gap:5px !important; }
+.fl-master .flc-badges .csp-dot{ width:6px; height:6px; }
+/* Bandeau FD/CC CHECK-IN + STD/ETD : heures moins hautes, libelles resserres. */
+.fl-master .fd-showing-time{ padding:11px 14px !important; }
+.fl-master .fd-showing-time .fst-val{ font-size:18px !important; letter-spacing:.01em; }
+.fl-master .fd-showing-time .fst-label{ font-size:9px !important; letter-spacing:.07em !important;
+  line-height:1.25; }
+.fl-master .fd-showing-time .fst-item{ gap:4px !important; padding:2px 10px 2px 0 !important;
+  margin-right:10px !important; }
+/* Selecteur de siege de + Add Crew */
+.flc-seathd{ font-size:15px; font-weight:800; color:#28405f; margin-bottom:4px; }
+.flc-seatsub{ font-size:11px; line-height:1.5; color:#5b6b86; margin-bottom:12px; }
+.flc-seatlist{ max-height:330px; overflow-y:auto; }
+.flc-seat{ display:flex; align-items:center; gap:11px; padding:9px 8px; cursor:pointer;
+  border:1px solid rgba(28,60,120,.14); border-radius:11px; margin-bottom:7px;
+  background:#fff; transition:background .14s, border-color .14s; }
+.flc-seat:hover{ background:#eef3fb; border-color:rgba(28,60,120,.34); }
+.flc-seat-av{ position:relative; flex:0 0 auto; width:40px; height:40px; border-radius:11px;
+  background:linear-gradient(160deg,#1f4f9c,#16345f); color:#fff; display:flex;
+  align-items:center; justify-content:center; font-size:13px; font-weight:800; }
+.flc-seat-av > span{ transform:translateY(-3px); }
+/* Les galons sont dessines par les regles de l iteration 26, portees par .fl-master.
+   La fenetre modale est HORS de l etiquette : on les redonne ici, sans les redefinir
+   ailleurs. */
+.flc-seat-av .flc-stripes{ position:absolute; left:0; right:0; bottom:4px; display:flex;
+  gap:2px; justify-content:center; }
+.flc-seat-av .flc-stripes i{ display:block; width:7px; height:2px; border-radius:1px;
+  background:linear-gradient(90deg,#e8c766,#f5e0a2,#c9a24e); }
+.flc-seat-who{ flex:1 1 auto; min-width:0; }
+.flc-seat-job{ font-size:9px; font-weight:800; letter-spacing:.11em; text-transform:uppercase;
+  color:#5d7290; }
+.flc-seat-nm{ font-size:13px; font-weight:800; color:#28405f; margin:1px 0 4px; }
+.flc-seat-bd{ display:flex; align-items:center; gap:5px; flex-wrap:wrap; }
+.flc-seat-bd .fd-badge{ height:20px !important; min-width:0 !important; padding:0 8px !important;
+  border-radius:6px !important; font-size:10px !important; text-transform:none !important; }
+.flc-seat-go{ flex:0 0 auto; text-align:right; padding-left:8px; }
+.flc-seat-go b{ display:block; font-size:15px; font-weight:800; color:#1c5fd6; }
+.flc-seat-go span{ display:block; font-size:8.5px; font-weight:800; letter-spacing:.08em;
+  text-transform:uppercase; color:#5b6b86; }
+.flc-seatmods{ margin-top:13px; padding-top:12px; border-top:1px solid rgba(28,60,120,.14); }
+.flc-seatmods > span{ display:block; font-size:9px; font-weight:800; letter-spacing:.1em;
+  text-transform:uppercase; color:#5b6b86; margin-bottom:8px; }
+.flc-seatmods > div{ display:grid; grid-template-columns:1fr 1fr; gap:7px; }
+.flc-modbtn{ height:34px; border-radius:9px; cursor:pointer; font-size:11.5px;
+  font-weight:800; border:1px solid rgba(28,60,120,.20); background:#fff; color:#28405f;
+  transition:background .14s, border-color .14s; }
+.flc-modbtn:hover{ background:#eef3fb; border-color:rgba(28,60,120,.36); }
+/* ================= ASSIGNED CREW -- refonte (iteration 26) =================
+   Bleu aviation de l'etiquette, verre leger, bordures fines, aucun neon.
+   Aucune animation en dehors des transitions de survol des boutons. */
+.fl-master .flc{ position:relative; background:linear-gradient(180deg,#fff,#f7f9fc);
+  border:1px solid rgba(28,60,120,.16); border-radius:14px; margin:0 0 12px;
+  box-shadow:0 1px 2px rgba(16,38,74,.06); overflow:hidden; }
+.fl-master .flc.flc-na{ opacity:.62; background:#f4f6f9; }
+.fl-master .flc-na-txt{ font-style:italic; color:var(--fl-mut); font-size:12px; font-weight:600; }
+/* ---------- en-tete de carte ---------- */
+.fl-master .flc-hd{ display:flex; align-items:flex-start; gap:14px; padding:13px 14px;
+  border-bottom:1px solid rgba(28,60,120,.10); background:rgba(28,60,120,.028); }
+.fl-master .flc-id{ display:flex; align-items:flex-start; gap:12px; min-width:0; flex:1 1 auto; }
+/* Avatar : initiales + galons deduits du role. */
+.fl-master .flc-av{ position:relative; flex:0 0 auto; width:46px; height:46px; border-radius:12px;
+  background:linear-gradient(160deg,#1f4f9c,#16345f); color:#fff; display:flex;
+  align-items:center; justify-content:center; font-size:14.5px; font-weight:800;
+  letter-spacing:.02em; box-shadow:inset 0 0 0 1px rgba(255,255,255,.14); }
+.fl-master .flc-av > span{ transform:translateY(-3px); }
+.fl-master .flc-stripes{ position:absolute; left:0; right:0; bottom:5px; display:flex;
+  gap:2px; justify-content:center; }
+.fl-master .flc-stripes i{ display:block; width:8px; height:2px; border-radius:1px;
+  background:linear-gradient(90deg,#e8c766,#f5e0a2,#c9a24e); }
+.fl-master .flc-who{ min-width:0; }
+.fl-master .flc-rank{ font-size:9.5px; font-weight:800; letter-spacing:.11em;
+  text-transform:uppercase; color:#5d7290; }
+.fl-master .flc-name{ font-size:15px; font-weight:800; color:var(--fl-ink);
+  line-height:1.25; margin:1px 0 5px; display:flex; align-items:center;
+  gap:7px; flex-wrap:wrap; }
+.fl-master .flc-badges{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:3px; }
+.fl-master .flc-badges:empty{ display:none; }
+/* ---------- bandeau de trois statistiques ---------- */
+.fl-master .flc-stats{ flex:0 0 auto; display:flex; align-items:stretch; gap:0;
+  margin-left:auto; padding-right:4px; }
+.fl-master .flc-stats > div{ padding:0 15px; text-align:right;
+  border-left:1px solid rgba(28,60,120,.12); }
+.fl-master .flc-stats > div:first-child{ border-left:0; }
+.fl-master .flc-stats span{ display:block; font-size:8.5px; font-weight:800;
+  letter-spacing:.09em; text-transform:uppercase; color:var(--fl-mut); margin-bottom:3px; }
+.fl-master .flc-stats b{ display:block; font-size:13.5px; font-weight:800; color:#28405f; }
+/* ---------- menu trois points ---------- */
+.fl-master .flc-menu-wrap{ position:relative; flex:0 0 auto; }
+.fl-master .flc-menu{ width:28px; height:28px; border-radius:8px; border:1px solid rgba(28,60,120,.18);
+  background:#fff; color:#41536f; font-size:15px; line-height:1; cursor:pointer;
+  transition:background .14s, border-color .14s; }
+.fl-master .flc-menu:hover{ background:#eef3fb; border-color:rgba(28,60,120,.34); }
+.fl-master .flc-menu-pop{ position:absolute; right:0; top:32px; z-index:40; min-width:168px;
+  background:#fff; border:1px solid rgba(28,60,120,.18); border-radius:10px;
+  box-shadow:0 10px 26px rgba(16,38,74,.16); overflow:hidden; }
+.fl-master .flc-menu-pop > div{ padding:9px 12px; font-size:12px; font-weight:700;
+  color:#28405f; cursor:pointer; }
+.fl-master .flc-menu-pop > div:hover{ background:#eef3fb; }
+/* ---------- corps : trois panneaux sur une ligne ---------- */
+.fl-master .flc-body{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:0;
+  align-items:stretch; }
+.fl-master .flc-panel{ padding:12px 14px 13px; border-left:1px solid rgba(28,60,120,.10); min-width:0; }
+.fl-master .flc-panel:first-child{ border-left:0; }
+.fl-master .flc-panel h5{ margin:0 0 9px; font-size:9.5px; font-weight:800;
+  letter-spacing:.11em; text-transform:uppercase; color:#41536f;
+  display:flex; align-items:center; gap:7px; }
+.fl-master .flc-panel h5 i{ font-style:normal; font-size:8.5px; font-weight:800;
+  letter-spacing:.06em; padding:2px 6px; border-radius:5px;
+  background:rgba(28,60,120,.09); color:#41536f; }
+/* une ligne de DUTY DETAILS */
+/* L indice (source, avertissement) prend sa propre ligne : dans une colonne de
+   tiers de largeur il ne peut pas partager la ligne de la valeur. */
+.fl-master .flc-dr{ display:grid; grid-template-columns:1fr auto; align-items:baseline;
+  gap:2px 10px; padding:5px 0; border-bottom:1px dashed rgba(28,60,120,.10); }
+.fl-master .flc-dr:last-child{ border-bottom:0; }
+.fl-master .flc-dr > span{ grid-column:1; font-size:11px; font-weight:600;
+  color:var(--fl-mut); line-height:1.3; }
+.fl-master .flc-dr > b{ grid-column:2; font-size:12.5px; font-weight:800; color:#28405f;
+  text-align:right; white-space:nowrap; }
+.fl-master .flc-dr > em{ grid-column:1 / -1; font-style:normal; font-size:9.5px;
+  font-weight:600; color:var(--fl-mut); line-height:1.35; }
+.fl-master .flc-none{ font-size:11px; font-weight:600; color:var(--fl-mut); font-style:italic; }
+/* Les deux interrupteurs FTL sont ecrits pour une pleine largeur. Dans une
+   colonne de tiers de largeur, le libelle et le renvoi reglementaire doivent
+   passer sous l interrupteur au lieu d etre rognes. Seule la mise en page
+   change : les cases, leurs etats et onToggleFtlExtension sont intouches. */
+.fl-master .flc-panel .fd-ftl-toggle-row{ display:grid;
+  grid-template-columns:32px minmax(0,1fr); gap:3px 9px; padding:7px 0;
+  align-items:center; border-bottom:1px dashed rgba(28,60,120,.10); }
+.fl-master .flc-panel .fd-ftl-toggle-row:last-child{ border-bottom:0; }
+.fl-master .flc-panel .fd-ftl-toggle-label{ grid-column:2; font-size:11.5px;
+  font-weight:800; line-height:1.25; }
+.fl-master .flc-panel .fd-ftl-toggle-hint{ grid-column:2; margin-left:0;
+  font-size:9.5px; font-style:normal; line-height:1.35; }
+/* ---------- check-in / check-out ---------- */
+.fl-master .flc-cio-grid{ display:flex; flex-direction:column; gap:9px; }
+.fl-master .flc-cio-box{ border:1px solid rgba(28,60,120,.15); border-radius:10px;
+  background:#fff; padding:8px 9px; }
+.fl-master .flc-cio-box.off{ background:#f5f7fa; }
+.fl-master .flc-cio-l{ font-size:9px; font-weight:800; letter-spacing:.09em;
+  text-transform:uppercase; color:var(--fl-mut); margin-bottom:5px; }
+.fl-master .flc-cio-t input[type=time]{ width:100%; font-size:14px; font-weight:800;
+  color:#28405f; border:1px solid rgba(28,60,120,.18); border-radius:8px;
+  padding:5px 7px; background:#fbfcfe; }
+.fl-master .flc-cio-a{ display:flex; gap:6px; margin-top:7px; }
+.fl-master .flc-cio-a button{ flex:1 1 0; height:26px; border-radius:7px; cursor:pointer;
+  font-size:10.5px; font-weight:800; letter-spacing:.03em;
+  border:1px solid rgba(28,60,120,.20); background:#fff; color:#28405f;
+  transition:background .14s, border-color .14s; }
+.fl-master .flc-cio-a button:hover{ background:#eef3fb; border-color:rgba(28,60,120,.36); }
+.fl-master .flc-cio-a button.now{ background:linear-gradient(180deg,#1c5fd6,#164ba8);
+  border-color:#164ba8; color:#fff; }
+.fl-master .flc-cio-a button.now:hover{ background:linear-gradient(180deg,#2069e6,#1a55bd); }
+.fl-master .flc-cio-off{ font-size:10.5px; font-weight:700; color:var(--fl-mut); line-height:1.4; }
+.fl-master .flc-cio-off em{ display:block; font-style:normal; font-size:9px; font-weight:600;
+  opacity:.85; margin-top:2px; }
+/* ---------- siege vide ---------- */
+.fl-master .flc-assign{ padding:14px; }
+.fl-master .flc-assign .occ-confirm-btn{ margin:0 auto; max-width:240px; }
+/* ---------- actions de l'en-tete de section ---------- */
+.fl-master .flc-hdacts{ display:flex; align-items:center; gap:8px; margin-left:10px; }
+.fl-master .flc-hdbtn{ height:30px; padding:0 13px; border-radius:8px; cursor:pointer;
+  font-size:11.5px; font-weight:800; letter-spacing:.03em;
+  border:1px solid rgba(28,60,120,.20); background:#fff; color:#28405f;
+  transition:background .14s, border-color .14s; }
+.fl-master .flc-hdbtn:hover:not(:disabled){ background:#eef3fb; border-color:rgba(28,60,120,.36); }
+.fl-master .flc-hdbtn.primary{ background:linear-gradient(180deg,#1c5fd6,#164ba8);
+  border-color:#164ba8; color:#fff; }
+.fl-master .flc-hdbtn.primary:hover:not(:disabled){ background:linear-gradient(180deg,#2069e6,#1a55bd); }
+.fl-master .flc-hdbtn:disabled{ opacity:.45; cursor:not-allowed; }
+/* -- tablette / mobile : on empile sans casser la hierarchie -- */
+@media (max-width:1180px){
+  .fl-master .flc-body{ grid-template-columns:1fr 1fr; }
+  .fl-master .flc-panel.flc-cio{ grid-column:1 / -1; border-left:0;
+    border-top:1px solid rgba(28,60,120,.10); }
+  .fl-master .flc-cio-grid{ flex-direction:row; }
+  .fl-master .flc-cio-grid > div{ flex:1 1 0; }
+}
+@media (max-width:760px){
+  .fl-master .flc-hd{ flex-wrap:wrap; }
+  .fl-master .flc-stats{ width:100%; justify-content:space-between; padding-top:8px;
+    margin-left:0; border-top:1px solid rgba(28,60,120,.10); }
+  .fl-master .flc-stats > div{ text-align:left; padding-left:0; border-left:0; }
+  .fl-master .flc-stats > div + div{ padding-left:14px; }
+  .fl-master .flc-body{ grid-template-columns:1fr; }
+  .fl-master .flc-panel{ border-left:0; border-top:1px solid rgba(28,60,120,.10); }
+  .fl-master .flc-cio-grid{ flex-direction:column; }
+}
+/* ---------- bouton GENDEC isole de l'onglet CREW (iteration 26) ----------
+   .action-btn est transforme par le theme en tuile-image : texte transparent,
+   font-size 0, image de fond posee par :nth-child sur les quatre tuiles de
+   l'onglet FLIGHT. Le bouton de l'onglet CREW porte la meme classe sans etre
+   dans cette rangee : il n'avait donc ni image ni libelle -- d'ou le rectangle
+   bleu vide. On lui donne une classe propre (fl-gendec-btn) et on lui rend son
+   libelle, qui existait deja dans le code. */
+.fl-master .action-btn.fl-gendec-btn{ height:46px !important; font-size:13.5px !important;
+  font-weight:800 !important; letter-spacing:.04em; color:#fff !important; gap:9px;
+  display:flex !important; align-items:center; justify-content:center;
+  background:linear-gradient(180deg,#1c5fd6,#164ba8) !important; }
+.fl-master .action-btn.fl-gendec-btn svg{ display:inline !important;
+  width:17px !important; height:17px !important; }
+/* ============ ASSIGNED CREW -- fidelite a la maquette (iteration 28) ========
+   Les fonds sont le point central de la demande : corps de carte bleu clair,
+   trois panneaux teintes avec leur bandeau, CHECK-IN vert et CHECK-OUT rouge.
+   Ce bloc est place APRES ceux des iterations 26 et 27 : a specificite egale,
+   c'est la derniere declaration qui gagne (lecon de l'entree 209). */
+.fl-master .crew-ico{ flex:0 0 auto; vertical-align:-2px; }
+/* ---------- barre de titre : icone + titre + les trois actions ---------- */
+.fl-master .fl-crew-hd .fd-section{ display:flex !important; align-items:center;
+  gap:9px; padding:9px 10px 9px 13px !important; border-radius:13px !important;
+  font-size:12.5px !important; letter-spacing:.10em !important; }
+.fl-master .flc-hdico{ display:inline-flex; align-items:center; color:#cfe0ff;
+  flex:0 0 auto; }
+.fl-master .fl-crew-hd .flc-hdacts{ display:flex !important; grid-template-columns:none;
+  align-items:center; gap:6px; margin:0 0 0 auto !important; flex:0 0 auto; }
+.fl-master .fl-crew-hd .flc-hdacts > *{ height:30px !important; width:auto;
+  padding:0 11px !important; border-radius:9px !important; font-size:10.5px !important;
+  font-weight:800 !important; letter-spacing:.03em; gap:5px;
+  text-transform:none !important; box-shadow:none !important; }
+.fl-master .fl-crew-hd .flc-hdacts .fl-lnk{ background:#fff; color:#1b3a6b;
+  border:1px solid rgba(255,255,255,.9); }
+.fl-master .fl-crew-hd .flc-hdacts .flc-hdbtn{ background:#fff; color:#1b3a6b;
+  border:1px solid rgba(255,255,255,.9); }
+.fl-master .fl-crew-hd .flc-hdacts .flc-hdbtn.primary{ background:#2f7bff;
+  border-color:#2f7bff; color:#fff; }
+.fl-master .fl-crew-hd .flc-hdacts .flc-hdbtn.primary:hover:not(:disabled){ background:#1f66e0; }
+.fl-master .fl-crew-hd .flc-hdacts .fl-lnk svg,
+.fl-master .fl-crew-hd .flc-hdacts .flc-hdbtn svg{ width:13px; height:13px; color:#2f7bff; }
+.fl-master .fl-crew-hd .flc-hdacts .flc-hdbtn.primary svg{ color:#fff; }
+/* ---------- la carte ---------- */
+.fl-master .flc{ background:#fff; border:1px solid rgba(28,60,120,.18);
+  border-radius:15px; box-shadow:0 6px 18px -12px rgba(15,42,92,.45); margin-bottom:11px; }
+.fl-master .flc-hd{ background:transparent; border-bottom:0; padding:12px 12px 10px; }
+/* avatar navy, galons epais, pastille avion */
+.fl-master .flc-av{ width:52px; height:52px; border-radius:13px;
+  background:linear-gradient(160deg,#1d4a8f,#122d55); font-size:14px;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.16), 0 4px 10px -6px rgba(15,42,92,.8); }
+.fl-master .flc-av > span{ transform:translateY(-8px); }
+.fl-master .flc-stripes{ bottom:11px; gap:3px; }
+.fl-master .flc-stripes i{ width:9px; height:3px; border-radius:1.5px;
+  background:linear-gradient(90deg,#f0cf72,#f7e6ae,#d8b25c); }
+.fl-master .flc-av-badge{ position:absolute; left:50%; bottom:-7px;
+  transform:translateX(-50%); width:20px; height:20px; border-radius:50%;
+  background:#dcebff; color:#12417f; border:2px solid #fff;
+  display:flex; align-items:center; justify-content:center; }
+.fl-master .flc-na .flc-av-badge{ display:none; }
+.fl-master .flc-rank{ font-size:10.5px; font-weight:700; letter-spacing:.01em;
+  text-transform:none; color:#7f92ac; }
+.fl-master .flc-name{ font-size:15px; color:#1b3a6b; margin:0 0 3px;
+  line-height:1.2; gap:6px; }
+.fl-master .flc-who{ padding-top:1px; }
+/* tuiles de statistiques a icones */
+.fl-master .flc-stats > div{ display:flex; align-items:center; gap:6px;
+  padding:0 8px; text-align:left; border-left:0; }
+.fl-master .flc-stats > div + div{ border-left:1px solid rgba(28,60,120,.12); }
+.fl-master .flc-stats > div > i{ display:inline-flex; align-items:center;
+  justify-content:center; width:20px; height:20px; border-radius:6px;
+  background:#e8f0ff; color:#1f5bc4; flex:0 0 auto; }
+.fl-master .flc-stats > div > u{ text-decoration:none; display:block; }
+.fl-master .flc-stats span{ font-size:8px; letter-spacing:.08em; color:#8497b0;
+  margin-bottom:1px; }
+.fl-master .flc-stats b{ font-size:12.5px; color:#1b3a6b; white-space:nowrap; }
+/* bouton Crew Doc + menu */
+/* Le bouton Crew Doc est en PLUS de la maquette (demande de l operateur). Il est
+   pose en bout de la rangee de badges, et non dans la rangee d identite : la
+   maquette n y laisse pas la place, et le nom se cassait sur trois lignes. */
+.fl-master .flc-hd{ grid-template-columns:minmax(0,1fr) auto auto !important; }
+.fl-master .flc-id{ grid-column:1; grid-row:1; }
+.fl-master .flc-stats{ grid-column:2; grid-row:1; min-width:0; }
+.fl-master .flc-menu-wrap{ grid-column:3; grid-row:1; }
+.fl-master .flc-badges{ grid-column:1 / -1 !important; grid-row:2; }
+.fl-master .flc-docbtn{ margin-left:auto; }
+.fl-master .flc-docbtn{ height:21px; display:inline-flex; align-items:center; gap:4px;
+  padding:0 8px; border-radius:7px; cursor:pointer; white-space:nowrap;
+  border:1px solid rgba(47,123,255,.35); background:#eef4ff; color:#1f5bc4;
+  font-size:10px; font-weight:800; letter-spacing:.02em;
+  transition:background .14s, border-color .14s; }
+.fl-master .flc-docbtn svg{ width:12px; height:12px; }
+.fl-master .flc-docbtn:hover{ background:#dde9ff; border-color:rgba(47,123,255,.6); }
+/* badges */
+.fl-master .flc-badges{ border-top:0; padding:6px 0 0; gap:5px; }
+/* Gabarit resserre pour que les badges ET le bouton Crew Doc tiennent sur une
+   seule ligne dans les 543 px utiles (mesure : 554 px avant, 528 apres). */
+.fl-master .flc-badges .fd-badge,
+.fl-master .flc-badges .crew-status-pill,
+.fl-master .flc-badges .crew-duty-pill{ height:21px !important; padding:0 7px !important;
+  font-size:10px !important; }
+/* ---------- corps : fond bleu clair, trois panneaux teintes ---------- */
+.fl-master .flc-body{ background:#eaf1fc; border-top:1px solid rgba(28,60,120,.12);
+  padding:9px; gap:8px; border-radius:0 0 14px 14px;
+  grid-template-columns:1fr 1.02fr 1.2fr; }
+.fl-master .flc-panel{ padding:0; border-left:0; border-radius:10px;
+  overflow:hidden; border:1px solid rgba(28,60,120,.14); background:#fff; }
+/* Le libelle d un h5 est un element de flex anonyme : sans white-space il se
+   reduit a son min-content et "Duty Details" passe sur deux lignes. */
+.fl-master .flc-panel h5{ margin:0; padding:6px 9px; font-size:9px;
+  letter-spacing:.08em; gap:6px; white-space:nowrap; }
+.fl-master .flc-panel h5 i{ margin-left:auto; }
+.fl-master .flc-panel .fd-ftl-toggle-label{ font-size:10.5px; line-height:1.2; }
+.fl-master .flc-name{ white-space:nowrap; }
+.fl-master .flc-name .fd-badge{ white-space:nowrap; }
+.fl-master .flc-pbody{ padding:8px 9px 9px; }
+.fl-master .flc-p-duty{ background:#eef3fd; }
+.fl-master .flc-p-duty h5{ background:#d7e3fa; color:#173a70; }
+.fl-master .flc-p-opt{ background:#f7f9fc; }
+.fl-master .flc-p-opt h5{ background:#e9eef7; color:#3c4f6b; }
+.fl-master .flc-p-cio{ background:#e9f2fe; }
+.fl-master .flc-p-cio h5{ background:#d5e7fc; color:#12417f; }
+.fl-master .flc-panel h5 i{ background:rgba(23,58,112,.10); color:inherit; }
+.fl-master .flc-dr{ border-bottom-color:rgba(28,60,120,.13); }
+/* ---------- CHECK-IN vert / CHECK-OUT rouge, cote a cote ---------- */
+.fl-master .flc-cio-grid{ flex-direction:row; gap:7px; }
+.fl-master .flc-cio-grid > div{ flex:1 1 0; min-width:0; }
+.fl-master .flc-cio-box{ padding:7px 5px 8px; border-radius:9px; }
+.fl-master .flc-cio-box.in{ background:#eafaf1; border-color:#a9dfc0; }
+.fl-master .flc-cio-box.out{ background:#fdeef0; border-color:#f2c2c9; }
+.fl-master .flc-cio-box.in.off{ background:#f1f7f3; border-color:#cde3d6; }
+.fl-master .flc-cio-box.out.off{ background:#faf1f2; border-color:#e8cfd3; }
+.fl-master .flc-cio-box.in .flc-cio-l{ color:#14713a; }
+.fl-master .flc-cio-box.out .flc-cio-l{ color:#a8202c; }
+.fl-master .flc-cio-l{ display:flex; align-items:center; gap:4px; font-size:8.5px;
+  letter-spacing:.07em; margin-bottom:4px; }
+.fl-master .flc-cio-t input[type=time]{ font-size:12px; padding:4px 4px;
+  background:#fff; border-color:rgba(28,60,120,.22); }
+.fl-master .flc-cio-a{ gap:4px; margin-top:5px; }
+.fl-master .flc-cio-a button{ height:23px; font-size:7.5px; letter-spacing:-.01em;
+  padding:0; border-radius:6px; white-space:nowrap; min-width:0; }
+.fl-master .flc-cio-box.in .flc-cio-a button.now{ background:linear-gradient(180deg,#1f9d5c,#177a41);
+  border-color:#177a41; }
+.fl-master .flc-cio-box.out .flc-cio-a button.now{ background:linear-gradient(180deg,#d1465a,#b8202e);
+  border-color:#b8202e; }
+.fl-master .flc-cio-off{ font-size:9.5px; }
+/* le siege vide garde un fond neutre, pas la teinte des panneaux */
+.fl-master .flc-assign{ background:#f4f8fe; border-top:1px solid rgba(28,60,120,.12);
+  border-radius:0 0 14px 14px; }
+/* ---------- fenetre des documents d'un membre ---------- */
+.flc-docwho{ display:flex; align-items:center; gap:11px; padding:9px 10px;
+  background:#eef3fd; border:1px solid rgba(28,60,120,.14); border-radius:11px;
+  margin-bottom:11px; }
+.flc-doclist{ max-height:330px; overflow-y:auto; }
+.flc-doc{ display:flex; align-items:center; gap:10px; padding:8px 9px;
+  border:1px solid rgba(28,60,120,.14); border-radius:10px; margin-bottom:7px;
+  background:#fff; }
+.flc-doc-i{ flex:0 0 auto; width:32px; height:32px; border-radius:9px;
+  background:#e8f0ff; color:#1f5bc4; display:flex; align-items:center;
+  justify-content:center; }
+.flc-doc-n{ flex:1 1 auto; min-width:0; }
+.flc-doc-n b{ display:block; font-size:12.5px; font-weight:800; color:#28405f; }
+.flc-doc-n span{ display:block; font-size:10px; font-weight:600; color:#5b6b86;
+  margin-top:1px; }
+.flc-doc-up{ flex:0 0 auto; height:28px; display:inline-flex; align-items:center;
+  gap:5px; padding:0 10px; border-radius:8px; cursor:pointer; font-size:10.5px;
+  font-weight:800; border:1px solid rgba(28,60,120,.22); background:#fff;
+  color:#28405f; transition:background .14s; }
+.flc-doc-up:hover{ background:#eef3fb; }
+.flc-doc .fd-badge{ height:22px !important; min-width:0 !important;
+  padding:0 9px !important; border-radius:7px !important; font-size:10px !important;
+  text-transform:none !important; margin:0 !important; }
+.flc-doc-none{ font-size:11px; font-weight:600; font-style:italic; color:#5b6b86;
+  padding:8px 2px; }
+/* ---------- tablette / mobile ---------- */
+@media (max-width:1180px){
+  .fl-master .fl-crew-hd .fd-section{ flex-wrap:wrap; }
+  .fl-master .fl-crew-hd .flc-hdacts{ width:100%; margin:8px 0 0 !important; }
+  .fl-master .fl-crew-hd .flc-hdacts > *{ flex:1 1 0; justify-content:center; }
+}
+@media (max-width:760px){
+  .fl-master .flc-hd{ grid-template-columns:minmax(0,1fr) auto !important; }
+  .fl-master .flc-menu-wrap{ grid-column:2; grid-row:1; }
+  .fl-master .flc-stats{ grid-column:1 / -1; grid-row:2; }
+  .fl-master .flc-badges{ grid-column:1 / -1 !important; grid-row:3; }
+  .fl-master .flc-cio-grid{ flex-direction:column; }
+}
+/* ============ CREW : retours et vue VIGIL equipage (iteration 29) =========
+   Bloc place APRES ceux des iterations 26, 27 et 28 : a specificite egale c'est
+   la derniere declaration qui gagne (entree 209). */
+/* ---------- CHECK-IN / CHECK-OUT : retour a l'etat d'avant la 28 ----------
+   Boites empilees, fond blanc, libelle neutre, bouton Now bleu. Le vert et le
+   rouge cote a cote de l'iteration 28 sont annules a la demande de l'operateur. */
+.fl-master .flc-cio-grid{ flex-direction:column !important; gap:9px !important; }
+.fl-master .flc-cio-grid > div{ flex:0 0 auto; }
+.fl-master .flc-cio-box{ background:#fff !important; border:1px solid rgba(28,60,120,.15) !important;
+  border-radius:10px !important; padding:8px 9px !important; }
+.fl-master .flc-cio-box.off{ background:#f5f7fa !important; }
+.fl-master .flc-cio-l{ display:block !important; font-size:9px !important;
+  letter-spacing:.09em !important; color:var(--fl-mut) !important; margin-bottom:5px !important; }
+.fl-master .flc-cio-t input[type=time]{ font-size:14px !important; padding:5px 7px !important;
+  background:#fbfcfe !important; border-color:rgba(28,60,120,.18) !important; }
+.fl-master .flc-cio-a{ gap:6px !important; margin-top:7px !important; }
+.fl-master .flc-cio-a button{ height:26px !important; font-size:10.5px !important;
+  letter-spacing:.03em !important; padding:0 2px !important; border-radius:7px !important; }
+.fl-master .flc-cio-a button.now{ background:linear-gradient(180deg,#1c5fd6,#164ba8) !important;
+  border-color:#164ba8 !important; color:#fff !important; }
+.fl-master .flc-cio-a button.now:hover{ background:linear-gradient(180deg,#2069e6,#1a55bd) !important; }
+.fl-master .flc-cio-off{ font-size:10.5px !important; }
+/* ---------- vue VIGIL restreinte a l'equipage ---------- */
+.cvg-head{ display:flex; align-items:center; gap:7px; font-size:15px; font-weight:800;
+  color:#28405f; margin-bottom:4px; }
+.cvg-sub{ font-size:11px; line-height:1.5; color:#5b6b86; margin-bottom:12px; }
+.cvg-kpis{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:13px; }
+.cvg-kpi{ border:1px solid rgba(28,60,120,.14); border-radius:11px; padding:8px 10px;
+  background:#f7f9fd; }
+.cvg-kpi b{ display:block; font-size:20px; font-weight:800; line-height:1.1; }
+.cvg-kpi span{ display:block; font-size:8.5px; font-weight:800; letter-spacing:.09em;
+  text-transform:uppercase; color:#5b6b86; margin-top:2px; }
+.cvg-kpi.crit b{ color:#b8202e; }
+.cvg-kpi.warn b{ color:#a9760a; }
+.cvg-kpi.ok b{ color:#1f5bc4; }
+.cvg-sec{ font-size:9px; font-weight:800; letter-spacing:.11em; text-transform:uppercase;
+  color:#41536f; margin:0 0 7px; padding-top:4px; }
+.cvg-list{ margin-bottom:13px; }
+.cvg-card{ border:1px solid rgba(28,60,120,.14); border-radius:11px; background:#fff;
+  padding:9px 10px; margin-bottom:8px; }
+.cvg-hd{ display:flex; align-items:center; gap:10px; padding-bottom:7px;
+  border-bottom:1px solid rgba(28,60,120,.12); margin-bottom:6px; }
+.cvg-hd > div:nth-child(2){ flex:1 1 auto; min-width:0; }
+.cvg-hd .fd-badge{ height:21px !important; min-width:0 !important; padding:0 9px !important;
+  border-radius:7px !important; font-size:10px !important; text-transform:none !important;
+  margin:0 !important; }
+.cvg-line{ position:relative; padding:5px 0 5px 13px; font-size:11.5px; line-height:1.45;
+  color:#28405f; }
+.cvg-line + .cvg-line{ border-top:1px dashed rgba(28,60,120,.12); }
+.cvg-line::before{ content:''; position:absolute; left:0; top:11px; width:6px; height:6px;
+  border-radius:50%; }
+.cvg-line.crit::before{ background:#c8202f; }
+.cvg-line.warn::before{ background:#e0a015; }
+.cvg-line.info::before{ background:#7f97c4; }
+.cvg-line b{ font-weight:700; }
+.cvg-line span{ display:block; font-size:10px; font-weight:600; color:#5b6b86; margin-top:1px; }
+.cvg-al{ border:1px solid rgba(28,60,120,.14); border-left:3px solid #8497b0;
+  border-radius:10px; background:#fff; padding:9px 10px; margin-bottom:8px; }
+.cvg-al.critical{ border-left-color:#c8202f; }
+.cvg-al.high{ border-left-color:#e07a15; }
+.cvg-al.warning{ border-left-color:#d9b524; }
+.cvg-al.info{ border-left-color:#2f7bff; }
+.cvg-al-t{ display:flex; align-items:center; justify-content:space-between; gap:8px;
+  font-size:12.5px; font-weight:800; color:#28405f; }
+.cvg-al-t i{ font-style:normal; font-size:8.5px; font-weight:800; letter-spacing:.1em;
+  color:#5b6b86; }
+.cvg-al-w{ font-size:11px; line-height:1.45; color:#3c4f6b; margin-top:3px; }
+.cvg-al-a{ font-size:11px; font-weight:700; color:#1f5bc4; margin-top:3px; }
+.cvg-al-m{ display:flex; gap:10px; font-size:9px; font-weight:600; color:#8497b0;
+  margin-top:5px; }
+.cvg-al-acts{ display:flex; gap:6px; flex-wrap:wrap; margin-top:7px; }
+.cvg-al-acts > span{ cursor:pointer; font-size:9.5px; font-weight:800; letter-spacing:.03em;
+  padding:4px 9px; border-radius:7px; border:1px solid rgba(28,60,120,.20);
+  background:#f7f9fd; color:#28405f; }
+.cvg-al-acts > span:hover{ background:#eef3fb; border-color:rgba(28,60,120,.36); }
+.cvg-none{ font-size:11px; font-weight:600; line-height:1.5; color:#5b6b86;
+  font-style:italic; padding:8px 2px; }
+.cvg-foot{ display:grid; grid-template-columns:1fr 1fr; gap:7px; padding-top:12px;
+  border-top:1px solid rgba(28,60,120,.14); }
+.cvg-foot > button:last-child{ grid-column:1 / -1; }
+.fl-master .action-btn{ height:82px; border-radius:12px !important; border:1px solid rgba(255,255,255,.75) !important; background:#1b3f7d center/cover no-repeat !important; color:transparent !important; font-size:0 !important; padding:0 !important; box-shadow:0 10px 22px -12px rgba(15,42,92,.9), 0 0 0 1px rgba(47,123,255,.25); position:relative; overflow:hidden; transition:transform .12s, box-shadow .12s; }
+.fl-master .action-btn svg{ display:none !important; } .fl-master .action-btn:hover{ transform:translateY(-2px); box-shadow:0 14px 26px -12px rgba(47,123,255,.9), 0 0 0 1px rgba(47,123,255,.6); }
+.fl-master .action-btn:nth-child(1){ background-image:var(--fl-tile-ofp) !important; } .fl-master .action-btn:nth-child(2){ background-image:var(--fl-tile-notam) !important; } .fl-master .action-btn:nth-child(3){ background-image:var(--fl-tile-wx) !important; } .fl-master .action-btn:nth-child(4){ background-image:var(--fl-tile-gendec) !important; }
+.fl-master .action-btn.gendec-alert{ box-shadow:0 0 0 2px #e0353f, 0 10px 22px -12px rgba(224,53,63,.9) !important; }
+.fl-master .revision-banner{ border-radius:12px !important; padding:10px 14px !important; font-size:12.5px !important; box-shadow:0 8px 18px -14px rgba(15,42,92,.5); margin-bottom:10px; }
+.fl-master .fd-note{ border-radius:12px; background:var(--fl-card); border:1px solid rgba(255,255,255,.9); padding:10px 14px; margin-bottom:10px; }
+/* pied : Open Flight Data / Flight Brief */
+.fl-master .fd-footer{ position:static !important; margin:12px 0 0 !important; padding:0 !important; background:transparent !important; border:none !important; box-shadow:none !important; }
+.fl-master .fd-btn-solid,.fl-master .fd-btn-brief{ height:52px !important; border-radius:14px !important; background:linear-gradient(180deg,#2f7bff,#1747b8) !important; color:#fff !important; font-size:16px !important; font-weight:700 !important; display:flex !important; align-items:center; justify-content:center; gap:12px; box-shadow:0 12px 26px -12px rgba(47,123,255,.95), 0 0 0 1px rgba(255,255,255,.5), inset 0 1px 0 rgba(255,255,255,.35) !important; border:none !important; position:relative; cursor:pointer; }
+.fl-master .fd-btn-solid::before{ content:''; width:20px; height:20px; background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z'/></svg>") center/contain no-repeat; }
+.fl-master .fd-btn-solid::after,.fl-master .fd-btn-brief::after{ content:'›'; position:absolute; right:18px; font-size:26px; line-height:1; font-weight:400; }
+.fl-master .fd-btn-brief svg{ stroke:#fff !important; width:18px !important; height:18px !important; } .fl-master .fd-btn-brief .kbd{ background:rgba(255,255,255,.2) !important; color:#fff !important; border-color:rgba(255,255,255,.4) !important; }
+/* ---------- SERVICES / OVF ---------- */
+.fl-master .fd-prog{ background:var(--fl-card) !important; border:1px solid rgba(255,255,255,.9) !important; border-radius:14px !important; padding:14px 16px !important; box-shadow:0 10px 24px -14px rgba(15,42,92,.7), inset 0 1px 0 #fff; gap:16px !important; margin-bottom:10px; }
+.fl-master .fd-prog-ring{ width:62px !important; height:62px !important; } .fl-master .fd-prog-pct{ font-size:15px !important; font-weight:800 !important; color:var(--fl-ink) !important; left:31px !important; }
+.fl-master .fd-prog-txt .st{ font-size:19px !important; font-weight:800 !important; color:var(--fl-ink) !important; } .fl-master .fd-prog-txt .sub{ font-size:13px !important; color:var(--fl-mut) !important; }
+.fl-master .fd-stn{ display:flex; align-items:center; gap:12px; padding:10px 14px 10px 10px !important; border-radius:12px !important; background:var(--fl-card) !important; border:1px solid rgba(255,255,255,.9) !important; border-left:4px solid var(--fl-blue2) !important; box-shadow:0 8px 20px -14px rgba(15,42,92,.6); margin:12px 0 8px !important; }
+.fl-master .fd-stn.arr{ border-left-color:#1f9d5c !important; }
+.fl-master .fd-stn::before{ content:''; width:24px; height:24px; flex-shrink:0; background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2312305e'><path d='M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z'/></svg>") center/contain no-repeat; }
+.fl-master .fd-stn-dir{ background:#dbe8ff !important; color:#1d4fb8 !important; font-size:11px !important; font-weight:800 !important; letter-spacing:.1em; padding:5px 12px !important; border-radius:8px !important; } .fl-master .fd-stn.arr .fd-stn-dir{ background:#d9f5e3 !important; color:#177a41 !important; }
+.fl-master .fd-stn-code{ font-size:20px !important; font-weight:800 !important; color:var(--fl-ink) !important; } .fl-master .fd-stn-icao{ font-size:15px !important; font-weight:600 !important; color:var(--fl-mut) !important; margin-left:6px; }
+.fl-master .fd-stn-name{ margin-left:auto !important; font-size:12px !important; letter-spacing:.06em; color:var(--fl-mut) !important; font-weight:600; }
+.fl-master .fd-row.interactive{ display:block !important; background:var(--fl-card) !important; border:1px solid rgba(255,255,255,.9) !important; border-radius:12px !important; padding:10px 12px 10px 56px !important; margin:0 0 8px !important; position:relative; box-shadow:0 8px 20px -14px rgba(15,42,92,.6), inset 0 1px 0 #fff; }
+.fl-master .fd-row.interactive::before{ content:''; position:absolute; left:14px; top:14px; width:30px; height:30px; background:var(--fl-ico,url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2312305e' stroke-width='1.7' stroke-linecap='round'><circle cx='12' cy='12' r='9'/><path d='M8 12h.01M12 12h.01M16 12h.01'/></svg>")) center/contain no-repeat; }
+.fl-master .fd-row.interactive[data-key^="ground"]::before{ --fl-ico:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2312305e' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'><path d='M3 16V8h9l3 4h4a2 2 0 0 1 2 2v2'/><circle cx='7' cy='18' r='2'/><circle cx='17' cy='18' r='2'/><path d='M9 18h6'/></svg>"); }
+.fl-master .fd-row.interactive[data-key^="fuel"]::before{ --fl-ico:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2312305e' stroke-width='1.7' stroke-linecap='round'><path d='M4 21V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v16M4 21h11M15 10h2a2 2 0 0 1 2 2v5a1.5 1.5 0 0 0 3 0V9l-3-3'/></svg>"); }
+.fl-master .fd-row.interactive[data-key^="customs"]::before{ --fl-ico:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2312305e' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'><path d='M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z'/><path d='m9 12 2 2 4-4'/></svg>"); }
+.fl-master .fd-row.interactive[data-key^="catering"]::before{ --fl-ico:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2312305e' stroke-width='1.7' stroke-linecap='round'><path d='M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10M17 3c-2 1-3 3-3 6v3h3v9'/></svg>"); }
+.fl-master .fd-row.interactive[data-key^="parking"]::before{ --fl-ico:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2312305e' stroke-width='1.7' stroke-linecap='round'><rect x='3' y='3' width='18' height='18' rx='3'/><path d='M9 17V7h4a3 3 0 0 1 0 6H9'/></svg>"); }
+.fl-master .fd-row-line{ display:flex; align-items:center; gap:8px; } .fl-master .fd-row-line + .fd-row-line{ margin-top:8px; }
+.fl-master .fd-fake-select{ border-radius:9px !important; border:1px solid rgba(28,60,120,.22) !important; background:#fff !important; height:36px; }
+.fl-master .fd-svc-select-wrap{ flex:1 1 48% !important; min-width:0; border:none !important; background:transparent !important; } .fl-master .fd-svc-select-wrap .fd-select{ font-size:15px !important; font-weight:700 !important; color:var(--fl-ink) !important; } .fl-master .fd-svc-select-wrap svg{ opacity:.35; }
+.fl-master .fd-supplier-select-wrap{ flex:1 1 40% !important; min-width:0; }
+.fl-master .fd-nps-btn[style*="display:none"], .fl-master .fd-nps-btn[style*="display: none"]{ display:none !important; } .fl-master .fd-supplier-select-wrap .fd-select{ font-size:13.5px !important; font-weight:600 !important; color:var(--fl-blue2) !important; }
+.fl-master .fd-select{ height:34px !important; }
+.fl-master .fd-contact-btn,.fl-master .fd-remove-btn,.fl-master .fd-nps-btn{ width:36px !important; height:36px !important; border-radius:9px !important; border:1px solid rgba(28,60,120,.22) !important; background:#fff !important; color:var(--fl-ink) !important; display:flex !important; align-items:center; justify-content:center; font-size:14px !important; } .fl-master .fd-nps-btn{ width:auto !important; padding:0 10px !important; font-size:11px !important; font-weight:700; gap:5px; }
+.fl-master .fd-contact-btn svg,.fl-master .fd-nps-btn svg{ width:16px !important; height:16px !important; }
+.fl-master .fd-send-btn{ height:36px; min-width:120px; padding:0 18px !important; border-radius:9px !important; border:1.5px solid var(--fl-blue2) !important; background:#fff !important; color:var(--fl-ink) !important; font-size:14px !important; font-weight:700 !important; display:inline-flex !important; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 6px 14px -10px rgba(47,123,255,.8); }
+.fl-master .fd-send-btn:hover{ background:#eaf1ff !important; } .fl-master .fd-send-btn.disabled{ opacity:.5; }
+/* ---------- CODE COULEUR DES STATUTS (iteration 24) ----------
+   Retabli par-dessus le theme de l'etiquette, qui l'ecrasait en !important.
+   `status-gray` (Not Actioned / N/A / Cancel) garde volontairement le neutre du theme. */
+.fl-master .fd-send-btn.sent{ background:#1d9b4a !important; border-color:#1d9b4a !important;
+  color:#fff !important; box-shadow:0 6px 14px -10px rgba(29,155,74,.95) !important; }
+.fl-master .fd-send-btn.sent:hover{ background:#17833e !important; }
+.fl-master .fd-send-btn.revise{ background:#e08e00 !important; border-color:#e08e00 !important;
+  color:#3a2600 !important; box-shadow:0 6px 14px -10px rgba(224,142,0,.95) !important; }
+.fl-master .fd-send-btn.revise:hover{ background:#c87d00 !important; }
+.fl-master .fd-status-select-wrap.status-green{ background:rgba(29,155,74,.13) !important;
+  border-color:rgba(29,155,74,.42) !important; }
+.fl-master .fd-status-select-wrap.status-green .fd-select{ color:#14713a !important; font-weight:700 !important; }
+.fl-master .fd-status-select-wrap.status-amber{ background:rgba(224,142,0,.15) !important;
+  border-color:rgba(224,142,0,.45) !important; }
+.fl-master .fd-status-select-wrap.status-amber .fd-select{ color:#8a5900 !important; font-weight:700 !important; }
+.fl-master .fd-status-select-wrap.status-red{ background:rgba(200,32,47,.11) !important;
+  border-color:rgba(200,32,47,.42) !important; }
+.fl-master .fd-status-select-wrap.status-red .fd-select{ color:#a8121f !important; font-weight:700 !important; }
+/* ---------- BOUTON DE REVISION PAR LIGNE (iteration 24) ----------
+   Meme gabarit que les boutons contact et suppression de la meme ligne. */
+.fd-revise-btn{ flex-shrink:0; width:30px; height:30px; border-radius:8px; cursor:pointer;
+  border:1px solid var(--line); background:var(--bg-panel); color:var(--tnp-navy-2);
+  display:flex; align-items:center; justify-content:center; }
+.fd-revise-btn svg{ width:14px; height:14px; }
+.fl-master .fd-revise-btn{ width:36px !important; height:36px !important; border-radius:9px !important;
+  border:1px solid rgba(28,60,120,.22) !important; background:#fff !important;
+  color:var(--fl-ink) !important; display:flex !important; align-items:center; justify-content:center; }
+.fl-master .fd-revise-btn:hover{ background:#eaf1ff !important; border-color:var(--fl-blue2) !important; }
+.fl-master .fd-revise-btn svg{ width:17px !important; height:17px !important; }
+/* ---------- DRAPEAU DU PAYS DE SURVOL (iteration 24) ----------
+   Pose exactement a la place du cercle a trois points de la ligne (::before), qui est
+   masque seulement quand un drapeau est reellement disponible. Le viewBox est en 3:2 :
+   rendu en 45 x 30 puis recentre, il remplit le cercle sans aucune deformation. */
+.fl-ovf-flag{ display:none; }
+.fl-master .fd-row.interactive.has-ovf-flag::before{ display:none !important; }
+.fl-master .fd-row.interactive .fl-ovf-flag{ display:block; position:absolute; left:14px; top:14px;
+  width:30px; height:30px; border-radius:50%; overflow:hidden;
+  box-shadow:0 0 0 1px rgba(28,60,120,.28), 0 2px 6px -3px rgba(15,42,92,.55); }
+.fl-master .fd-row.interactive .fl-ovf-flag svg{ display:block; width:45px; height:30px; margin-left:-7.5px; }
+.fl-master .fd-status-select-wrap{ flex:1 !important; background:#e9eef5 !important; border-color:rgba(28,60,120,.12) !important; position:relative; } .fl-master .fd-status-select-wrap .fd-select{ font-size:13.5px !important; color:var(--fl-mut) !important; font-weight:600; }
+.fl-master .fd-status-select-wrap::after{ content:''; position:absolute; right:10px; top:9px; width:18px; height:18px; background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2312305e' stroke-width='1.8' stroke-linecap='round'><circle cx='12' cy='12' r='9'/><path d='M12 7v5l3.5 2'/></svg>") center/contain no-repeat; pointer-events:none; } .fl-master .fd-status-select-wrap > svg{ display:none !important; }
+.fl-master .fd-add-service-btn{ height:44px; display:flex; align-items:center; justify-content:center; border-radius:12px !important; border:1.5px dashed rgba(28,60,120,.35) !important; background:rgba(255,255,255,.55) !important; color:var(--fl-ink) !important; font-size:14px !important; font-weight:700 !important; margin:4px 0 10px !important; }
+.fl-master .fd-add-service-btn:hover{ background:rgba(255,255,255,.9) !important; border-style:solid !important; }
+.fl-master .fd-row:not(.interactive){ background:var(--fl-card); border:1px solid rgba(255,255,255,.9); border-radius:12px; padding:10px 14px !important; margin-bottom:8px; box-shadow:0 8px 20px -14px rgba(15,42,92,.6); font-size:13.5px !important; }
+.fl-master .fd-row .fdl{ font-weight:700 !important; color:var(--fl-ink) !important; font-size:14px !important; }
+/* ---------- FUEL ---------- */
+.fl-master .fd-fuel-converter{ background:var(--fl-card) !important; border:1px solid rgba(255,255,255,.9) !important; border-radius:14px !important; padding:14px 16px !important; box-shadow:0 10px 24px -14px rgba(15,42,92,.7), inset 0 1px 0 #fff; }
+.fl-master .ffc-title{ font-size:14px !important; letter-spacing:.1em !important; color:var(--fl-ink) !important; font-weight:700 !important; text-transform:uppercase; padding-bottom:10px; border-bottom:1px solid rgba(28,60,120,.1); margin-bottom:10px; }
+.fl-master .ffc-field label{ font-size:12px !important; letter-spacing:.06em; color:var(--fl-mut) !important; font-weight:600; } .fl-master .ffc-field input{ height:48px !important; border-radius:10px !important; border:1px solid rgba(28,60,120,.2) !important; background:#eef3fa !important; font-family:'JetBrains Mono',ui-monospace,monospace !important; font-size:20px !important; font-weight:700 !important; color:var(--fl-ink) !important; padding:0 14px !important; }
+.fl-master .ffc-arrow{ font-size:22px !important; color:var(--fl-blue2) !important; }
+.fl-master .fd-fuel-btn{ width:100%; height:56px !important; border-radius:14px !important; background:linear-gradient(180deg,#2f7bff,#1747b8) !important; color:#fff !important; font-size:18px !important; font-weight:800 !important; border:none !important; box-shadow:0 12px 26px -12px rgba(47,123,255,.95), 0 0 0 1px rgba(255,255,255,.5); display:flex; align-items:center; justify-content:center; gap:12px; margin-top:12px; cursor:pointer; }
+.fl-master .fd-fuel-btn svg{ width:22px !important; height:22px !important; stroke:#fff !important; }
+.fl-master .fd-grid .fd-card .val{ font-size:22px !important; }
+/* ---------- CREW ---------- */
+.fl-master .fd-showing-time{ display:grid !important; grid-template-columns:1.5fr 1.3fr .8fr .8fr; gap:0 !important; border-radius:14px !important; padding:14px 16px !important; background:linear-gradient(135deg,#0b2250,#163a78 55%,#0f2f6a) !important; color:#fff !important; border:1px solid rgba(47,123,255,.6) !important; box-shadow:0 0 0 2px rgba(47,123,255,.25), 0 14px 30px -14px rgba(47,123,255,.9), inset 0 1px 0 rgba(255,255,255,.2); }
+.fl-master .fst-item{ display:flex !important; flex-direction:column; gap:6px; padding:4px 12px 4px 0; border-right:1px solid rgba(255,255,255,.12); margin-right:12px; } .fl-master .fst-item:last-child{ border-right:none; margin-right:0; }
+.fl-master .fst-label{ font-size:10.5px !important; letter-spacing:.1em !important; color:#c9d8ee !important; text-transform:uppercase; font-weight:600; } .fl-master .fst-val{ font-size:24px !important; font-weight:800 !important; color:#fff !important; font-family:'JetBrains Mono',ui-monospace,monospace !important; }
+.fl-master .fd-showing-time + div{ background:var(--fl-card); border:1px solid rgba(255,255,255,.9); border-radius:12px; padding:10px 14px 10px 50px !important; margin:10px 0 !important; font-size:12px !important; color:var(--fl-ink) !important; position:relative; line-height:1.5; box-shadow:0 8px 20px -14px rgba(15,42,92,.6); }
+.fl-master .fd-showing-time + div::before{ content:'i'; position:absolute; left:12px; top:50%; transform:translateY(-50%); width:28px; height:28px; border-radius:50%; background:var(--fl-navy); color:#fff; font-weight:800; font-style:italic; display:flex; align-items:center; justify-content:center; font-family:Georgia,serif; }
+.fl-master .fd-crew-row{ display:grid !important; grid-template-columns:64px 1fr auto; gap:12px !important; align-items:start; background:var(--fl-card) !important; border:1px solid rgba(255,255,255,.9) !important; border-left:4px solid var(--fl-blue2) !important; border-radius:12px !important; padding:14px 14px 14px 12px !important; margin:0 0 10px !important; box-shadow:0 8px 20px -14px rgba(15,42,92,.6), inset 0 1px 0 #fff; }
+.fl-master .fd-crew-av{ width:54px !important; height:54px !important; border-radius:50% !important; background:linear-gradient(180deg,#1c5fd6,#0f2a5c) !important; color:#fff !important; font-size:17px !important; font-weight:800 !important; display:flex; align-items:center; justify-content:center; box-shadow:0 6px 14px -8px rgba(15,42,92,.9); }
+.fl-master .fd-crew-row .rl{ font-size:12.5px !important; color:var(--fl-mut) !important; font-weight:600; } .fl-master .fd-crew-row .info > div:nth-child(2){ font-size:18px !important; font-weight:800 !important; color:var(--fl-ink) !important; display:flex; flex-wrap:wrap; align-items:center; gap:6px; }
+.fl-master .crew-status-pill,.fl-master .crew-duty-pill{ height:26px; display:inline-flex !important; align-items:center; padding:0 12px !important; border-radius:13px !important; font-size:12px !important; font-weight:700 !important; }
+.fl-master .crew-status-pill.warn{ background:#ffe6a3 !important; color:#7a5200 !important; } .fl-master .crew-status-pill.ok{ background:#d9f5e3 !important; color:#177a41 !important; } .fl-master .crew-status-pill.crit,.fl-master .crew-status-pill.bad{ background:#ffd9d9 !important; color:#b8202e !important; }
+.fl-master .crew-duty-pill{ background:#eaf1ff !important; color:var(--fl-ink) !important; border:1px solid rgba(47,123,255,.3) !important; }
+.fl-master .crew-notes-panel{ background:#f4f7fb; border-radius:10px; padding:8px 12px; margin:6px 0; font-size:12px; } .fl-master .cn-item{ font-size:12px !important; }
+.fl-master .fd-crew-row .info > div[style*="font-size:10px"]{ font-size:12px !important; color:var(--fl-ink) !important; background:#eef3fa; border-radius:10px; padding:10px 12px !important; margin:8px 0 !important; line-height:1.5 !important; }
+.fl-master .fd-checktimes{ display:grid !important; grid-template-columns:1fr 1fr; gap:10px !important; margin:0 0 8px !important; } .fl-master .fd-checktimes > div{ background:#eef3fa; border-radius:10px; padding:10px 12px; } .fl-master .fd-checktimes label{ font-size:11px !important; letter-spacing:.08em; color:var(--fl-mut) !important; text-transform:uppercase; font-weight:700; display:block; margin-bottom:6px; }
+.fl-master .fd-checktimes input[type="time"]{ height:36px; border-radius:9px; border:1px solid rgba(28,60,120,.2); background:#fff; font-family:'JetBrains Mono',ui-monospace,monospace; font-size:16px; font-weight:700; color:var(--fl-ink); padding:0 10px; }
+.fl-master .fd-ftl-toggle-row{ display:flex; align-items:center; gap:10px; padding:6px 0; font-size:12.5px; } .fl-master .fd-ftl-toggle-label{ font-weight:700; color:var(--fl-ink); } .fl-master .fd-ftl-toggle-hint{ font-size:11px; color:var(--fl-mut); }
+.fl-master .occ-confirm-btn{ height:34px; display:inline-flex !important; align-items:center; padding:0 16px !important; border-radius:9px !important; border:1.5px solid var(--fl-blue2) !important; background:#fff !important; color:var(--fl-blue2) !important; font-size:12.5px !important; font-weight:700 !important; letter-spacing:.06em; cursor:pointer; }
+.fl-master .fd-crew-row > div:last-child .fd-badge{ height:30px; display:inline-flex; align-items:center; gap:6px; padding:0 14px !important; border-radius:15px !important; font-size:12.5px !important; }
+.fl-master .fd-crew-row > div:last-child .fd-badge.green{ background:#d9f5e3 !important; color:#177a41 !important; } .fl-master .fd-crew-row > div:last-child .fd-badge.green::before{ content:'✓'; width:16px; height:16px; border-radius:50%; background:#1f9d5c; color:#fff; font-size:10px; display:flex; align-items:center; justify-content:center; }
+.fl-master .fd-crew-row .action-btn{ height:auto; background:#fff !important; color:var(--fl-ink) !important; font-size:12px !important; border:1px solid rgba(28,60,120,.2) !important; border-radius:9px !important; padding:8px 10px !important; }
+.fl-master .fd-crew-row .action-btn svg{ display:inline !important; width:15px !important; height:15px !important; }
+.fl-crew-hd{ display:flex; align-items:center; justify-content:space-between; margin:12px 0 8px; } .fl-crew-hd .fd-section{ margin:0 !important; flex:1; } .fl-crew-hd .fl-lnk{ margin-left:10px; }
+.fl-lnk{ height:40px; display:inline-flex; align-items:center; gap:8px; padding:0 14px; border-radius:11px; background:#fff; border:1px solid rgba(28,60,120,.22); color:var(--fl-ink); font-size:13px; font-weight:700; cursor:pointer; box-shadow:0 6px 14px -10px rgba(15,42,92,.6); white-space:nowrap; } .fl-lnk svg{ width:18px; height:18px; color:var(--fl-blue2); } .fl-lnk:hover{ background:#eaf1ff; }
+.fl-ftl{ height:100%; display:flex; align-items:center; gap:8px; padding:0 14px; border-radius:12px; background:var(--fl-card); border:1px solid rgba(255,255,255,.9); font-size:11px; font-weight:800; letter-spacing:.06em; color:var(--fl-ink); text-transform:uppercase; white-space:nowrap; } .fl-ftl i{ width:9px; height:9px; border-radius:50%; background:#22c88a; box-shadow:0 0 6px #22c88a; } .fl-ftl.warn i{ background:#f2a100; box-shadow:0 0 6px #f2a100; } .fl-ftl.crit i{ background:#e0353f; box-shadow:0 0 6px #e0353f; }
+/* ---------- PAX ---------- */
+.fl-master .fd-pax-kpis{ display:grid !important; grid-template-columns:repeat(3,1fr); gap:10px !important; margin-bottom:6px; }
+.fl-master .fd-pax-kpi{ display:flex !important; flex-direction:row !important; align-items:center; gap:12px; text-align:left !important; padding:14px 14px 14px 62px !important; border-radius:12px !important; background:var(--fl-card) !important; border:1px solid rgba(255,255,255,.9) !important; position:relative; box-shadow:0 8px 20px -14px rgba(15,42,92,.6), inset 0 1px 0 #fff; min-height:74px; }
+.fl-master .fd-pax-kpi::before{ content:''; position:absolute; left:14px; top:50%; transform:translateY(-50%); width:36px; height:36px; background:var(--fl-ico) center/contain no-repeat; }
+.fl-master .fd-pax-kpi:nth-child(1){ --fl-ico:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2312305e' stroke-width='1.6' stroke-linecap='round'><circle cx='9' cy='8' r='3.2'/><circle cx='17' cy='9' r='2.6'/><path d='M2.5 20a6.5 6.5 0 0 1 13 0M14.5 20a5 5 0 0 1 7-4.5'/></svg>"); }
+.fl-master .fd-pax-kpi:nth-child(2){ --fl-ico:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2312305e' stroke-width='1.6' stroke-linecap='round'><rect x='4' y='8' width='16' height='12' rx='2'/><path d='M9 8V6a3 3 0 0 1 6 0v2M4 13h16'/></svg>"); }
+.fl-master .fd-pax-kpi:nth-child(3){ --fl-ico:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2312305e' stroke-width='1.6' stroke-linecap='round'><rect x='5' y='4' width='14' height='17' rx='2'/><path d='M9 4h6v3H9zM9 12h6M9 16h4'/></svg>"); }
+.fl-master .fd-pax-kpi .n{ font-size:30px !important; font-weight:800 !important; color:var(--fl-ink) !important; line-height:1; } .fl-master .fd-pax-kpi .t{ font-size:11px !important; letter-spacing:.1em !important; color:var(--fl-mut) !important; text-transform:uppercase; font-weight:700; }
+.fl-master .px-wrap{ background:var(--fl-card); border:1px solid rgba(255,255,255,.9); border-radius:12px; padding:8px 10px; box-shadow:0 8px 20px -14px rgba(15,42,92,.6); }
+.fl-master .px-head{ font-size:11px !important; letter-spacing:.08em; color:var(--fl-blue2) !important; font-weight:700 !important; text-transform:uppercase; padding:6px 0 8px !important; }
+.fl-master .px-row{ padding:4px 0 !important; } .fl-master .px-in{ height:34px !important; border-radius:8px !important; border:1px solid rgba(28,60,120,.18) !important; background:#eef3fa !important; font-size:13px !important; color:var(--fl-ink) !important; font-weight:600; }
+.fl-master .px-pill{ width:20px !important; height:20px !important; border-radius:50% !important; } .fl-master .px-pill.bad{ background:#e0353f url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round'><path d='M12 7v6M12 17h.01'/></svg>") center/12px no-repeat !important; } .fl-master .px-pill.ok{ background:#1f9d5c url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><path d='m5 12 5 5L20 7'/></svg>") center/12px no-repeat !important; }
+.fl-master .px-del{ width:30px !important; height:30px !important; border-radius:8px !important; border:1px solid rgba(28,60,120,.18) !important; background:#fff !important; color:var(--fl-mut) !important; }
+.fl-master .px-actions .px-btn{ height:44px !important; border-radius:11px !important; border:1px solid rgba(28,60,120,.22) !important; background:#fff !important; color:var(--fl-ink) !important; font-size:13.5px !important; font-weight:700 !important; padding:0 16px !important; box-shadow:0 6px 14px -10px rgba(15,42,92,.6); }
+.fl-master .px-count{ font-size:12px !important; font-weight:700; }
+.fl-master .px-manifest{ height:52px !important; border-radius:14px !important; background:linear-gradient(180deg,#2f7bff,#1747b8) !important; color:#fff !important; font-size:15px !important; font-weight:700 !important; box-shadow:0 12px 26px -12px rgba(47,123,255,.95), 0 0 0 1px rgba(255,255,255,.5) !important; border:none !important; }
+/* ---------- TRIP FOLDER ---------- */
+.fl-master .fd-doc-row{ display:grid !important; grid-template-columns:44px 1fr auto auto; gap:12px; align-items:center; background:var(--fl-card) !important; border:1px solid rgba(255,255,255,.9) !important; border-radius:12px !important; padding:12px 14px !important; margin:0 0 8px !important; box-shadow:0 8px 20px -14px rgba(15,42,92,.6), inset 0 1px 0 #fff; }
+.fl-master .fd-doc-row::before{ content:''; width:34px; height:34px; background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231c5fd6' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><path d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'/><path d='M14 2v6h6M8 13h8M8 17h5'/></svg>") center/contain no-repeat; }
+.fl-master .fd-doc-row .dn{ font-size:15px !important; font-weight:700 !important; color:var(--fl-ink) !important; }
+.fl-master .fd-upload-btn{ height:40px !important; padding:0 18px !important; border-radius:10px !important; border:1.5px solid var(--fl-blue2) !important; background:#fff !important; color:var(--fl-ink) !important; font-size:14px !important; font-weight:700 !important; display:inline-flex !important; align-items:center; gap:8px; cursor:pointer; } .fl-master .fd-upload-btn svg{ width:16px !important; height:16px !important; stroke:var(--fl-blue2) !important; }
+.fl-master .fd-doc-row .fd-badge{ height:36px; display:inline-flex; align-items:center; gap:7px; padding:0 14px !important; border-radius:10px !important; font-size:13px !important; font-weight:700 !important; min-width:108px; justify-content:center; }
+.fl-master .fd-doc-row .fd-badge.green{ background:#d9f5e3 !important; color:#177a41 !important; } .fl-master .fd-doc-row .fd-badge.green::before{ content:'✓'; width:16px; height:16px; border-radius:50%; background:#1f9d5c; color:#fff; font-size:10px; display:flex; align-items:center; justify-content:center; }
+.fl-master .fd-doc-row .fd-badge.amber{ background:#ffe6a3 !important; color:#7a5200 !important; } .fl-master .fd-doc-row .fd-badge.amber::before{ content:''; width:14px; height:14px; border-radius:50%; border:2px solid #b8781a; }
+.fl-master .fd-trip-extras{ background:var(--fl-card); border:1px solid rgba(255,255,255,.9); border-radius:14px; padding:14px 16px; margin-top:12px; box-shadow:0 10px 24px -14px rgba(15,42,92,.7); }
+.fl-master .fd-trip-lbl{ font-size:12px !important; letter-spacing:.1em !important; color:var(--fl-mut) !important; font-weight:700; text-transform:uppercase; margin-bottom:8px; }
+.fl-master .fd-trip-remarks{ width:100%; min-height:110px; border-radius:10px !important; border:1px solid rgba(28,60,120,.18) !important; background:#eef3fa !important; font-size:13px !important; padding:10px 12px !important; color:var(--fl-ink); }
+.fl-master .fd-trip-close-btn{ width:100%; height:56px !important; border-radius:14px !important; margin-top:12px !important; font-size:18px !important; font-weight:800 !important; background:linear-gradient(180deg,#34c27a,#1f9d5c) !important; color:#fff !important; border:none !important; display:flex; align-items:center; justify-content:center; gap:10px; box-shadow:0 12px 26px -12px rgba(31,157,92,.9), 0 0 0 1px rgba(255,255,255,.5); cursor:pointer; }
+.fl-master .fd-trip-close-btn.blocked{ background:linear-gradient(180deg,#c8d3e2,#aebbcd) !important; color:#fff !important; box-shadow:none !important; cursor:not-allowed; }
+.fl-master .fd-trip-hint{ text-align:center; font-size:12px !important; color:var(--fl-mut) !important; margin-top:8px; }
+.fl-master .fd-body > div[style*="margin:-4px 0 10px"]{ display:none; } .fl-master .fd-body > .fl-bnwrap-trip:first-child + .fd-section{ display:none !important; } /* titre déjà dans le bandeau TRIP FOLDER */ /* sous-titre déplacé dans le bandeau TRIP FOLDER */
+/* ---------- VIGIL — bandeau assistant (image de la maquette + message réel) ---------- */
+.fl-vigil{ position:relative; margin-top:14px; width:100%; aspect-ratio:600/116; background:center/100% 100% no-repeat; border-radius:12px; }
+.fl-vigil .msg{ position:absolute; left:36%; top:34%; width:38.5%; height:37%; background:#f4f8fd; border-radius:7px; box-shadow:0 4px 10px -6px rgba(0,0,0,.5); padding:0 22px 0 10px; display:flex; flex-direction:column; justify-content:center; gap:2px; overflow:hidden; cursor:pointer; }
+.fl-vigil .msg b{ font-size:11.5px; font-weight:800; color:#12305e; line-height:1.15; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } .fl-vigil .msg span{ font-size:9.5px; color:#5b6b86; line-height:1.15; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.fl-vigil .msg i{ position:absolute; right:8px; top:50%; transform:translateY(-50%); width:8px; height:8px; border-radius:50%; background:#22c88a; box-shadow:0 0 6px #22c88a; } .fl-vigil .msg i.warn{ background:#f2a100; box-shadow:0 0 6px #f2a100; } .fl-vigil .msg i.crit{ background:#e0353f; box-shadow:0 0 6px #e0353f; } .fl-vigil .msg i.grey{ background:#8d99ad; box-shadow:none; }
+.fl-vigil .act{ position:absolute; left:75.6%; top:34%; width:23%; height:29%; border-radius:7px; background:#0c1f47; border:1px solid rgba(255,255,255,.35); color:#fff; font-size:10.5px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:6px; cursor:pointer; white-space:nowrap; overflow:hidden; padding:0 8px; }
+.fl-vigil .act:hover{ background:#163a78; } .fl-vigil .act svg{ width:13px; height:13px; flex-shrink:0; } .fl-vigil .act::after{ content:'›'; font-size:15px; margin-left:auto; }
+@media (max-width:1000px){ .fd-root.fl-master{ width:100vw !important; } }
+
+/* ============================================================================
+   AJOUTS DU PORTAGE — rien de tout ceci n'est dans l'annexe.
+
+   1. Le tiroir de Dispatch est en position fixe, la ou le panneau de l'annexe
+      etait un aside du meme document. La largeur de 600px que le bloc impose
+      est celle de l'annexe ; il faut seulement la rendre compatible avec un
+      element fixe et avec le z-index de l'en-tete de l'application.
+   2. L'annexe n'ouvrait jamais ce panneau sur un avion au sol : la fiche « sol »
+      garde donc la feuille sombre de flightfile.css, et .fl-master n'est pas
+      pose sur elle.
+   ============================================================================ */
+.drawer.fd-root.fl-master{
+  position: fixed; top: 0; right: 0; bottom: 0;
+  max-width: 100vw;
+  overflow-y: auto;
+  z-index: 300;                 /* au-dessus de la TopBar, qui est a 200 */
+}
+.drawer.fd-root.fl-master .detail-head{ padding: 0 14px !important; }
+
+/* Le heros de l'annexe est injecte par le JSX la ou TNPFL.decorate() le
+   plantait : en tete du corps de l'onglet FLIGHT. Il n'a pas de marge propre
+   dans le bloc de l'annexe parce qu'il y etait enveloppe dans un div anonyme. */
+.fd-root.fl-master .fd-body > .fl-hero:first-child{ margin-top: 2px; }
+
+
+/* Le masque d'heure de l'annexe portait ses dimensions en style inline dans le
+   HTML genere (tnpMaskedTimeHtml, l. 14507) ; en React elles sont ici, aux
+   memes valeurs. Le bloc master les reprend deja pour la version « master »
+   (.fl-master .tnp-time-mask input) : ce qui suit n'habille que la fiche sans
+   theme, et le separateur, qui n'avait pas de classe chez elle. */
+.fd-root .tnp-time-mask{ display:inline-flex; align-items:center; gap:3px; }
+.fd-root .tnp-time-mask input{
+  width:26px; text-align:center; padding:3px 0;
+  border:1px solid var(--line); border-radius:4px;
+  font-family:var(--mono); font-size:11px;
+  background:transparent; color:inherit;
+}
+.fd-root .tnp-time-sep{ font-weight:700; color:var(--text-faint,#5b6178); }
+.fd-root .tnp-time-ok{ color:#3fb950; flex:none; }
+
+/* L'annexe visait son bouton MVT par l'attribut onclick — un selecteur qu'un
+   composant React ne peut pas produire. Meme declaration, visee par la classe. */
+.fl-master .atd-row > .fd-mvt{
+  height:30px; padding:0 12px !important; border-radius:9px !important;
+  font-size:12px !important;
+  background:linear-gradient(180deg,#ffc633,#e6a800) !important;
+  color:#1d2b4f !important; border:none !important;
+  box-shadow:0 6px 14px -8px rgba(230,168,0,.9);
+}
+.fl-master .atd-row > .fd-mvt:disabled{ opacity:.55; cursor:progress; }
+.fl-master .tnp-time-sep{ color:var(--fl-mut); font-size:14px; }
+.fl-master .tnp-time-ok{ color:#1f9d5c; }
+
+/* ────────────────────────────────────────────────────────────────────────
+   Les classes du PORTAGE, relues sur fond clair.
+
+   flightfile.css ecrit ses quelques classes propres (.fd-sub, .fd-finding,
+   .fd-verdict, .fd-risk) avec les jetons de la coque — --text, --text-faint,
+   --bg-panel-2 — qui sont ceux du theme sombre de l'application. Le panneau
+   master, lui, est une feuille CLAIRE : un « CAMO REASON » gris clair sur du
+   verre bleu pale ne se lit pas.
+
+   Plutot que de recopier une regle par classe, on redefinit les jetons sur la
+   racine du panneau, avec la palette de l'annexe elle-meme (--fl-ink,
+   --fl-mut, --fl-line). Toute classe du portage qui entre dans le panneau
+   devient lisible sans qu'on ait a y penser.
+   ──────────────────────────────────────────────────────────────────────── */
+.fd-root.fl-master{
+  --text: #12305e;
+  --text-dim: #40567d;
+  --text-faint: #5b6b86;
+  --line: rgba(28,60,120,.16);
+  --line-soft: rgba(28,60,120,.10);
+  --bg-panel: rgba(255,255,255,.82);
+  --bg-panel-2: rgba(255,255,255,.62);
+  --bg-raised: #ffffff;
+}
+
+/* La bande VIGIL et la grille d'equipage : quelques mesures que l'annexe
+   portait en style inline sur des elements que son JS construisait. */
+.fl-master .fl-vigil{ background-image: url(/flabel/vigil.jpg); }
+.fl-master .fd-crew-row{ text-align:left; }
+.fl-master .fd-crew-meta{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:7px; }
+.fl-master .fd-crew-why{ margin-top:6px; font-size:11px; color:var(--fl-mut); }
+
+/* ────────────────────────────────────────────────────────────────────────
+   LA GEOMETRIE DE L'ANNEXE, RETABLIE.
+
+   Mesure faite sur les deux panneaux ouverts cote a cote, meme fenetre de
+   1440 px, sur la meme ligne (TS-NPQ) :
+
+                        annexe     ici (avant)
+     panneau            600        600   ok
+     en-tete, onglets   563        563   ok
+     CORPS              563        527   -36
+     heros              563x130    527x122
+     grille             563        527
+     police de base     16px       13px
+
+   Deux causes, toutes les deux de mon fait :
+
+   1. .fd-body portait « padding:0 18px 22px », une regle de MON habillage de
+      tiroir. Le corps de l'annexe n'a que « padding-top:12px » : ses blocs
+      touchent les bords du panneau, et c'est ce qui leur donne leur ampleur.
+      Les 36 px perdus se retrouvaient sur le heros, la grille et les tuiles.
+
+   2. La coque de l'application ecrit « body { font-size:13px } », la ou le
+      prototype est un document nu a 16 px. Le bloc master fixe des tailles en
+      pixels presque partout, mais pas les hauteurs de ligne ni ce qui herite :
+      les cellules sortaient 5 px plus hautes et les libelles 2 px plus bas.
+      Le panneau reprend donc la base du document sur laquelle il a ete dessine :
+      16 px, et surtout « line-height:normal ». La coque impose 1.45, ce qui
+      etirait chaque libelle de deux pixels et la barre d'onglets de huit.
+   ──────────────────────────────────────────────────────────────────────── */
+.fd-root.fl-master{ font-size: 16px; line-height: normal; }
+.fd-root.fl-master .fd-body{ padding: 12px 0 0 !important; }
+
+/* Les deux regles que l'annexe injecte depuis son JS (l. 72509) plutot que
+   depuis sa feuille, et que l'extraction du bloc master ne pouvait donc pas
+   contenir. Son commentaire dit pourquoi : « barre d'onglets : icones alignees
+   sur une meme ligne ». Sans elles, un onglet au libelle court (FLIGHT) et un
+   onglet au libelle sur deux lignes (AIRPORT INFO) placent leurs icones a des
+   hauteurs differentes, et la barre gagne huit pixels. Copiees telles quelles. */
+.fd-root .fd-tab-ico{
+  height: 20px; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.fd-root .fd-tab .lbl{
+  display: flex; align-items: flex-start; justify-content: center;
+  min-height: 2.2em;
+}

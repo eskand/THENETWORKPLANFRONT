@@ -10,6 +10,7 @@ import {
   fetchTrack,
   fetchLiveTraffic,
   fetchTripSupportBoard,
+  recordMovement,
   sendMvt,
 } from '../api/operations'
 
@@ -152,6 +153,27 @@ export function useSendMvt() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: sendMvt,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['leg'] })
+      queryClient.invalidateQueries({ queryKey: ['timeline'] })
+      queryClient.invalidateQueries({ queryKey: ['dispatch-board'] })
+    },
+  })
+}
+
+/**
+ * Enregistrer une heure reelle (ATD / ATA).
+ *
+ * <p>Le prototype gardait l'heure dans son objet en memoire ; ici elle part
+ * dans {@code ops.leg_movements}, et les ecrans qui lisent l'etape — tableau
+ * de dispatch, timeline, suivi de vol — sont rafraichis derriere. Une heure
+ * reelle change le retard, la disponibilite de l'avion et le temps de service
+ * de l'equipage : la garder dans un seul ecran serait la perdre.
+ */
+export function useRecordMovement() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ legId, kind, at }) => recordMovement(legId, kind, at),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['leg'] })
       queryClient.invalidateQueries({ queryKey: ['timeline'] })

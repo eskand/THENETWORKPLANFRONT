@@ -7,7 +7,7 @@ import { isoDate } from '../../lib/format'
 import BoardToolbar from './components/BoardToolbar'
 import FlightTable from './components/FlightTable'
 import KpiStrip from './components/KpiStrip'
-import LegDrawer from './components/LegDrawer'
+import FlightFile from '../../components/flightfile/FlightFile'
 
 /** Les onglets que le tableau connait — voir TABS dans BoardToolbar. */
 const TAB_IDS = [
@@ -98,7 +98,7 @@ export default function DispatchPage() {
         </main>
       </div>
 
-      <LegDrawer row={selected} onClose={() => setSelected(null)} />
+      <FlightFile row={selected} onClose={() => setSelected(null)} />
     </>
   )
 }

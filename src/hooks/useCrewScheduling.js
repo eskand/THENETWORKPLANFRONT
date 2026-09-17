@@ -1,6 +1,8 @@
 import { useMemo } from 'react'
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
-import { assignSeat, fetchSchedulingBoard, unassignSeat } from '../api/crewScheduling'
+import {
+  assignSeat, fetchSchedulingBoard, recordCheckTimes, unassignSeat,
+} from '../api/crewScheduling'
 
 /**
  * Scheduling is a live picture — two planners work on the same day — so it
@@ -37,6 +39,11 @@ export function useAssignSeat() {
 
 export function useUnassignSeat() {
   return useSchedulingMutation(unassignSeat)
+}
+
+/** Les heures de prise et de fin de service, saisies depuis le dossier de vol. */
+export function useRecordCheckTimes() {
+  return useSchedulingMutation(({ assignmentId, ...times }) => recordCheckTimes(assignmentId, times))
 }
 
 /**

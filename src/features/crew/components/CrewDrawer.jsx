@@ -14,7 +14,7 @@ const STATUS_TONE = {
 /**
  * The crew file, opened from the list.
  *
- * Structurally the same drawer as LegDrawer: a head with the verdict, then the
+ * Structurally the same drawer as the flight file: a head with the verdict, then the
  * findings grouped by what they mean. Here the "verdict" is the document state
  * of the file, and the groups are qualifications, duty and absences.
  */

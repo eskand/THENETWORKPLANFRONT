@@ -13,6 +13,18 @@ export async function fetchDispatchBoard({ date, tab, fleet, base }) {
   return data
 }
 
+/**
+ * GET /v1/dispatch/legs/{id} — one leg, in the shape the board uses.
+ *
+ * <p>The flight file is one screen opened from two places. It reads one shape,
+ * so the Dispatch board and the Flight Timeline cannot end up telling a
+ * dispatcher two different things about the same leg.
+ */
+export async function fetchDispatchLeg(legId) {
+  const { data } = await client.get(`/dispatch/legs/${legId}`)
+  return data
+}
+
 /** GET /v1/legs/{id}/readiness — what is missing before this leg can go. */
 export async function fetchLegReadiness(legId) {
   const { data } = await client.get(`/legs/${legId}/readiness`)

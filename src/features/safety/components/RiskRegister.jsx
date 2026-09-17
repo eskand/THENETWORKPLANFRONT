@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { Plus } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import Badge from '../../../components/Badge'
 import { LoadingState } from '../../../components/States'
 import { useHazardRegister, useHazardReview } from '../../../hooks/useCommercial'
@@ -17,6 +19,60 @@ import { EMPTY, dayMonthYear } from '../../../lib/format'
  * than hard-coded here: a second copy of that scale would disagree with the
  * first the day the operator revised it.
  */
+
+/**
+ * Les deux echelles que l'annexe A4 pose a cote de la matrice.
+ *
+ * <b>Une couleur sans son echelle est une decoration.</b> Un C3 orange ne dit
+ * rien tant qu'on ne lit pas que « tolerable » veut dire « attenuation requise
+ * et documentee » — et c'est cette phrase, pas la couleur, qu'un auditeur
+ * demande. Les bornes sont celles de la table de l'exploitant.
+ */
+function Scales() {
+  const tolerability = [
+    ['intolerable', 'Intolerable — index ≥ 15', 'Stop or mitigate before operating'],
+    ['tolerable', 'Tolerable — 10 to 14', 'Mitigation required and documented'],
+    ['watch', 'Tolerable — 5 to 9', 'Monitor, verify controls'],
+    ['acceptable', 'Acceptable — 1 to 4', 'Routine monitoring'],
+  ]
+  const severity = [
+    ['A', 'Catastrophic', 'Multiple, multiple fatalities'],
+    ['B', 'Hazardous', 'Large reduction in safety margins, serious injury'],
+    ['C', 'Major', 'Significant reduction in safety margins, incident'],
+    ['D', 'Minor', 'Nuisance, operating limitations, use of contingency'],
+    ['E', 'Negligible', 'Little or no consequence'],
+  ]
+
+  return (
+    <div className="rm-scales">
+      <div className="rm-scale">
+        <h4>Tolerability</h4>
+        {tolerability.map(([kind, title, hint]) => (
+          <div className="rm-scale__row" key={title}>
+            <span className={`rm-scale__dot rm-scale__dot--${kind}`} />
+            <div>
+              <b>{title}</b>
+              <i>{hint}</i>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="rm-scale">
+        <h4>Severity scale</h4>
+        {severity.map(([code, title, hint]) => (
+          <div className="rm-scale__row" key={code}>
+            <span className="rm-scale__code">{code}</span>
+            <div>
+              <b>{title}</b>
+              <i>{hint}</i>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
 
 const SEVERITY_LABEL = {
   A: 'Catastrophic', B: 'Hazardous', C: 'Major', D: 'Minor', E: 'Negligible',
@@ -38,6 +94,7 @@ const IDENTIFICATION = {
 }
 
 export default function RiskRegister() {
+  const navigate = useNavigate()
   const [mode, setMode] = useState('residual')
   const [selected, setSelected] = useState(null)
   const [cell, setCell] = useState(null)
@@ -64,7 +121,23 @@ export default function RiskRegister() {
 
   return (
     <>
-      <div className="kpi-strip">
+      <div className="page-hdr">
+        <div>
+          <div className="page-title">Safety Risk Register</div>
+          <div className="page-sub">ICAO Doc 9859 5×5 matrix · hazard → consequence → control → residual risk</div>
+        </div>
+        <div className="btn-row">
+          {/* Un danger se declare la ou il est constate : le formulaire de
+              declaration alimente le registre, et un deuxieme point d'entree
+              ici produirait deux dangers pour un seul fait. */}
+          <button type="button" className="btn-p"
+                  onClick={() => navigate('/safety-reports')}>
+            <Plus size={13} /> Add hazard
+          </button>
+        </div>
+      </div>
+
+      <div className="kpi-row">
         <Kpi label="Registered hazards" value={data.hazards.length} hint="on the register" />
         <Kpi label="Open" value={data.open} hint="no controls yet in place"
              accent="var(--attention-fg)" alarm={data.open > 0} />
@@ -74,10 +147,10 @@ export default function RiskRegister() {
              accent="var(--attention-fg)" alarm={data.reviewOverdue > 0} />
       </div>
 
-      <section className="panel">
-        <header className="panel__head">
+      <section className="card">
+        <header className="card-hdr">
           <h2>ICAO 5×5 risk matrix</h2>
-          <div className="seg">
+          <div className="mtx-toggle">
             <button type="button" className={residual ? undefined : 'is-active'}
                     onClick={() => setMode('initial')}>
               Initial
@@ -108,6 +181,8 @@ export default function RiskRegister() {
           <b>{residual ? 'residual risk after controls' : 'initial risk before controls'}</b>.
           The figure in the corner of a cell is how many registered hazards sit in it.
         </p>
+
+        <Scales />
 
         {cell ? (
           <div className="rm-cell-detail">
@@ -146,10 +221,10 @@ export default function RiskRegister() {
       </section>
 
       <div className="sms-split">
-        <section className="panel">
-          <header className="panel__head">
+        <section className="card">
+          <header className="card-hdr">
             <h2>Registered hazards</h2>
-            <span className="panel__count">{data.hazards.length}</span>
+            <span className="mtx-note">{data.hazards.length}</span>
           </header>
           <table className="table">
             <thead>
@@ -240,7 +315,7 @@ function Row({ severity, matrix, onPick }) {
 function HazardFile({ hazard, review }) {
   if (!hazard) {
     return (
-      <aside className="panel sms-file">
+      <aside className="card sms-file">
         <div className="state" style={{ padding: '44px 8px' }}>
           <h3>No hazard selected</h3>
           <p>Select a row to open its file: the consequence, the barriers and what they buy.</p>
@@ -250,7 +325,7 @@ function HazardFile({ hazard, review }) {
   }
 
   return (
-    <aside className="panel sms-file">
+    <aside className="card sms-file">
       <header className="sms-file__head">
         <div>
           <div className="sms-file__ref">{hazard.reference}</div>
@@ -357,16 +432,23 @@ function Cell({ label, value, alarm }) {
   )
 }
 
+/**
+ * Une tuile de l'annexe.
+ *
+ * <p>Les pages appellent encore ce helper avec leurs propres arguments ; il
+ * rend maintenant la carte du prototype. La couleur vient de l'etat — un
+ * chiffre en alerte prend le rouge de l'annexe — et l'icone reste neutre :
+ * ces trois pages n'en declarent pas, et en inventer une par tuile aurait
+ * ajoute un symbole que l'annexe ne porte pas.
+ */
 function Kpi({ label, value, hint, accent, alarm }) {
+  const tone = alarm ? 'c2' : accent === 'var(--pending-fg)' ? 'c5'
+    : accent === 'var(--ready-fg)' ? 'c4' : 'c1'
   return (
-    <div className="kpi" style={{
-      '--kpi-accent': accent ?? 'var(--accent-orange)',
-      '--kpi-value': alarm ? accent : undefined,
-    }}>
-      <span className="kpi__corners" />
-      <div className="eyebrow">{label}</div>
-      <div className="kpi__value">{value}</div>
-      <div className="kpi__hint">{hint}</div>
+    <div className={`kc ${tone}`}>
+      <div className="kc-lbl">{label}</div>
+      <div className="kc-val">{value}</div>
+      <div className="kc-sub">{hint}</div>
     </div>
   )
 }

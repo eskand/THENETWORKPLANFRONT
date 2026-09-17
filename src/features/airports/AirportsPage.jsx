@@ -37,19 +37,26 @@ export default function AirportsPage() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [selected, setSelected] = useState(null)
 
-  /* La recherche part au serveur : neuf mille fiches ne se filtrent pas dans
-     le navigateur, et l'annuaire n'a d'interet que complet. */
+  /* Tout le filtrage part au serveur — y compris la region, qui se filtrait
+     ici sur la liste complete et obligeait donc a la charger entiere. */
+  const term = query.trim()
   const filters = useMemo(
-    () => ({ search: query.trim() || undefined, usedOnly }),
-    [query, usedOnly],
+    () => ({ search: term || undefined, region: region || undefined, usedOnly }),
+    [term, region, usedOnly],
   )
-  const list = useAirports(filters)
+
+  /* RIEN NE PART TANT QU'ON N'A RIEN DEMANDE. L'ecran le disait deja dans son
+     etat vide — « Type an ICAO, IATA, city or name » — mais la requete partait
+     quand meme, sans critere, et l'annuaire repondait ses 9 584 fiches : quatre
+     megaoctets a analyser et autant de lignes a poser dans le DOM. C'etait la
+     table a vingt-six lignes d'avant V51 ; ce ne l'est plus. */
+  const asked = term.length >= 2 || Boolean(region) || usedOnly
+  const list = useAirports(filters, asked)
   const detail = useAirportDetail(selected)
 
-  const rows = useMemo(() => {
-    const all = list.data ?? []
-    return region ? all.filter((row) => row.airport.region === region) : all
-  }, [list.data, region])
+  const rows = list.data?.rows ?? []
+  const matched = list.data?.matched ?? 0
+  const capped = list.data?.capped ?? false
 
   const regionName = REGIONS.find(([id]) => id === region)?.[1]
 
@@ -139,7 +146,16 @@ export default function AirportsPage() {
             </label>
 
             <div className="apd__count">
-              {list.isFetching ? 'searching…' : `${rows.length} aerodrome${rows.length === 1 ? '' : 's'}`}
+              {!asked
+                ? 'type two characters, pick a region, or tick the box'
+                : list.isFetching
+                  ? 'searching…'
+                  : capped
+                    /* On dit ce qu'on montre ET ce qu'on a trouve : « 200 »
+                       sur un millier laisserait planifier contre une liste
+                       qu'on croit complete. */
+                    ? `${rows.length} of ${matched} — narrow the search`
+                    : `${rows.length} aerodrome${rows.length === 1 ? '' : 's'}`}
               {regionName ? ` · ${regionName}` : ''}
             </div>
 
@@ -170,9 +186,11 @@ export default function AirportsPage() {
                 ))
               ) : (
                 <div className="apd__empty">
-                  {query.trim()
-                    ? 'No aerodrome matches that search.'
-                    : 'Type an ICAO, IATA, city or name to search the directory.'}
+                  {!asked
+                    ? 'Type an ICAO, IATA, city or name to search the directory — or pick a region.'
+                    : list.isFetching
+                      ? 'Searching…'
+                      : 'No aerodrome matches that search.'}
                 </div>
               )}
             </div>

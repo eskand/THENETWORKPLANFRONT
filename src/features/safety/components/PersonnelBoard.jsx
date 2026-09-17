@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import Badge from '../../../components/Badge'
 import { LoadingState } from '../../../components/States'
 import { useCrewList } from '../../../hooks/useCrew'
@@ -34,6 +35,7 @@ const STATE_LABEL = {
 }
 
 export default function PersonnelBoard({ accountability }) {
+  const navigate = useNavigate()
   const [filter, setFilter] = useState('all')
   const crew = useCrewList({ activeOnly: true })
 
@@ -56,39 +58,114 @@ export default function PersonnelBoard({ accountability }) {
     return <LoadingState label="Reading the personnel register…" />
   }
 
+  /* La competence SMS par role : combien de personnes de ce role sont a jour
+     de leurs trois horloges. Le compte vient du registre equipage, pas d'un
+     tableau de formation tenu a part qui divergerait le premier jour. */
+  const byRole = []
+  const roles = new Map()
+  people.forEach((person) => {
+    const role = person.mainRole ?? 'Unassigned'
+    if (!roles.has(role)) roles.set(role, { role, total: 0, current: 0 })
+    const entry = roles.get(role)
+    entry.total += 1
+    if (person.state === 'CURRENT') entry.current += 1
+  })
+  roles.forEach((entry) => byRole.push(entry))
+  byRole.sort((a, b) => b.total - a.total)
+
+  const compliant = people.filter((person) => person.state === 'CURRENT').length
+  const compliance = people.length === 0 ? 0 : Math.round((compliant / people.length) * 100)
+
   return (
     <>
-      <div className="kpi-strip">
-        <Kpi label="Licence holders" value={people.length} hint="on the crew register" />
+      <div className="page-hdr">
+        <div>
+          <div className="page-title">Personnel &amp; Competence</div>
+          <div className="page-sub">Every person whose duties affect safety — licences, medicals, recurrent training
+            and SMS competence</div>
+        </div>
+        <div className="btn-row">
+          <button type="button" className="btn-o" onClick={() => navigate('/crew-management')}>
+            Open Crew Management
+          </button>
+          <button type="button" className="btn-o" onClick={() => navigate('/training')}>
+            Open Training
+          </button>
+        </div>
+      </div>
+
+      <div className="kpi-row">
+        <Kpi label="Personnel on the register" value={people.length} hint="on the crew register" />
         <Kpi label="Not current" value={expired}
              hint={expired ? 'must not be rostered' : 'none'}
              accent="var(--attention-fg)" alarm={expired > 0} />
         <Kpi label="Expiring within 30 days" value={soon} hint="schedule renewal"
              accent="var(--pending-fg)" />
-        <Kpi
-          label="Accountable Manager"
-          value={accountability?.accountableManager?.split('—')[0]?.trim() ?? EMPTY}
-          hint="ICAO Annex 19 · EASA ORO.GEN.210"
-          small
-        />
+        <Kpi label="SMS training compliance" value={`${compliance}%`}
+             hint={`${compliant} of ${people.length} personnel`}
+             accent="var(--ready-fg)" />
       </div>
 
-      <section className="panel">
-        <header className="panel__head">
-          <h2>Just Culture</h2>
-        </header>
-        <p className="sms-note">
-          Reporting an honest error will not of itself lead to disciplinary action. Wilful
-          violations and destructive acts remain outside the protection of the policy.
-          Confidential reports are de-identified by the Safety Manager before any analysis is
-          shared.
-        </p>
-      </section>
+      <div className="sms-row sms-row--2">
+        <section className="card">
+          <div className="card-hdr">
+            <h3 className="card-title">SMS training and competence by role</h3>
+            <span className="mtx-note">ICAO Annex 19 · safety promotion</span>
+          </div>
+          {byRole.map((entry) => {
+            const percent = entry.total === 0 ? 0
+              : Math.round((entry.current / entry.total) * 100)
+            const colour = percent >= 95 ? 'var(--ready-fg)'
+              : percent >= 80 ? 'var(--pending-fg)' : 'var(--attention-fg)'
+            return (
+              <div className="sms-domain" key={entry.role}>
+                <div className="sms-domain__name">{entry.role}</div>
+                <div className="sms-domain__bar">
+                  <div className="sms-domain__seg"
+                       style={{ width: `${percent}%`, background: colour }} />
+                </div>
+                <div className="sms-domain__count" style={{ color: colour }}>
+                  {entry.current}/{entry.total}
+                </div>
+              </div>
+            )
+          })}
+          {byRole.length === 0 ? (
+            <p className="mtx-note">Nobody is on the crew register yet.</p>
+          ) : null}
+        </section>
 
-      <section className="panel">
-        <header className="panel__head">
+        <section className="card">
+          <div className="card-hdr">
+            <h3 className="card-title">Just Culture — reporting behaviour</h3>
+          </div>
+          <p className="mtx-note">
+            Reporting an honest error will not of itself lead to disciplinary action. Wilful
+            violations and destructive acts remain outside the protection of the policy.
+            Confidential reports are de-identified by the Safety Manager before any analysis is
+            shared.
+          </p>
+          <div className="acc-row">
+            <span>Accountable Manager</span>
+            <b>{accountability?.accountableManager ?? EMPTY}
+              <i>ICAO Annex 19 · EASA ORO.GEN.210</i></b>
+          </div>
+          <div className="acc-row">
+            <span>Safety Manager</span>
+            <b>{accountability?.safetyManager ?? EMPTY}
+              <i>focal point for the management system</i></b>
+          </div>
+          <div className="acc-row">
+            <span>Just Culture policy</span>
+            <b>Active<i>declared for the whole platform</i></b>
+          </div>
+        </section>
+      </div>
+
+      <section className="card">
+        <header className="card-hdr">
           <h2>Currency</h2>
-          <div className="sms-filters">
+          <div className="filter-bar">
             {FILTERS.map(([key, label]) => {
               const count = key === 'all'
                 ? people.length
@@ -142,7 +219,7 @@ export default function PersonnelBoard({ accountability }) {
             ) : null}
           </tbody>
         </table>
-        <p className="sms-note">Source: the Crew Management and Training modules.</p>
+        <p className="mtx-note">Source: the Crew Management and Training modules.</p>
       </section>
     </>
   )
@@ -176,17 +253,23 @@ function Clock({ date }) {
   )
 }
 
-function Kpi({ label, value, hint, accent, alarm, small }) {
+/**
+ * Une tuile de l'annexe.
+ *
+ * <p>Les pages appellent encore ce helper avec leurs propres arguments ; il
+ * rend maintenant la carte du prototype. La couleur vient de l'etat — un
+ * chiffre en alerte prend le rouge de l'annexe — et l'icone reste neutre :
+ * ces trois pages n'en declarent pas, et en inventer une par tuile aurait
+ * ajoute un symbole que l'annexe ne porte pas.
+ */
+function Kpi({ label, value, hint, accent, alarm }) {
+  const tone = alarm ? 'c2' : accent === 'var(--pending-fg)' ? 'c5'
+    : accent === 'var(--ready-fg)' ? 'c4' : 'c1'
   return (
-    <div className="kpi" style={{
-      '--kpi-accent': accent ?? 'var(--accent-orange)',
-      '--kpi-value': alarm ? accent : undefined,
-      '--kpi-size': small ? '15px' : undefined,
-    }}>
-      <span className="kpi__corners" />
-      <div className="eyebrow">{label}</div>
-      <div className="kpi__value">{value}</div>
-      <div className="kpi__hint">{hint}</div>
+    <div className={`kc ${tone}`}>
+      <div className="kc-lbl">{label}</div>
+      <div className="kc-val">{value}</div>
+      <div className="kc-sub">{hint}</div>
     </div>
   )
 }

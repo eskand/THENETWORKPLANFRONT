@@ -19,6 +19,7 @@ const SECTIONS = [
   ['thresholds', 'Alert thresholds'],
   ['spi', 'Targets'],
   ['policy', 'Policy'],
+  ['store', 'Record store'],
 ]
 
 export default function SafetySettings({ indicators, accountability }) {
@@ -37,7 +38,15 @@ export default function SafetySettings({ indicators, accountability }) {
   const safety = all.filter((entry) => entry.category === 'SAFETY')
 
   return (
-    <div className="sms-settings">
+    <>
+      <div className="page-hdr">
+        <div>
+          <div className="page-title">SMS Settings</div>
+          <div className="page-sub">Alert thresholds, organisation details and where the safety record is held</div>
+        </div>
+      </div>
+
+      <div className="sms-settings">
       <nav className="sms-settnav">
         {SECTIONS.map(([key, label]) => (
           <button
@@ -51,14 +60,14 @@ export default function SafetySettings({ indicators, accountability }) {
         ))}
       </nav>
 
-      <section className="panel">
+      <section className="card">
         {section === 'org' ? (
           <>
             <Row label="Operator" value={accountability?.operator} />
             <Row label="AOC reference" value={accountability?.aocReference} />
             <Row label="Accountable Manager" value={accountability?.accountableManager} />
             <Row label="Safety Manager" value={accountability?.safetyManager} />
-            <p className="sms-note">
+            <p className="mtx-note">
               Under EASA ORO.GEN.200 the Accountable Manager holds ultimate responsibility for
               the management system. The Safety Manager is the focal point for the development
               and maintenance of the SMS and reports directly to them.
@@ -78,7 +87,7 @@ export default function SafetySettings({ indicators, accountability }) {
                   hint={entry.description}
                 />
               ))}
-            <p className="sms-note">
+            <p className="mtx-note">
               These thresholds drive the cross-module scan. They are the operator's own warning
               margins and sit inside, not instead of, the regulatory limits held in the source
               modules.
@@ -88,7 +97,7 @@ export default function SafetySettings({ indicators, accountability }) {
 
         {section === 'spi' ? (
           <>
-            <p className="sms-note" style={{ marginTop: 0 }}>
+            <p className="mtx-note" style={{ marginTop: 0 }}>
               A target is what the operator aims to achieve; an alert level is the point at which
               performance must be reviewed by the Safety Review Board.
             </p>
@@ -142,7 +151,7 @@ export default function SafetySettings({ indicators, accountability }) {
               value={`${value('safety.morWindowHours') ?? 72} hours`}
               hint="Regulation (EU) 376/2014 Art. 4(3)"
             />
-            <p className="sms-note">
+            <p className="mtx-note">
               <b>Regulatory references applied in this module</b>
               <br />
               ICAO Annex 19 (3rd edition) — SMS framework · ICAO Doc 9859 (4th edition) — risk
@@ -152,18 +161,44 @@ export default function SafetySettings({ indicators, accountability }) {
           </>
         ) : null}
 
-        <p className="sms-note">
+        {section === 'store' ? (
+          <>
+            {/* Le prototype tient ses enregistrements dans le navigateur et
+                propose de les exporter avant de les perdre. Ici ils sont dans
+                PostgreSQL : il n'y a rien a exporter en urgence, et le dire
+                est plus utile que de recopier un bouton qui ne protege plus
+                de rien. */}
+            <Row label="Persistence" value="PostgreSQL — schema safety"
+                 hint="not the browser: closing the tab loses nothing" />
+            <Row label="Occurrence register" value="safety.occurrences" />
+            <Row label="Hazard register" value="safety.hazards, safety.hazard_controls" />
+            <Row label="Investigations"
+                 value="safety.investigations, investigation_steps, investigation_recommendations" />
+            <Row label="Assurance" value="safety.audits, safety.audit_findings, safety.spi_definitions" />
+            <Row label="Promotion" value="safety.campaigns, safety.campaign_acknowledgements" />
+            <Row label="Notifications" value="safety.notifications" />
+            <p className="mtx-note">
+              Every figure on these ten tabs is read from those tables when the page opens, and
+              none of it is cached in the browser. An occurrence recorded on one workstation is on
+              every other workstation immediately — which is the difference between a safety
+              record and a local note.
+            </p>
+          </>
+        ) : null}
+
+        <p className="mtx-note">
           These values are stored once for the whole platform and edited in{' '}
           <Link to="/settings">Settings</Link>, under Safety.
         </p>
       </section>
-    </div>
+      </div>
+    </>
   )
 }
 
 function Row({ label, value, hint }) {
   return (
-    <div className="sms-setrow">
+    <div className="acc-row">
       <span>
         {label}
         {hint ? <i>{hint}</i> : null}

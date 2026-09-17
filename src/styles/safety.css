@@ -989,3 +989,715 @@
   background: var(--bg-raised);
   color: var(--text-faint);
 }
+
+/* ============================================================
+   LES RANGEES DU PROTOTYPE.
+
+   D'OU CA VIENT. L'annexe A4 pose le tableau de bord en quatre
+   rangees — deux cartes, deux cartes, deux cartes, trois cartes —
+   et pas en grille libre. La difference n'est pas cosmetique : une
+   grille auto-fit reordonne les cartes quand la fenetre change, et
+   « profil de risque » se retrouve sous « actions correctives » sur
+   un portable alors que la premiere est la question et la seconde la
+   reponse.
+   ============================================================ */
+
+.sms-row {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 12px;
+  align-items: start;
+}
+
+.sms-row--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.sms-row--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+@media (max-width: 1180px) {
+  .sms-row--2,
+  .sms-row--3 { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* --- les boutons de l'en-tete de page --- */
+.sms-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sms-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 7px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.sms-btn:hover { background: var(--bg-raised); }
+
+.sms-btn--primary {
+  background: var(--accent-teal, #0f8ea8);
+  border-color: transparent;
+  color: #fff;
+}
+
+.sms-btn--primary:hover { filter: brightness(1.08); }
+
+/* L'icone de la tuile : le prototype la pose en haut a droite, ou
+   elle nomme la famille du chiffre sans repeter son libelle. */
+.kpi__icon {
+  position: absolute;
+  top: 10px;
+  right: 11px;
+  opacity: 0.65;
+  line-height: 0;
+}
+
+.kpi { position: relative; }
+
+/* ============================================================
+   SURVEILLANCE OPERATIONNELLE.
+
+   LA GRILLE DES MODULES. Le prototype affiche les neuf modules
+   qu'il surveille, y compris ceux qui n'ont rien trouve. Un module
+   qui annonce CLEAR dit qu'il a regarde — ce qui n'est pas la meme
+   chose qu'un module absent de la liste parce que personne ne l'a
+   branche. La nuance est exactement celle qu'un auditeur cherche.
+   ============================================================ */
+
+.mon-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+}
+
+@media (max-width: 1180px) { .mon-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 720px)  { .mon-grid { grid-template-columns: minmax(0, 1fr); } }
+
+.mon-tile {
+  font: inherit;
+  text-align: left;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  padding: 9px 11px;
+  cursor: pointer;
+}
+
+.mon-tile:hover { background: var(--bg-raised); }
+
+.mon-tile--critical { border-left-color: var(--attention-fg); }
+.mon-tile--high     { border-left-color: var(--pending-fg); }
+.mon-tile--medium   { border-left-color: var(--info-fg); }
+.mon-tile--low      { border-left-color: var(--accent-teal, #0f8ea8); }
+.mon-tile--clear    { border-left-color: var(--ready-fg); }
+
+.mon-tile__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 3px;
+}
+
+.mon-tile__name {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.mon-tile__count {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--attention-fg);
+}
+
+.mon-tile__clear {
+  margin-left: auto;
+  font-size: 8.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--ready-fg);
+}
+
+.mon-tile__scope { font-size: 9.5px; color: var(--text-faint); }
+
+.mon-tile__state {
+  font-size: 9.5px;
+  margin-top: 4px;
+  color: var(--text-dim);
+}
+
+.mon-tile--clear .mon-tile__state { color: var(--ready-fg); }
+
+/* --- la barre de filtres --- */
+.sms-filters {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 14px 0 10px;
+}
+
+.sms-chip {
+  font: inherit;
+  font-size: 11px;
+  padding: 5px 11px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.sms-chip span { font-family: var(--mono); font-size: 10px; opacity: 0.75; }
+.sms-chip:hover { background: var(--bg-raised); }
+
+.sms-chip.is-on {
+  background: var(--accent-teal, #0f8ea8);
+  border-color: transparent;
+  color: #fff;
+}
+
+/* --- une ligne de constat --- */
+.mon-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 9px 2px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.mon-row:last-child { border-bottom: 0; }
+
+.mon-row__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  margin-top: 5px;
+  flex-shrink: 0;
+}
+
+.mon-row__dot--critical { background: var(--attention-fg); }
+.mon-row__dot--high     { background: var(--pending-fg); }
+.mon-row__dot--medium   { background: var(--info-fg); }
+.mon-row__dot--low      { background: var(--ready-fg); }
+
+.mon-row__body { flex: 1; min-width: 0; }
+
+.mon-row__head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11.5px;
+}
+
+.mon-row__domain {
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  background: var(--bg-raised);
+  border-radius: 3px;
+  padding: 1px 5px;
+}
+
+.mon-row__detail { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+
+.mon-row__action {
+  font-size: 10px;
+  font-style: italic;
+  color: var(--text-faint);
+  margin-top: 2px;
+}
+
+.sms-btn--small { font-size: 10.5px; padding: 5px 9px; }
+
+.sms-scanmeta {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-faint);
+}
+
+.sms-card__note { font-size: 9.5px; color: var(--text-faint); }
+
+.kpi-strip--4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+@media (max-width: 900px) { .kpi-strip--4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* --- l'evaluation du risque vol : un tableau dense, qui defile seul --- */
+.frat { overflow-x: auto; }
+
+.frat table { width: 100%; border-collapse: collapse; }
+
+.frat th {
+  text-align: left;
+  font-size: 8.5px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  padding: 7px 9px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+.frat td {
+  font-size: 11px;
+  padding: 7px 9px;
+  border-bottom: 1px solid var(--line-soft);
+  white-space: nowrap;
+}
+
+.frat td.is-num { font-family: var(--mono); text-align: right; }
+
+.frat tbody tr:hover td { background: var(--bg-raised); }
+
+.mon-row__acts { display: flex; gap: 6px; flex-shrink: 0; }
+
+@media (max-width: 860px) {
+  .mon-row { flex-wrap: wrap; }
+  .mon-row__acts { width: 100%; padding-left: 17px; }
+}
+
+/* --- le registre des occurrences --- */
+.kpi-strip--5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+
+@media (max-width: 1250px) { .kpi-strip--5 { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 760px)  { .kpi-strip--5 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+.sms-search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  padding: 4px 9px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-faint);
+  min-width: 240px;
+}
+
+.sms-search input {
+  font: inherit;
+  font-size: 11px;
+  border: 0;
+  outline: none;
+  background: none;
+  color: var(--text);
+  width: 100%;
+}
+
+@media (max-width: 820px) { .sms-search { margin-left: 0; width: 100%; } }
+
+/* Les etiquettes d'une occurrence : la phase, la machine, le terrain — et
+   « MOR » quand l'autorite doit etre prevenue. */
+.occ-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 3px; }
+
+.occ-tag {
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  background: var(--bg-raised);
+  border-radius: 3px;
+  padding: 1px 5px;
+}
+
+.occ-tag--mor   { color: #fff; background: var(--attention-fg); }
+.occ-tag--filed { color: #fff; background: var(--ready-fg); }
+
+/* --- les deux echelles a cote de la matrice --- */
+.rm-scales {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line-soft);
+}
+
+@media (max-width: 900px) { .rm-scales { grid-template-columns: minmax(0, 1fr); } }
+
+.rm-scale h4 {
+  margin: 0 0 7px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.rm-scale__row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 3px 0;
+}
+
+.rm-scale__row b { display: block; font-size: 10.5px; font-weight: 600; color: var(--text); }
+.rm-scale__row i { display: block; font-size: 9.5px; font-style: normal; color: var(--text-faint); }
+
+.rm-scale__dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+
+.rm-scale__dot--intolerable { background: #C8202F; }
+.rm-scale__dot--tolerable   { background: #E67E22; }
+.rm-scale__dot--watch       { background: #C9A227; }
+.rm-scale__dot--acceptable  { background: #1f9d5c; }
+
+.rm-scale__code {
+  width: 15px;
+  height: 15px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--navy, #1B2D6B);
+}
+
+/* ============================================================
+   ENQUETES — la chaine des cinq pourquoi.
+
+   Le dernier maillon porte une pastille rouge parce que c'est la
+   condition organisationnelle : celle sur laquelle une action
+   corrective doit porter. Les quatre precedents sont le chemin qui
+   y mene, et les colorer pareil laisserait croire qu'on peut agir
+   n'importe ou sur la chaine.
+   ============================================================ */
+
+.inv-card {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  padding: 13px 15px;
+  margin-bottom: 12px;
+}
+
+.inv-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.inv-card__title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+  font-size: 12.5px;
+}
+
+.inv-card__ref {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  color: var(--text-faint);
+  background: var(--bg-raised);
+  border-radius: 4px;
+  padding: 2px 7px;
+}
+
+.inv-card__meta {
+  font-size: 10px;
+  color: var(--text-faint);
+  margin-top: 4px;
+}
+
+.inv-progress {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 9px 0 3px;
+}
+
+.inv-progress__bar {
+  flex: 1;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--line);
+  overflow: hidden;
+}
+
+.inv-progress__fill {
+  display: block;
+  height: 100%;
+  background: var(--accent-teal, #0f8ea8);
+}
+
+.inv-progress__fill.is-done { background: var(--ready-fg); }
+
+.inv-progress__pct {
+  font-size: 10px;
+  font-weight: 600;
+  font-family: var(--mono);
+  color: var(--accent-teal, #0f8ea8);
+}
+
+.inv-progress__pct.is-done { color: var(--ready-fg); }
+
+.inv-sec {
+  margin: 11px 0 5px;
+  font-size: 8.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.why-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 3px 0;
+}
+
+.why-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--accent-teal, #0f8ea8);
+}
+
+.why-dot--root { background: var(--attention-fg); }
+
+.why-text { font-size: 10.5px; color: var(--text); line-height: 1.55; }
+
+.inv-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+
+.inv-chip {
+  font-size: 10px;
+  color: var(--text-dim);
+  background: var(--bg-raised);
+  border: 1px solid var(--line-soft);
+  border-radius: 999px;
+  padding: 2px 9px;
+}
+
+.inv-root {
+  margin: 0;
+  font-size: 10.5px;
+  line-height: 1.6;
+  color: var(--text-dim);
+  border-left: 3px solid var(--attention-fg);
+  padding-left: 9px;
+}
+
+.inv-recos {
+  margin: 0;
+  padding-left: 17px;
+  font-size: 10.5px;
+  line-height: 1.7;
+  color: var(--text-dim);
+}
+
+.sms-none { font-size: 10px; font-style: italic; color: var(--text-faint); }
+.board b.is-good { color: var(--ready-fg); }
+.board b.is-bad  { color: var(--attention-fg); }
+
+/* --- promotion : la liste a gauche, la portee a droite --- */
+.sms-row--promo { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+
+@media (max-width: 1080px) { .sms-row--promo { grid-template-columns: minmax(0, 1fr); } }
+
+.promo-side { display: flex; flex-direction: column; gap: 12px; }
+
+.promo-reach { text-align: center; padding: 6px 0 10px; }
+
+.promo-reach__pct {
+  font-family: var(--mono);
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--accent-teal, #0f8ea8);
+}
+
+.promo-reach__hint { font-size: 10px; color: var(--text-faint); }
+
+.promo-mini { margin-bottom: 8px; }
+
+.promo-mini__head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9.5px;
+  font-family: var(--mono);
+  color: var(--text-faint);
+  margin-bottom: 3px;
+}
+
+.promo-obj {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.promo-obj:last-child { border-bottom: 0; }
+
+.promo-obj__name { font-size: 10.5px; color: var(--text-dim); }
+
+.promo-obj__val {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.promo-obj__val i { font-style: normal; font-weight: 400; font-size: 9.5px; color: var(--text-faint); }
+.promo-obj__val.is-good { color: var(--ready-fg); }
+.promo-obj__val.is-bad  { color: var(--attention-fg); }
+
+/* ============================================================
+   LES TUILES DE L'ANNEXE A4.
+
+   Portee au module. Le reste du produit utilise le `.kpi` de la
+   plateforme ; le Safety Manager reproduit l'annexe approuvee, et
+   leur donner une seule classe entrainerait tous les autres ecrans
+   la prochaine fois que l'annexe bouge.
+
+   LA COULEUR EST UNE FAMILLE, PAS UN ETAT. « Risks above tolerance »
+   est rouge qu'il affiche zero ou neuf : rouge veut dire RISQUE. Une
+   barre qui changerait de couleur avec le chiffre ferait ressembler
+   un bon mois a un autre ecran.
+   ============================================================ */
+
+.sms-kpis {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 11px;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 1250px) { .sms-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 760px)  { .sms-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+.sms-kc {
+  position: relative;
+  overflow: hidden;
+  display: block;
+  width: 100%;
+  font: inherit;
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  padding: 12px 14px;
+}
+
+.sms-kc.is-clickable { cursor: pointer; }
+.sms-kc.is-clickable:hover { background: var(--bg-raised); }
+
+/* La barre de trois pixels en bas : la famille du chiffre. */
+.sms-kc::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+}
+
+.sms-kc--cyan::after   { background: #00b4d8; }
+.sms-kc--red::after    { background: #ef4444; }
+.sms-kc--orange::after { background: #f97316; }
+.sms-kc--slate::after  { background: #64748b; }
+.sms-kc--green::after  { background: #22c55e; }
+
+.sms-kc__ico {
+  position: absolute;
+  top: 11px;
+  right: 11px;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sms-kc__ico--cyan   { background: rgba(0, 180, 216, 0.1);  color: #00b4d8; }
+.sms-kc__ico--red    { background: rgba(239, 68, 68, 0.1);  color: #ef4444; }
+.sms-kc__ico--orange { background: rgba(249, 115, 22, 0.1); color: #f97316; }
+.sms-kc__ico--slate  { background: rgba(100, 116, 139, 0.1); color: #64748b; }
+.sms-kc__ico--green  { background: rgba(34, 197, 94, 0.1);  color: #22c55e; }
+
+.sms-kc__lbl {
+  display: block;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-faint);
+  margin-bottom: 4px;
+  padding-right: 32px;
+}
+
+.sms-kc__val {
+  display: block;
+  font-size: 21px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--text);
+}
+
+.sms-kc__sub {
+  display: block;
+  font-size: 9px;
+  margin-top: 3px;
+  color: var(--text-faint);
+}
+
+/* La pastille de l'onglet Monitoring : elle dit qu'il y a du critique,
+   le compte exact se lit sur l'onglet lui-meme. */
+.sms-tab__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--attention-fg);
+  margin-left: 5px;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* La banniere du roster : verte quand le moteur FTL n'a rien trouve.
+   Pas d'icone d'alerte — une bonne nouvelle qui porte un triangle se lit
+   comme un probleme au premier coup d'oeil. */
+.sms-banner--roster-ok {
+  background: rgba(34, 197, 94, 0.06);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+.sms-banner--roster-ok .sms-banner__text {
+  color: #166534;
+  font-weight: 600;
+}

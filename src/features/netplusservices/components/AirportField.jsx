@@ -19,11 +19,14 @@ export default function AirportField({ label, value, onChange, tone, placeholder
   const [open, setOpen] = useState(false)
   const boxRef = useRef(null)
 
-  // On n'interroge l'annuaire qu'a partir de deux caracteres : en dessous, la
-  // reponse serait la base entiere.
+  /* On n'interroge l'annuaire qu'a partir de deux caracteres : en dessous, la
+     reponse serait la base entiere. La regle etait ecrite ici depuis le debut,
+     mais la requete partait quand meme avec search='' — et le serveur lisait ca
+     comme « tout », soit 9 584 fiches pour remplir une liste de huit. Le
+     deuxieme argument de useAirports est le garde-fou. */
   const search = query.trim().length >= 2 ? query.trim() : ''
-  const airports = useAirports(search ? { search } : { search: '' })
-  const rows = search ? (airports.data ?? []).slice(0, 8) : []
+  const airports = useAirports({ search, limit: 8 }, Boolean(search))
+  const rows = search ? (airports.data?.rows ?? []) : []
 
   useEffect(() => {
     if (!open) return undefined
@@ -38,7 +41,7 @@ export default function AirportField({ label, value, onChange, tone, placeholder
   // Verdict a trois etats : inconnu tant que rien n'a ete demande ou recu.
   let known = null
   if (code.length === 4 && search && !airports.isFetching) {
-    known = (airports.data ?? []).some((row) => row.airport.icao === code)
+    known = (airports.data?.rows ?? []).some((row) => row.airport.icao === code)
   }
 
   function pick(row) {

@@ -262,4 +262,6 @@ FL.flagSvg = function(iso2){
 })(registry)
 
 
-export const { placeFor, placeSvg, flagSvg, PLACES, PLACE_MAP, FLAGS, ZONE } = registry.TNPFL
+export const {
+  placeFor, placeSvg, flagSvg, cityOf, PLACES, PLACE_MAP, CITY, FLAGS, ZONE,
+} = registry.TNPFL
