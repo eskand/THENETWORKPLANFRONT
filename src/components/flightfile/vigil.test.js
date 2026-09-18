@@ -31,6 +31,38 @@ describe('vigilFor — onglet FUEL (ref l. 77497)', () => {
   })
 })
 
+describe('vigilFor — onglet AIRPORT (ref l. 77481-77488)', () => {
+  test('sans verdict de mise en ligne → « not computed » / INSUFFICIENT DATA, gris', () => {
+    const verdict = vigilFor('airport', base, {})
+    expect(verdict.title).toBe('Airport suitability not computed.')
+    expect(verdict.sub).toBe('INSUFFICIENT DATA')
+    expect(verdict.level).toBe('grey')
+  })
+
+  test('deux terrains aptes, METAR reçu, pas de source NOTAM', () => {
+    const verdict = vigilFor('airport', base, {
+      readiness: { blocking: [], derogable: [], info: [] },
+      weather: { stations: [{ icao: 'DTTA', observation: { raw: 'DTTA 180800Z' } }] },
+    })
+    expect(verdict.title).toBe('Both airports are suitable for operation.')
+    expect(verdict.sub).toBe('NOTAM: no data (offline or not yet analysed) · Weather: METAR received')
+    expect(verdict.level).toBe('ok')
+  })
+
+  test('un terrain inapte → « Airport compatibility issue — CODE. », critique', () => {
+    const verdict = vigilFor('airport', base, {
+      readiness: {
+        blocking: [{ check: 'RUNWAY_TOO_SHORT', message: 'HECA longest runway is below the type minimum' }],
+        derogable: [], info: [],
+      },
+      weather: { stations: [] },
+    })
+    expect(verdict.title).toBe('Airport compatibility issue — CAI.')
+    expect(verdict.sub).toBe('NOTAM: no data (offline or not yet analysed) · Weather: unavailable')
+    expect(verdict.level).toBe('crit')
+  })
+})
+
 describe('vigilFor — onglet CREW (ref l. 77498-77504)', () => {
   // ref l. 77500 : 'Crew duty looks compliant — '+warn+' item(s) to review.'
   test('un avertissement FTL est compté, au format de la référence', () => {

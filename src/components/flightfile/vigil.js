@@ -51,11 +51,30 @@ export function vigilFor(tab, row, extra = {}) {
   }
 
   if (tab === 'airport') {
+    // ref l. 77481-77488 : aptitude des deux terrains (computeAirportSuitability),
+    // puis « NOTAM: … · Weather: … ». L'aptitude est celle des controles de mise
+    // en ligne (RUNWAY/AIRPORT/AERODROME/SLOT bloquants nommant le terrain), comme
+    // dans l'onglet ; aucune source NOTAM n'est branchee → « no data ».
+    const readiness = extra.readiness
+    const action = { action: 'View NOTAMs', actionHint: 'NOTAMs for both aerodromes' }
+    if (!readiness) {
+      return { title: 'Airport suitability not computed.', sub: 'INSUFFICIENT DATA', level: 'grey', ...action }
+    }
+    const unsuitable = (icao) => (readiness.blocking ?? []).some((item) =>
+      String(item.message ?? '').includes(icao ?? '')
+        && /RUNWAY|AIRPORT|AERODROME|SLOT/.test(String(item.check ?? '')))
+    const failing = [
+      unsuitable(row.depIcao) ? (row.depCode ?? row.depIcao) : null,
+      unsuitable(row.arrIcao) ? (row.arrCode ?? row.arrIcao) : null,
+    ].filter(Boolean)
+    const metar = (extra.weather?.stations ?? []).some((station) => station.observation)
     return {
-      title: `${row.depCode ?? row.depIcao} and ${row.arrCode ?? row.arrIcao} read below.`,
-      sub: 'Runway, RFFS and category from the aerodrome register; weather from the METAR feed.',
-      level: 'ok', action: 'View NOTAMs',
-      actionHint: 'The NOTAM digest is not attached to the leg yet',
+      title: failing.length
+        ? `Airport compatibility issue — ${failing.join(' & ')}.`
+        : 'Both airports are suitable for operation.',
+      sub: `NOTAM: no data (offline or not yet analysed) · Weather: ${metar ? 'METAR received' : 'unavailable'}`,
+      level: failing.length ? 'crit' : 'ok',
+      ...action,
     }
   }
 

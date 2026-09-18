@@ -340,7 +340,12 @@ function VigilStrip({ row, tab }) {
   // Les lectures dont la phrase a besoin, limitees a l'onglet ouvert : la
   // requete est celle que l'onglet fait deja, donc partagee par le cache.
   const fuel = useLegFuel(tab === 'fuel' ? row.legId : null)
-  const verdict = vigilFor(tab, row, { fuel: fuel.data })
+  const readiness = useLegReadiness(tab === 'airport' ? row.legId : null)
+  const weather = useStationWeather(
+    tab === 'airport' ? [row.depIcao, row.arrIcao].filter(Boolean) : [])
+  const verdict = vigilFor(tab, row, {
+    fuel: fuel.data, readiness: readiness.data, weather: weather.data,
+  })
 
   return (
     <div className="fl-vigil">
