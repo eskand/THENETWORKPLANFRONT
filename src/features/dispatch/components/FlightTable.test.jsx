@@ -75,4 +75,15 @@ describe('FlightTable — cellule Status de la référence (dispatchStatusBadge,
     expect(within(cell).getByText('In flight')).toHaveClass('badge--ready')
     expect(within(cell).queryByText('En route')).toBeNull()
   })
+
+  // ref l. 22680-22682 : maint → badge GRIS « Maintenance » (un badge, pas du texte nu)
+  test('un appareil en maintenance porte un badge gris « Maintenance »', () => {
+    const cell = statusCell(row({
+      kind: 'GROUND', flightNo: null, label: 'Scheduled maintenance',
+      status: 'MAINTENANCE', statusTone: 'MAINTENANCE',
+    }))
+    const badge = within(cell).getByText('Maintenance')
+    expect(badge).toHaveClass('badge')
+    expect(badge).toHaveClass('badge--neutral')
+  })
 })

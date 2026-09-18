@@ -12,6 +12,7 @@ const STATUS_TONE = {
   ENROUTE: 'READY',
   DELAYED: 'PENDING',
   AOG: 'ATTENTION',
+  MAINTENANCE: 'NEUTRAL',
   CLOSED: 'NEUTRAL',
   CANCELLED: 'NEUTRAL',
 }
@@ -93,15 +94,6 @@ function StatusCell({ row }) {
   const tone = STATUS_TONE[row.statusTone]
   const label = STATUS_LABEL[row.statusTone] ?? titleCase(row.status)
 
-  // Maintenance is shown as plain text, like on the approved mock-up: it is a
-  // planned state, not something to act on right now.
-  if (row.statusTone === 'MAINTENANCE') {
-    return (
-      <td>
-        <span className="status-text">{label}</span>
-      </td>
-    )
-  }
   return (
     <td>
       <Badge tone={tone ?? 'NEUTRAL'} title={row.note ?? undefined}>
