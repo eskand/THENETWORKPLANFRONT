@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, screen, waitFor } from '@testing-library/react'
 import { vi } from 'vitest'
 import { renderWithProviders } from '../../test/renderWithProviders'
 
@@ -790,6 +790,38 @@ describe('Audit visuel — l’heure fait foi quand le statut ne dit rien (fwTim
     data.adsb = { provider: 'OPENSKY', state: 'LIVE', seen: 1, matched: 0, withoutModeS: [], ranAt: new Date().toISOString() }
     await open(data)
     expect(q('#fw-feed-age')).toHaveTextContent('ADS-B (OpenSky) · last sweep')
+  })
+})
+
+describe('F20 — le seam hôte : window.FW et l’événement fw:select (js/11 l. 1-39, js/06 l. 1216-1227)', () => {
+  test('choisir un vol émet fw:select { id, callsign, route, risk, index } une seule fois par changement', async () => {
+    const seen = []
+    const onSelect = (event) => seen.push(event.detail)
+    window.addEventListener('fw:select', onSelect)
+    try {
+      await open()
+      fireEvent.click(q('#fwListBtn'))
+      fireEvent.click(q('#flightlist .fcard .fcard-call'))
+      fireEvent.click(q('#flightlist .fcard .fcard-call'))
+      expect(seen).toEqual([{ id: 'l1', callsign: 'TNP101', route: ['DTTA', 'LFMN'], risk: 'LOW', index: 2 }])
+    } finally {
+      window.removeEventListener('fw:select', onSelect)
+    }
+  })
+
+  test('window.FW.flights() rend l’état courant, FW.select(id) ouvre le détail, FW.refresh() relit le tableau ; FW disparaît avec la vue', async () => {
+    const { unmount } = await open()
+    expect(window.FW.flights()).toEqual([{ id: 'l1', callsign: 'TNP101', actype: 'F2TH', route: ['DTTA', 'LFMN'], risk: 'LOW' }])
+    let picked
+    act(() => {
+      picked = window.FW.select('l1')
+    })
+    expect(picked).toBe(true)
+    expect(q('#right')).toHaveClass('fw-open')
+    expect(typeof window.FW.refresh).toBe('function')
+    expect(window.FW.setFlights).toBeUndefined()
+    unmount()
+    expect(window.FW).toBeUndefined()
   })
 })
 

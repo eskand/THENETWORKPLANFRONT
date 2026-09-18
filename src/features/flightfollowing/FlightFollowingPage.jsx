@@ -314,6 +314,10 @@ export default function FlightFollowingPage() {
   const interval = REFRESH.find((entry) => entry.id === refresh)?.ms ?? 15_000
   const board = useFollowingBoard(date, interval)
   const data = board.data
+  const selectedIdRef = useRef(null)
+  const allRef = useRef([])
+  const refetchRef = useRef(() => {})
+  refetchRef.current = () => board.refetch()
 
   /* Le réseau dessiné sous les appareils : les aérodromes que l'exploitant
      dessert (usedOnly), depuis refdata.airports. */
@@ -322,6 +326,7 @@ export default function FlightFollowingPage() {
 
   /* Tous les vols du tableau : la carte et les compteurs les voient tous. */
   const all = useMemo(() => (data ? [...data.airborne, ...data.upcoming, ...data.arrived] : []), [data])
+  allRef.current = all
 
   /* La liste : le texte cherche d'abord, les filtres retranchent ensuite
      (renderList js/06 l. 1118-1125). */
@@ -349,12 +354,65 @@ export default function FlightFollowingPage() {
 
   /* Un seul point d'entrée pour choisir un vol — liste ou carte — qui ouvre
      le détail (js/07 : selectFlight → openDetail). */
-  const selectFlight = useCallback((legId, fly = true) => {
-    setSelectedId(legId)
-    setFollowing(false)
-    setDetailOpen(true)
-    if (fly) setFocus((current) => ({ legId, n: (current?.n ?? 0) + 1 }))
-  }, [])
+  const selectFlight = useCallback(
+    (legId, fly = true) => {
+      /* Le seul événement qui sort du module — js/06 l. 1216-1227 : émis quand le
+         vol choisi change, avec { id, callsign, route, risk, index }. */
+      if (legId !== selectedIdRef.current) {
+        const f = allRef.current.find((entry) => entry.legId === legId)
+        try {
+          window.dispatchEvent(
+            new CustomEvent('fw:select', {
+              detail: {
+                id: legId,
+                callsign: f?.flightNo,
+                route: f ? [f.depIcao, f.arrIcao] : undefined,
+                risk: f?.risk?.level,
+                index: f?.risk?.index,
+              },
+            }),
+          )
+        } catch {
+          /* hôte sans CustomEvent */
+        }
+      }
+      selectedIdRef.current = legId
+      setSelectedId(legId)
+      setFollowing(false)
+      setDetailOpen(true)
+      if (fly) setFocus((current) => ({ legId, n: (current?.n ?? 0) + 1 }))
+    },
+    [],
+  )
+
+  /* window.FW — ce que le module rend à l'hôte (js/11 l. 1-39) : flights(), select(id),
+     refresh(). setFlights n'existe pas ici : la liste vient de GET /flight-following/board,
+     la cible EST l'hôte. */
+  useEffect(() => {
+    const FW = {
+      flights: () =>
+        allRef.current.map((f) => ({
+          id: f.legId,
+          callsign: f.flightNo,
+          actype: f.icaoType,
+          route: [f.depIcao, f.arrIcao],
+          risk: f.risk?.level,
+        })),
+      select: (id) => {
+        if (!allRef.current.some((f) => f.legId === id)) return false
+        selectFlight(id, true)
+        return true
+      },
+      refresh: () => {
+        refetchRef.current()
+        return allRef.current.length
+      },
+    }
+    window.FW = FW
+    return () => {
+      if (window.FW === FW) delete window.FW
+    }
+  }, [selectFlight])
 
   /* Le rejeu — fwReplayToggle js/06 l. 855-873 : la trace est celle que le serveur a
      reçue (GET /flight-following/legs/{id}/track), lue pour chaque vol qui a une
