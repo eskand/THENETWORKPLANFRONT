@@ -282,7 +282,7 @@ describe('F03c — les tags des facteurs actifs sur les cartes (js/06 renderList
 })
 
 describe('F01c — le panneau de détail (renderDetailPane js/06 l. 1520-1610, fwOpsBlockHtml l. 1341-1370, fwAcBlockHtml l. 1400-1406, fwLinksHtml l. 1409-1417)', () => {
-  const withMel = () =>
+  const withMel = (extra = {}) =>
     flight({
       legId: 'l3', flightNo: 'TNP303', melReference: 'MEL 21-51-01', melBlocking: true,
       lastPosition: {
@@ -291,6 +291,7 @@ describe('F01c — le panneau de détail (renderDetailPane js/06 l. 1520-1610, f
       },
       progressPercent: 60,
       risk: { level: 'HIGH', index: 12, severity: 4, likelihood: 3, action: 'Mitigation required.', factors: [] },
+      ...extra,
     })
 
   test('en-tête : indicatif, exploitant — type · immat, pastille « LEVEL · INDEX n » colorée', async () => {
@@ -330,15 +331,18 @@ describe('F01c — le panneau de détail (renderDetailPane js/06 l. 1520-1610, f
     expect(q('#detailpane .progressbar .progressbar-fill#progressfill').style.width).toBe('60%')
   })
 
-  test('TIMES · UTC : STD / ETD / STA / ETA / Block / Delay et le temps restant', async () => {
-    await open(board([withMel()]))
+  test('TIMES · UTC : STD / ETD / STA / ETA / Block / Delay et le temps restant (eta − maintenant, fwTimes l. 1296-1310)', async () => {
+    const std = new Date(Date.now() - 90 * 60000)
+    const sta = new Date(std.getTime() + 135 * 60000)
+    const z = (d) => d.toISOString().slice(11, 16) + 'Z'
+    await open(board([withMel({ std: std.toISOString(), sta: sta.toISOString() })]))
     fireEvent.click(q('#flightlist .fcard .fcard-call'))
     const sects = qa('#detailpane .detail-sect')
     const times = sects.find((s) => s.querySelector('h4')?.textContent === 'TIMES · UTC')
     const cells = [...times.querySelectorAll('.fw-times > *')].map((c) => c.textContent)
-    expect(cells).toEqual(['STD', '06:00Z', 'ETD', '06:00Z', 'STA', '08:15Z', 'ETA', '08:15Z', 'Block', '2h15', 'Delay', 'On schedule'])
+    expect(cells).toEqual(['STD', z(std), 'ETD', z(std), 'STA', z(sta), 'ETA', z(sta), 'Block', '2h15', 'Delay', 'On schedule'])
     expect(times.querySelector('.fw-times .fw-ok')).toHaveTextContent('On schedule')
-    expect(times.querySelector('.fw-eta')).toHaveTextContent('0h45 to run')
+    expect(times.querySelector('.fw-eta').textContent).toMatch(/^0h4[456] to run$/)
   })
 
   test('AIRCRAFT STATUS quand une MEL est ouverte, FLIGHT PROGRESS, DISPATCHER NOTES, OPEN THIS FLIGHT IN, FOLLOW', async () => {
@@ -541,8 +545,11 @@ describe('F19 — radar météo : curseur d’opacité et commande d’animation
 })
 
 describe('F09a — les commandes de veille et la vue TABLE (index.html l. 154-166, js/06 fwTableHtml l. 1066-1115)', () => {
+  const stdA = new Date(Date.now() - 90 * 60000)
+  const staA = new Date(stdA.getTime() + 135 * 60000)
+  const zz = (d) => d.toISOString().slice(11, 16) + 'Z'
   const trio = () => [
-    flight({ legId: 'a', flightNo: 'TNP101', status: 'DEPARTED', minutesToDestination: 45 }),
+    flight({ legId: 'a', flightNo: 'TNP101', status: 'DEPARTED', std: stdA.toISOString(), sta: staA.toISOString() }),
     flight({ legId: 'b', flightNo: 'TNP202', registration: 'TS-NPB', status: 'PLANNED', sta: '2099-01-01T08:15:00Z', std: '2099-01-01T06:00:00Z',
       melReference: 'MEL 21-51-01', melBlocking: true,
       risk: { level: 'HIGH', index: 12, severity: 4, likelihood: 3, action: '', factors: [] } }),
@@ -579,7 +586,9 @@ describe('F09a — les commandes de veille et la vue TABLE (index.html l. 154-16
     const rows = qa('#fw-table .fw-tab-t tbody tr')
     expect(rows.map((r) => r.querySelector('td b').textContent)).toEqual(['TNP202', 'TNP303', 'TNP101'])
     const cells = (i) => [...rows[i].querySelectorAll('td')].map((td) => td.textContent)
-    expect(cells(2)).toEqual(['TNP101', 'DTTA → LFMN', 'TS-NPA', 'Airborne', '06:00Z', '08:15Z', 'on time', '0h45', 'LOW', '—'])
+    expect(cells(2).slice(0, 7)).toEqual(['TNP101', 'DTTA → LFMN', 'TS-NPA', 'Airborne', zz(stdA), zz(staA), 'on time'])
+    expect(cells(2)[7]).toMatch(/^0h4[456]$/)
+    expect(cells(2).slice(8)).toEqual(['LOW', '—'])
     expect(cells(0)).toEqual(['TNP202', 'DTTA → LFMN', 'TS-NPB', 'Not departed', '06:00Z', '08:15Z', 'on time', 'not departed', 'HIGH', 'MEL 21-51-01'])
     expect(cells(1)).toEqual(['TNP303', 'DTTA → LFMN', 'TS-NPA', 'Landed', '06:00Z', '08:27Z', '+12 min', 'landed', 'MEDIUM', '—'])
     expect(rows[0].querySelector('td:nth-child(9) span')).toHaveStyle({ color: '#E67E22' })
@@ -749,6 +758,41 @@ describe('F04b — FIR CROSSINGS · ESTIMATED (js/06 fwFirIndex l. 966-990, fwFi
   })
 })
 
+describe('Audit visuel — l’heure fait foi quand le statut ne dit rien (fwTimes js/06 l. 1296-1297, fwPhase l. 675-686)', () => {
+  test('un vol non déclaré parti dont l’ETD est passée compte comme en vol : « to run », phase Airborne, pas « Departs in −… »', async () => {
+    const std = new Date(Date.now() - 70 * 60000).toISOString()
+    const sta = new Date(Date.now() + 50 * 60000).toISOString()
+    await open(board([flight({ status: 'RELEASED', std, sta, minutesToDestination: null })]))
+    fireEvent.click(q('#fwListBtn'))
+    fireEvent.click(q('#flightlist .fcard .fcard-call'))
+    expect(q('#detailpane .fw-eta').textContent).toMatch(/^0h(49|50|51) to run$/)
+    fireEvent.click(q('#fw-table-btn'))
+    const cells = [...q('#fw-table .fw-tab-t tbody tr').querySelectorAll('td')].map((td) => td.textContent)
+    expect(cells[3]).toBe('Airborne')
+    expect(cells[7]).toMatch(/^0h(49|50|51)$/)
+    fireEvent.change(q('#fwPhase'), { target: { value: 'air' } })
+    expect(qa('#flightlist .fcard')).toHaveLength(1)
+  })
+
+  test('un vol dont l’ETA est passée compte comme posé : « Landed », phase On ground', async () => {
+    const std = new Date(Date.now() - 170 * 60000).toISOString()
+    const sta = new Date(Date.now() - 20 * 60000).toISOString()
+    await open(board([flight({ status: 'DEPARTED', std, sta, minutesToDestination: -20 })]))
+    fireEvent.click(q('#fwListBtn'))
+    fireEvent.click(q('#flightlist .fcard .fcard-call'))
+    expect(q('#detailpane .fw-eta')).toHaveTextContent('Landed')
+    fireEvent.change(q('#fwPhase'), { target: { value: 'ground' } })
+    expect(qa('#flightlist .fcard')).toHaveLength(1)
+  })
+
+  test('#fw-feed-age écrit « ADS-B (OpenSky) » comme la référence, quel que soit le code du fournisseur', async () => {
+    const data = board()
+    data.adsb = { provider: 'OPENSKY', state: 'LIVE', seen: 1, matched: 0, withoutModeS: [], ranAt: new Date().toISOString() }
+    await open(data)
+    expect(q('#fw-feed-age')).toHaveTextContent('ADS-B (OpenSky) · last sweep')
+  })
+})
+
 describe('F01a — les commandes du bandeau (#fwTopHost, index.html l. 30-39, js/09 l. 175-186, js/10 l. 139-148)', () => {
   test('le bandeau du produit porte #fwTopHost : LIVE, ACTIVATE ERP, FLIGHT LIST, horloge UTC', async () => {
     await open()
@@ -845,6 +889,8 @@ describe('F01a — la feuille de style de la référence (css/04 l. 286-345, 537
     expect(css).toContain('#fwTopHost .fw-listbtn.on{ background:var(--gold); border-color:var(--gold); color:var(--navy); font-weight:700; }')
     expect(css).toContain('#fwTopHost #utcclock small{ color:var(--txt-dim); font-size:9px; display:block; letter-spacing:2px; margin-top:1px; }')
     expect(css).toContain('#viewFlightFollowing .fw-x{')
+    // Audit visuel 2026-09-18 : le line-height de l'hôte gonflait cartes et compteurs (114 px au lieu de 104).
+    expect(css).toContain('#viewFlightFollowing, #fwTopHost { line-height: normal; }')
   })
 
   test('la barre propre à la cible a disparu', () => {

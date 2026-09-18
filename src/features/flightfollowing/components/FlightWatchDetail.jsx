@@ -63,8 +63,11 @@ export function timesOf(flight, now) {
   const sta = new Date(flight.sta)
   const eta = flight.etaRevised ? new Date(flight.etaRevised) : sta
   const delayMin = Math.round((eta - sta) / 60000)
-  const parti = flight.status === 'DEPARTED' || flight.status === 'ARRIVED' || flight.status === 'CLOSED'
-  const pose = flight.status === 'ARRIVED' || flight.status === 'CLOSED'
+  /* fwTimes l. 1296-1297 : parti = ATD ou maintenant ≥ ETD ; posé = ATA ou maintenant ≥ ETA.
+     Le statut de l'étape tient lieu d'ATD / ATA. */
+  const etd = std
+  const pose = flight.status === 'ARRIVED' || flight.status === 'CLOSED' || now >= eta
+  const parti = pose || flight.status === 'DEPARTED' || now >= etd
   return {
     stdTxt: zTime(flight.std),
     staTxt: zTime(flight.sta),
@@ -73,9 +76,7 @@ export function timesOf(flight, now) {
     revise: Math.abs(delayMin) >= 1,
     delayMin,
     blockTxt: fwDur((sta - std) / 60000),
-    resteMin: pose
-      ? null
-      : flight.minutesToDestination ?? Math.round((eta - now) / 60000),
+    resteMin: pose ? null : Math.round((eta - now) / 60000),
     avantMin: parti ? null : Math.round((std - now) / 60000),
     parti,
     pose,

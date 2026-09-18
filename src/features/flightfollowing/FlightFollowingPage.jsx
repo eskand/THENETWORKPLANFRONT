@@ -89,9 +89,13 @@ function familleLabel(k) {
   return k === 'E190' ? 'Lineage / E190' : k.charAt(0) + k.slice(1).toLowerCase()
 }
 
-/** La phase se lit de l'horaire (fwPhase js/06 l. 675-695) : ici du statut de l'étape. */
-function fwPhase(flight) {
-  if (flight.status === 'DEPARTED') return 'air'
+/** La phase se lit de l'horaire (fwPhase js/06 l. 675-686) : posé si ATA ou maintenant ≥ ETA,
+ *  en vol si ATD ou maintenant ≥ ETD, au sol sinon. Le statut de l'étape tient lieu d'ATD / ATA. */
+function fwPhase(flight, now = new Date()) {
+  const eta = flight.etaRevised ? new Date(flight.etaRevised) : flight.sta ? new Date(flight.sta) : null
+  const etd = flight.std ? new Date(flight.std) : null
+  if (flight.status === 'ARRIVED' || flight.status === 'CLOSED' || (eta && now >= eta)) return 'ground'
+  if (flight.status === 'DEPARTED' || (etd && now >= etd)) return 'air'
   return 'ground'
 }
 
@@ -100,7 +104,7 @@ const NO_FILTER = { fleet: 'ALL', phase: 'ALL', risk: 'ALL', op: 'ALL' }
 
 /** Le libellé de phase de la vue TABLE — fwPhaseTxt js/06 l. 1066-1073. */
 function fwPhaseTxt(flight, now) {
-  const p = fwPhase(flight)
+  const p = fwPhase(flight, now)
   if (p === 'air') return 'Airborne'
   if (p === 'divert') return 'Diverting'
   const sta = flight.sta ? new Date(flight.sta) : null
@@ -111,7 +115,7 @@ function fwPhaseTxt(flight, now) {
 /** fwPasseFiltres js/06 l. 697-703. */
 function passesFilters(flight, filters) {
   if (filters.fleet !== 'ALL' && fwFamille(`${flight.model ?? ''} ${flight.icaoType ?? ''}`) !== filters.fleet) return false
-  if (filters.phase !== 'ALL' && fwPhase(flight) !== filters.phase) return false
+  if (filters.phase !== 'ALL' && fwPhase(flight, new Date()) !== filters.phase) return false
   if (filters.risk !== 'ALL' && (FW_RANG[flight.risk?.level] || 0) < (FW_RANG[filters.risk] || 0)) return false
   if (filters.op !== 'ALL' && flight.operator !== filters.op) return false
   return true
@@ -894,7 +898,7 @@ export default function FlightFollowingPage() {
                     </>
                   ) : (
                     <>
-                      ADS-B ({adsb.provider}) · last sweep <b className="age">{fwAgeTxt(ms)}</b>
+                      ADS-B ({adsb.provider === 'OPENSKY' ? 'OpenSky' : adsb.provider}) · last sweep <b className="age">{fwAgeTxt(ms)}</b>
                       {cls === 'stale' ? ' — treat these positions as out of date' : ''}
                     </>
                   )}
