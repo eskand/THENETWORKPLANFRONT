@@ -37,4 +37,10 @@ describe('FlightTable — cellule Crew de la référence', () => {
     expect(badge).toHaveClass('badge--attention')
     expect(within(cell).queryByText('Unassigned')).toBeNull()
   })
+
+  // ref l. 22775 : tous les sièges requis pourvus → badge VERT « Assigned »
+  test('un équipage complet s’écrit « Assigned » en vert', () => {
+    const cell = crewCell(row())
+    expect(within(cell).getByText('Assigned')).toHaveClass('badge--ready')
+  })
 })

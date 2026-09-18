@@ -68,7 +68,7 @@ function CrewCell({ row }) {
     <td>
       <span className="badge-group">
         <Badge
-          tone={row.crewAssigned ? 'INFO' : 'ATTENTION'}
+          tone={row.crewAssigned ? 'READY' : 'ATTENTION'}
           title={`${row.crewSeatsFilled} of ${row.crewMinimumSeats} flight-deck seats`}
         >
           {row.crewAssigned ? 'Assigned' : `${row.crewSeatsFilled}/${row.crewMinimumSeats}`}
