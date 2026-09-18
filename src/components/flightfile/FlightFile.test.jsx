@@ -149,3 +149,39 @@ describe('TRIP FOLDER — titre et sous-ligne (ref l. 16537-16538)', () => {
     expect(sublines.some((element) => element.tagName === 'DIV')).toBe(true)
   })
 })
+
+describe('Modale « Open Flight Data » (openFlightDataModal, ref l. 16682-16716)', () => {
+  test('la table porte les lignes de la référence et rien de plus', async () => {
+    routes['/legs/leg-1/passengers'] = {
+      legId: 'leg-1', totalPax: 4, checkedIn: 3, onManifest: 3, documentsNotValid: 0,
+      specialRequests: [], passengers: [],
+    }
+    routes['/legs/leg-1/fuel'] = {
+      legId: 'leg-1', stationIcao: 'DTTA', supplierName: 'World Fuel Services',
+      price: 5.23, currency: 'USD', unit: 'USG', effectiveFrom: null, effectiveTo: null,
+    }
+    open(row({ status: 'DEPARTED', statusTone: 'ENROUTE' }))
+    // Le pied de l'onglet FLIGHT (l. 16606) — l'entrée du menu ⋮ porte le même texte.
+    fireEvent.click(screen.getAllByText('Open Flight Data')
+      .find((element) => element.classList.contains('fd-btn-solid')))
+
+    const table = document.querySelector('.tnp-modal-box table.gendec-info')
+    expect(table).not.toBeNull()
+    const cells = () => Array.from(table.querySelectorAll('td')).map((td) => td.textContent.trim())
+
+    // ref l. 16695-16699 : les cinq rangées, dans cet ordre
+    expect(cells()).toEqual(expect.arrayContaining([
+      'Aircraft', 'TS-NPD · Falcon 2000', 'Status', 'In flight',
+      'Route', 'TUN → CAI', 'Registration', 'TS-NPD',
+      'Departure', '08:00 UTC', 'Arrival', '11:00 UTC',
+      // blockHrs = e − s = 3h00 ; flightHrs = max(0.25, block − 0.33) = 2h40 (ref l. 14275-14276)
+      'Flight time', '2h40', 'Block time', '3h00',
+    ]))
+    await screen.findByText('3/4 checked in')
+    expect(cells()).toEqual(expect.arrayContaining(['Passengers', '3/4 checked in', 'Fuel price', '$5.23/USG']))
+    for (const foreign of ['Nature', 'Off / On blocks', 'Flight plan', 'Risk', 'MVT']) {
+      expect(cells()).not.toContain(foreign)
+    }
+    expect(screen.queryByText(/Printed from the leg record/)).toBeNull()
+  })
+})

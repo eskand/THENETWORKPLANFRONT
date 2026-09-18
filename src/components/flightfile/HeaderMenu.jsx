@@ -4,9 +4,10 @@ import { LoadingState } from '../States'
 import { useRecordMovement, useSendMvt } from '../../hooks/useOperations'
 import { useSchedulingBoard } from '../../hooks/useCrewScheduling'
 import {
-  useFlightFileLvp, useFlightNote, useSaveFlightNote,
+  useFlightFileLvp, useFlightNote, useLegFuel, useLegPassengers, useSaveFlightNote,
 } from '../../hooks/useFlightFile'
-import { hhmm, isoDate, titleCase } from '../../lib/format'
+import { hhmm, isoDate } from '../../lib/format'
+import { statusLabel } from './statusLabel'
 import LvpModal from './LvpModal'
 import Modal from './Modal'
 import OccTimelineModal from './OccTimelineModal'
@@ -327,7 +328,10 @@ function hhmmNow() {
 export function FlightDataModal({ row, onClose }) {
   const board = useSchedulingBoard(
     row.std ? { date: isoDate(new Date(row.std)), role: '' } : undefined)
-  const crew = (board.data?.legs ?? []).find((leg) => leg.legId === row.legId)?.crew ?? []
+  const leg = (board.data?.legs ?? []).find((candidate) => candidate.legId === row.legId)
+  const crew = leg?.crew ?? []
+  const pax = useLegPassengers(row.legId)
+  const fuel = useLegFuel(row.legId)
   const label = row.flightNo ?? row.registration
 
   useEffect(() => {
@@ -336,11 +340,19 @@ export function FlightDataModal({ row, onClose }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
-  const block = row.std && row.sta
-    ? duration(new Date(row.sta) - new Date(row.std)) : EMPTY_DASH
-  const flown = (row.atd ?? row.outAt) && (row.ata ?? row.inAt)
-    ? duration(new Date(row.ata ?? row.inAt) - new Date(row.atd ?? row.outAt))
-    : block
+  // buildFlightData() de l'annexe (l. 14275-14277) : blockHrs = e − s,
+  // flightHrs = max(0.25, blockHrs − 0.33), fmtDur → « 2h40 ».
+  const blockHrs = row.std && row.sta ? (new Date(row.sta) - new Date(row.std)) / 3_600_000 : null
+  const flightHrs = blockHrs != null ? Math.max(0.25, blockHrs - 0.33) : null
+
+  // Les sieges de l'annexe (crewJobs) : chaque siege requis a sa ligne, pourvu
+  // ou « Unassigned » ; un siege occupe au-dela des requis reste visible.
+  const minimumSeats = leg?.minimumSeats ?? 2
+  const seats = SEAT_JOBS.filter(([seat], index) =>
+    index < minimumSeats || crew.some((member) => member.seat === seat))
+
+  const symbol = fuel.data?.currency === 'EUR' ? '€' : '$'
+  const fuelUnit = fuel.data?.unit === 'LITER' ? 'L' : 'USG'
 
   return (
     <div className="tnp-modal-overlay"
@@ -362,40 +374,30 @@ export function FlightDataModal({ row, onClose }) {
 
           <table className="gendec-info">
             <tbody>
+              {/* Les cinq rangees de l'annexe (l. 16695-16699), dans son ordre. */}
               <tr>
                 <td>Aircraft</td>
                 <td>{[row.registration, row.model ?? row.icaoType].filter(Boolean).join(' · ')}</td>
-                <td>Status</td><td>{titleCase(row.status)}</td>
+                <td>Status</td><td>{statusLabel(row)}</td>
               </tr>
               <tr>
                 <td>Route</td>
-                <td>{row.depIcao ?? '—'} → {row.arrIcao ?? '—'}</td>
-                <td>Nature</td>
-                <td>{[row.commercialType, row.flightType].filter(Boolean).join(' · ') || '—'}</td>
+                <td>{row.depCode ?? row.depIcao ?? '—'} → {row.arrCode ?? row.arrIcao ?? '—'}</td>
+                <td>Registration</td><td>{row.registration ?? '—'}</td>
               </tr>
               <tr>
                 <td>Departure</td><td>{row.std ? `${hhmm(row.std)} UTC` : '—'}</td>
                 <td>Arrival</td><td>{row.sta ? `${hhmm(row.sta)} UTC` : '—'}</td>
               </tr>
               <tr>
-                <td>Off / On blocks</td>
-                <td>
-                  {row.atd ?? row.outAt ? hhmm(row.atd ?? row.outAt) : '—'}
-                  {' / '}
-                  {row.ata ?? row.inAt ? hhmm(row.ata ?? row.inAt) : '—'}
-                </td>
-                <td>Block time</td><td>{flown}</td>
+                <td>Flight time</td><td>{fmtDur(flightHrs)}</td>
+                <td>Block time</td><td>{fmtDur(blockHrs)}</td>
               </tr>
               <tr>
-                <td>Passengers</td><td>{row.paxCount ?? 0}</td>
-                <td>Flight plan</td><td>{row.flightPlanLetter ?? '—'}</td>
-              </tr>
-              <tr>
-                <td>Risk</td>
-                <td>{row.riskLevel
-                  ? `${row.riskLevel}${row.riskIndex ? ` · index ${row.riskIndex}` : ''}` : '—'}</td>
-                <td>MVT</td>
-                <td>{row.mvtSentAt ? `sent ${hhmm(row.mvtSentAt)} UTC` : 'not sent'}</td>
+                <td>Passengers</td>
+                <td>{pax.data ? `${pax.data.checkedIn}/${pax.data.totalPax} checked in` : EMPTY_DASH}</td>
+                <td>Fuel price</td>
+                <td>{fuel.data?.price != null ? `${symbol}${fuel.data.price}/${fuelUnit}` : EMPTY_DASH}</td>
               </tr>
             </tbody>
           </table>
@@ -403,25 +405,18 @@ export function FlightDataModal({ row, onClose }) {
           <div className="gendec-section-title">Crew</div>
           <table className="gendec-crew">
             <tbody>
-              {crew.length
-                ? crew.map((member) => (
-                  <tr key={member.assignmentId ?? member.personId}>
-                    <td>{member.seat}</td>
-                    <td>{member.fullName}</td>
-                    <td>{member.staffNo}</td>
+              {/* crewLines de l'annexe (l. 16685) : le poste, puis le nom ou « Unassigned ». */}
+              {seats.map(([seat, job]) => {
+                const member = crew.find((candidate) => candidate.seat === seat)
+                return (
+                  <tr key={seat}>
+                    <td>{job}</td>
+                    <td>{member?.fullName ?? 'Unassigned'}</td>
                   </tr>
-                ))
-                : <tr><td colSpan={3}>No crew assigned</td></tr>}
+                )
+              })}
             </tbody>
           </table>
-
-          {/* Ce que l'annexe n'ecrit pas et qui manque a toute feuille sortie
-              d'un logiciel : d'ou viennent les chiffres, et a quelle heure. */}
-          <div className="gendec-decl">
-            Printed from the leg record at {new Date().toISOString().slice(11, 16)} UTC.
-            Times are the stored scheduled and actual times; the crew list is the current
-            roster assignment. This sheet is a summary, not an operational clearance.
-          </div>
         </div>
 
         <div className="tnp-modal-actions">
@@ -436,9 +431,19 @@ export function FlightDataModal({ row, onClose }) {
 
 const EMPTY_DASH = '—'
 
-/** hh h mm, la duree telle que le document la porte. */
-function duration(milliseconds) {
-  if (!Number.isFinite(milliseconds) || milliseconds < 0) return EMPTY_DASH
-  const minutes = Math.round(milliseconds / 60_000)
-  return `${Math.floor(minutes / 60)}h${String(minutes % 60).padStart(2, '0')}`
+/** Les postes de l'annexe (crewJobs, l. 14330-14335), etendus aux sieges que la cible connait. */
+const SEAT_JOBS = [
+  ['CPT', 'Captain'],
+  ['FO', 'First Officer'],
+  ['CABIN_1', 'Cabin Crew'],
+  ['CABIN_2', 'Cabin Crew'],
+  ['ENGINEER', 'Engineer'],
+]
+
+/** fmtDur de l'annexe (l. 14277) : heures decimales → « 2h40 ». */
+function fmtDur(hours) {
+  if (hours == null || !Number.isFinite(hours)) return EMPTY_DASH
+  const hh = Math.floor(hours)
+  const mm = Math.round((hours - hh) * 60)
+  return `${hh}h${String(mm).padStart(2, '0')}`
 }
