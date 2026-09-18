@@ -123,4 +123,13 @@ describe('AIRPORT INFO — rangée des quatre cartes (ref l. 14821-14824)', () =
     const cat = await screen.findByText('4E')
     expect(cat).toHaveClass('fd-badge', 'amber')
   })
+
+  // ref l. 14824 : <div class="val mono">${meta.rwy} m</div> — la piste la plus
+  // longue en METRES ; le registre cible la tient en pieds (10 499 ft → 3 200 m).
+  test('« Longest RWY » s’écrit en mètres, en police mono', async () => {
+    openAirportTab()
+    const rwy = await screen.findByText('3200 m')
+    expect(rwy).toHaveClass('val', 'mono')
+    expect(screen.queryByText(/ft$/)).toBeNull()
+  })
 })

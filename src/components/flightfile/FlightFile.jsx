@@ -1109,13 +1109,10 @@ function AirportSide({ role, icao, iata, name, city, iso2, at, observed, verdict
         </div>
         <div className="fd-card">
           <div className="lbl">Longest RWY</div>
-          <div className="val">
-            {/* En PIEDS, parce que c'est l'unite dans laquelle le registre les
-                tient et celle que lit un manuel de vol occidental. L'annexe
-                ecrit « m » sur une valeur qu'elle stocke en pieds ; recopier
-                l'etiquette sans la conversion aurait fait dire a la fiche
-                qu'une piste de 10 800 ft en fait 10 800. */}
-            {longest != null ? `${longest} ft` : 'NO DATA'}
+          <div className="val mono">
+            {/* En METRES, comme l'annexe l'ecrit (l. 14824) : le registre cible
+                tient la longueur en pieds, elle est convertie ici. */}
+            {longest != null ? `${Math.round(longest * 0.3048)} m` : 'NO DATA'}
           </div>
         </div>
       </div>
