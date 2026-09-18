@@ -281,6 +281,105 @@ describe('F03c — les tags des facteurs actifs sur les cartes (js/06 renderList
   })
 })
 
+describe('F01c — le panneau de détail (renderDetailPane js/06 l. 1520-1610, fwOpsBlockHtml l. 1341-1370, fwAcBlockHtml l. 1400-1406, fwLinksHtml l. 1409-1417)', () => {
+  const withMel = () =>
+    flight({
+      legId: 'l3', flightNo: 'TNP303', melReference: 'MEL 21-51-01', melBlocking: true,
+      lastPosition: {
+        latitude: 36.8, longitude: 10.2, altitudeFt: 39000, groundSpeedKt: 452, trackDeg: 312,
+        reportedAt: '2026-09-18T07:00:00Z', ageMinutes: 3, provider: 'OPENSKY', automatic: true,
+      },
+      progressPercent: 60,
+      risk: { level: 'HIGH', index: 12, severity: 4, likelihood: 3, action: 'Mitigation required.', factors: [] },
+    })
+
+  test('en-tête : indicatif, exploitant — type · immat, pastille « LEVEL · INDEX n » colorée', async () => {
+    await open()
+    fireEvent.click(q('#fwListBtn'))
+    fireEvent.click(screen.getByText('TNP101'))
+    const pane = q('#right #detailpane')
+    expect(q('#right #emptystate')).not.toBeVisible()
+    expect(pane.querySelector('.detail-head .detail-head-main .detail-call')).toHaveTextContent('TNP101')
+    expect(pane.querySelector('.detail-head .detail-op')).toHaveTextContent('TNP — F2TH · TS-NPA')
+    const badge = pane.querySelector('.detail-head .detail-badge#detail-risk-badge')
+    expect(badge).toHaveTextContent('LOW · INDEX 2')
+    expect(badge).toHaveStyle({ color: '#27AE60', border: '1px solid #27AE60' })
+  })
+
+  test('la grille : Route, Cruise level, Ground speed, Total distance, Heading, Progress', async () => {
+    routes['/airports'] = {
+      rows: [
+        { icao: 'DTTA', name: 'Tunis Carthage', latitude: 36.851, longitude: 10.227 },
+        { icao: 'LFMN', name: 'Nice Côte d’Azur', latitude: 43.658, longitude: 7.216 },
+      ],
+    }
+    await open(board([withMel()]))
+    fireEvent.click(q('#flightlist .fcard .fcard-call'))
+    const items = qa('#detailpane .detail-grid .dg-item')
+    expect(items.map((i) => i.querySelector('.dg-label').textContent)).toEqual([
+      'Route', 'Cruise level', 'Ground speed', 'Total distance', 'Heading', 'Progress',
+    ])
+    expect(items[0].querySelector('.dg-val.small')).toHaveTextContent('DTTA – LFMN')
+    expect(items[1].querySelector('.dg-val')).toHaveTextContent('FL390')
+    expect(items[2].querySelector('.dg-val')).toHaveTextContent('452 KT')
+    await waitFor(() => expect(items[3].querySelector('.dg-val')).toHaveTextContent(/^\d+ NM$/))
+    expect(Number(items[3].querySelector('.dg-val').textContent.replace(' NM', ''))).toBeGreaterThan(430)
+    expect(Number(items[3].querySelector('.dg-val').textContent.replace(' NM', ''))).toBeLessThan(470)
+    expect(items[4].querySelector('.dg-val#dg-hdg')).toHaveTextContent('312°')
+    expect(items[5].querySelector('.dg-val#dg-prog')).toHaveTextContent('60%')
+    expect(q('#detailpane .progressbar .progressbar-fill#progressfill').style.width).toBe('60%')
+  })
+
+  test('TIMES · UTC : STD / ETD / STA / ETA / Block / Delay et le temps restant', async () => {
+    await open(board([withMel()]))
+    fireEvent.click(q('#flightlist .fcard .fcard-call'))
+    const sects = qa('#detailpane .detail-sect')
+    const times = sects.find((s) => s.querySelector('h4')?.textContent === 'TIMES · UTC')
+    const cells = [...times.querySelectorAll('.fw-times > *')].map((c) => c.textContent)
+    expect(cells).toEqual(['STD', '06:00Z', 'ETD', '06:00Z', 'STA', '08:15Z', 'ETA', '08:15Z', 'Block', '2h15', 'Delay', 'On schedule'])
+    expect(times.querySelector('.fw-times .fw-ok')).toHaveTextContent('On schedule')
+    expect(times.querySelector('.fw-eta')).toHaveTextContent('0h45 to run')
+  })
+
+  test('AIRCRAFT STATUS quand une MEL est ouverte, FLIGHT PROGRESS, DISPATCHER NOTES, OPEN THIS FLIGHT IN, FOLLOW', async () => {
+    await open(board([withMel()]))
+    fireEvent.click(q('#flightlist .fcard .fcard-call'))
+    const titles = qa('#detailpane .detail-sect h4').map((h) => h.textContent)
+    expect(titles).toEqual(['TIMES · UTC', 'AIRCRAFT STATUS', 'FLIGHT PROGRESS', 'DISPATCHER NOTES', 'OPEN THIS FLIGHT IN'])
+    const ac = qa('#detailpane .detail-sect').find((s) => s.querySelector('h4').textContent === 'AIRCRAFT STATUS')
+    expect(ac.querySelector('.route-line')).toHaveTextContent('Deferred defect MEL 21-51-01')
+    expect(ac.querySelector('.route-line b')).toHaveTextContent('MEL 21-51-01')
+    const links = qa('#detailpane .fw-links .fw-link').map((b) => b.textContent)
+    expect(links).toEqual(['Flight label', 'Dispatch', 'Timeline', 'Tech Log', 'Roster'])
+    const follow = q('#detailpane .followbtn#followbtn')
+    expect(follow).toHaveTextContent('📍 FOLLOW THIS FLIGHT ON MAP')
+    fireEvent.click(follow)
+    expect(follow).toHaveTextContent('⏸ STOP FOLLOWING')
+  })
+
+  test('sans MEL : pas de bloc AIRCRAFT STATUS ni de lien Tech Log ; note « Routine flight — standard monitoring. »', async () => {
+    await open()
+    fireEvent.click(q('#fwListBtn'))
+    fireEvent.click(screen.getByText('TNP101'))
+    const titles = qa('#detailpane .detail-sect h4').map((h) => h.textContent)
+    expect(titles).not.toContain('AIRCRAFT STATUS')
+    expect(qa('#detailpane .fw-links .fw-link').map((b) => b.textContent)).toEqual(['Flight label', 'Dispatch', 'Timeline', 'Roster'])
+    const notes = qa('#detailpane .detail-sect').find((s) => s.querySelector('h4').textContent === 'DISPATCHER NOTES')
+    expect(notes.querySelector('.route-line')).toHaveTextContent('Routine flight — standard monitoring.')
+    expect(q('#right .fwd')).toBeNull()
+  })
+
+  test('l’état vide de la référence (index.html l. 196-200)', async () => {
+    await open()
+    const empty = q('#right .empty-state#emptystate')
+    expect(empty).toBeVisible()
+    expect(empty.querySelector('.ico')).toHaveTextContent('✈')
+    expect(empty.innerHTML.replace(/\s+/g, ' ').trim()).toBe(
+      '<div class="ico">✈</div>Select a flight from the list<br>or click an aircraft on the map to view tracking details and run<br>the proactive SMS risk assessment.',
+    )
+  })
+})
+
 describe('F01a — les commandes du bandeau (#fwTopHost, index.html l. 30-39, js/09 l. 175-186, js/10 l. 139-148)', () => {
   test('le bandeau du produit porte #fwTopHost : LIVE, ACTIVATE ERP, FLIGHT LIST, horloge UTC', async () => {
     await open()

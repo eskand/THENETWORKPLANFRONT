@@ -154,6 +154,8 @@ export default function FlightFollowingPage() {
   const [layersOpen, setLayersOpen] = useState(false)
   const [listOpen, setListOpen] = useState(false)
   const [detailOpen, setDetailOpen] = useState(false)
+  // « FOLLOW THIS FLIGHT ON MAP » — followSelected js/06 l. 1604-1608.
+  const [following, setFollowing] = useState(false)
   // LIVE (js/09 l. 175-186) : éteint au départ, comme NP.adsb._on.
   const [live, setLive] = useState(false)
   const showTraffic = live && layers.adsb
@@ -502,7 +504,12 @@ export default function FlightFollowingPage() {
                 ×
               </button>
             </div>
-            <FlightWatchDetail flight={selected} />
+            <FlightWatchDetail
+              flight={selected}
+              airports={airports.data?.rows ?? []}
+              following={following}
+              onToggleFollow={() => setFollowing((current) => !current)}
+            />
           </div>
         </div>
       </div>
