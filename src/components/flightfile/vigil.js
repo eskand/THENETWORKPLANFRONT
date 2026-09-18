@@ -167,8 +167,13 @@ export function vigilFor(tab, row, extra = {}) {
   }
 
   if (tab === 'pax') {
-    const count = row.paxCount ?? 0
-    if (!count) {
+    // ref l. 77507-77511 : n = lignes du manifeste, bad = documents non valides
+    // (le serveur les juge contre la date du vol).
+    const manifest = extra.pax?.passengers ?? []
+    const n = manifest.length
+    const bad = extra.pax?.documentsNotValid ?? 0
+    const action = { action: 'Manifest', actionHint: 'Crew & Passenger Manifest (PDF)' }
+    if (!n) {
       const positioning =
         /FERRY|POSITIONING|EMPTY/.test(String(row.flightType ?? '').toUpperCase())
       return {
@@ -178,22 +183,20 @@ export function vigilFor(tab, row, extra = {}) {
         sub: positioning
           ? 'Positioning sector: passenger documents not applicable.'
           : 'Add passengers or import the list (CSV / Excel).',
-        level: 'ok', action: 'Manifest',
-        actionHint: 'Open the PAX tab to build the manifest',
+        level: 'ok', ...action,
       }
     }
-    /* Ces deux phrases disaient « le module passagers n'est pas cable » et
-       « aucune source ne verifie les documents ». Les deux etaient vraies
-       quand elles ont ete ecrites ; elles ne le sont plus depuis que l'onglet
-       PAX lit ops.leg_passengers et que le serveur juge la validite du
-       document contre la date du vol. Une bande VIGIL qui annonce une lacune
-       comblee est aussi trompeuse qu'une qui cache une lacune reelle. */
+    if (bad) {
+      return {
+        title: `${bad} passenger document${bad === 1 ? '' : 's'} not valid.`,
+        sub: `${n} passenger(s) on manifest — complete document number, type and validity.`,
+        level: 'warn', ...action,
+      }
+    }
     return {
-      title: `${count} passenger${count === 1 ? '' : 's'} expected on this leg.`,
-      sub: 'The PAX tab carries the manifest; each travel document is judged against '
-        + 'the flight date.',
-      level: 'ok', action: 'Manifest',
-      actionHint: 'Open the PAX tab to check the manifest',
+      title: 'All passenger documents are valid.',
+      sub: `${n} passenger(s) on manifest — no alert detected for ${who}.`,
+      level: 'ok', ...action,
     }
   }
 

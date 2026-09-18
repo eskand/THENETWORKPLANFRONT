@@ -63,6 +63,34 @@ describe('vigilFor — onglet AIRPORT (ref l. 77481-77488)', () => {
   })
 })
 
+describe('vigilFor — onglet PAX (ref l. 77507-77511)', () => {
+  test('manifeste vide sur un vol commercial', () => {
+    const verdict = vigilFor('pax', { ...base, paxCount: 4, flightType: 'PAX' },
+      { pax: { passengers: [], documentsNotValid: 0 } })
+    expect(verdict.title).toBe('No passenger on the manifest.')
+    expect(verdict.sub).toBe('Add passengers or import the list (CSV / Excel).')
+    expect(verdict.level).toBe('ok')
+  })
+
+  test('un document non valide sur trois passagers', () => {
+    const verdict = vigilFor('pax', base, {
+      pax: { passengers: [{ id: 1 }, { id: 2 }, { id: 3 }], documentsNotValid: 1 },
+    })
+    expect(verdict.title).toBe('1 passenger document not valid.')
+    expect(verdict.sub).toBe('3 passenger(s) on manifest — complete document number, type and validity.')
+    expect(verdict.level).toBe('warn')
+  })
+
+  test('tous les documents valides', () => {
+    const verdict = vigilFor('pax', base, {
+      pax: { passengers: [{ id: 1 }, { id: 2 }], documentsNotValid: 0 },
+    })
+    expect(verdict.title).toBe('All passenger documents are valid.')
+    expect(verdict.sub).toBe('2 passenger(s) on manifest — no alert detected for TNP526.')
+    expect(verdict.level).toBe('ok')
+  })
+})
+
 describe('vigilFor — onglet CREW (ref l. 77498-77504)', () => {
   // ref l. 77500 : 'Crew duty looks compliant — '+warn+' item(s) to review.'
   test('un avertissement FTL est compté, au format de la référence', () => {

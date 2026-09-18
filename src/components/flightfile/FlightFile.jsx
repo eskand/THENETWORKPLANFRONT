@@ -9,7 +9,7 @@ import { useAirportDetail } from '../../hooks/useOperations'
 import { useRecordMovement, useSendMvt } from '../../hooks/useOperations'
 import { useStationWeather } from '../../hooks/useWeather'
 import {
-  useFlightFileLvp, useFlightNote, useLegFuel, useTripFolder,
+  useFlightFileLvp, useFlightNote, useLegFuel, useLegPassengers, useTripFolder,
 } from '../../hooks/useFlightFile'
 import { EMPTY, hhmm, isoDate, titleCase } from '../../lib/format'
 import { documentHref } from '../../api/flightfile'
@@ -343,8 +343,9 @@ function VigilStrip({ row, tab }) {
   const readiness = useLegReadiness(tab === 'airport' ? row.legId : null)
   const weather = useStationWeather(
     tab === 'airport' ? [row.depIcao, row.arrIcao].filter(Boolean) : [])
+  const pax = useLegPassengers(tab === 'pax' ? row.legId : null)
   const verdict = vigilFor(tab, row, {
-    fuel: fuel.data, readiness: readiness.data, weather: weather.data,
+    fuel: fuel.data, readiness: readiness.data, weather: weather.data, pax: pax.data,
   })
 
   return (
