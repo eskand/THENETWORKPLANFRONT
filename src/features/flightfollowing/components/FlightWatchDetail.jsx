@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { RISK_COLOUR } from './FlightWatchList'
+import { firCrossings, useFirIndex } from './firCrossings'
 
 /**
  * Le tiroir de droite : `#emptystate` puis `#detailpane`.
@@ -9,11 +10,12 @@ import { RISK_COLOUR } from './FlightWatchList'
  * · immat, pastille « LEVEL · INDEX n »), grille de six cellules, TIMES · UTC
  * (fwOpsBlockHtml l. 1341-1370), AIRCRAFT STATUS quand une MEL est ouverte
  * (fwAcBlockHtml l. 1400-1406), FLIGHT PROGRESS, DISPATCHER NOTES, OPEN THIS
- * FLIGHT IN (fwLinksHtml l. 1409-1417) et le bouton FOLLOW.
+ * FLIGHT IN (fwLinksHtml l. 1409-1417), FIR CROSSINGS · ESTIMATED
+ * (fwFirBlockHtml l. 1042-1064) et le bouton FOLLOW.
  *
  * Ce que la référence lisait d'autres modules et que le tableau ne porte pas
  * encore n'est pas rendu plutôt qu'inventé : DESTINATION (dégagement OM-C et
- * METAR — F04d), PUBLISHED ROSTER CREW (F04e), FIR CROSSINGS (F04b). Les
+ * METAR — F04d), PUBLISHED ROSTER CREW (F04e). Les
  * heures viennent de l'étape (std, sta, etaRevised) : sans ETD révisée ni
  * heures réelles dans FollowedFlightDto, ETD = STD et le retard se lit sur la
  * seule révision connue, celle de l'ETA (Q22).
@@ -118,6 +120,48 @@ function TimesBlock({ flight }) {
         <b>{delay}</b>
       </div>
       <div className="fw-eta">{remaining}</div>
+    </div>
+  )
+}
+
+/** Le bloc des franchissements — fwFirBlockHtml js/06 l. 1042-1064. */
+function FirBlock({ flight, from, to }) {
+  const index = useFirIndex(Boolean(flight))
+  if (!index || !from || !to) return null
+  const crossings = firCrossings(index, [
+    [from.lat, from.lon],
+    [to.lat, to.lon],
+  ])
+  if (!crossings.length) return null
+  const etd = flight.std ? new Date(flight.std).getTime() : null
+  const eta = flight.etaRevised
+    ? new Date(flight.etaRevised).getTime()
+    : flight.sta
+      ? new Date(flight.sta).getTime()
+      : null
+  const hhmm = (frac) =>
+    etd == null || eta == null || Number.isNaN(etd) || Number.isNaN(eta)
+      ? null
+      : zTime(new Date(etd + (eta - etd) * frac).toISOString())
+  return (
+    <div className="detail-sect">
+      <h4>FIR CROSSINGS · ESTIMATED</h4>
+      {crossings.map((c, i) => {
+        const h = hhmm(c.at)
+        return (
+          <div className="fw-fir-l" key={`${c.icao ?? 'none'}-${i}`}>
+            <b>{c.icao || 'outside known FIR data'}</b>
+            <span>
+              {i === 0 ? 'from departure' : `at ${Math.round(c.at * 100)} % of route`}
+              {h ? ` · ~${h}` : ''}
+            </span>
+          </div>
+        )
+      })}
+      <div className="fw-src">
+        Computed from the great-circle track over the operator’s 285 FIR/UIR boundaries, sampled every ~1 % of
+        route; times interpolated between ETD and ETA. Not an ATC clearance and not a flight-plan routing.
+      </div>
     </div>
   )
 }
@@ -237,6 +281,8 @@ export default function FlightWatchDetail({ flight, airports, following = false,
             </div>
           </div>
         ) : null}
+
+        <FirBlock flight={flight} from={byIcao.get(flight.depIcao)} to={byIcao.get(flight.arrIcao)} />
 
         <div className="detail-sect">
           <h4>FLIGHT PROGRESS</h4>

@@ -702,6 +702,53 @@ describe('F09c — le REPLAY sur la trace reçue (index.html l. 167-173 ; js/06 
   })
 })
 
+describe('F04b — FIR CROSSINGS · ESTIMATED (js/06 fwFirIndex l. 966-990, fwFirCrossings l. 1023-1038, fwFirBlockHtml l. 1042-1064)', () => {
+  // Deux FIR carrées : l'ouest (lon < 9) et l'est (lon ≥ 9) — la route DTTA (10.2 E) → LFMN (7.2 E) les traverse d'est en ouest.
+  const fir = {
+    type: 'FeatureCollection',
+    features: [
+      { type: 'Feature', properties: { icao: 'LTTT' }, geometry: { type: 'Polygon', coordinates: [[[9, 30], [20, 30], [20, 50], [9, 50], [9, 30]]] } },
+      { type: 'Feature', properties: { icao: 'LFMM' }, geometry: { type: 'Polygon', coordinates: [[[0, 30], [9, 30], [9, 50], [0, 50], [0, 30]]] } },
+    ],
+  }
+  let realFetch
+  beforeEach(() => {
+    realFetch = globalThis.fetch
+    globalThis.fetch = vi.fn((url) =>
+      String(url).includes('/geo/fir.geojson')
+        ? Promise.resolve({ json: () => Promise.resolve(fir) })
+        : Promise.reject(new Error('no network in tests')),
+    )
+    routes['/airports'] = {
+      rows: [
+        { icao: 'DTTA', name: 'Tunis Carthage', latitude: 36.851, longitude: 10.227 },
+        { icao: 'LFMN', name: 'Nice Côte d’Azur', latitude: 43.658, longitude: 7.216 },
+      ],
+    }
+  })
+  afterEach(() => {
+    globalThis.fetch = realFetch
+  })
+
+  test('le bloc liste la suite des FIR avec la part de route et l’heure interpolée entre ETD et ETA, puis la note', async () => {
+    await open()
+    fireEvent.click(q('#fwListBtn'))
+    fireEvent.click(q('#flightlist .fcard .fcard-call'))
+    await waitFor(() => expect(qa('#detailpane .detail-sect h4').map((h) => h.textContent)).toContain('FIR CROSSINGS · ESTIMATED'))
+    const titles = qa('#detailpane .detail-sect h4').map((h) => h.textContent)
+    expect(titles.indexOf('FIR CROSSINGS · ESTIMATED')).toBe(titles.indexOf('FLIGHT PROGRESS') - 1)
+    const sect = qa('#detailpane .detail-sect').find((d) => d.querySelector('h4').textContent === 'FIR CROSSINGS · ESTIMATED')
+    const lines = [...sect.querySelectorAll('.fw-fir-l')]
+    expect(lines.map((l) => l.querySelector('b').textContent)).toEqual(['LTTT', 'LFMM'])
+    expect(lines[0].querySelector('span')).toHaveTextContent('from departure · ~06:00Z')
+    expect(lines[1].querySelector('span').textContent).toMatch(/^at 4\d % of route · ~0[67]:\d\dZ$/)
+    expect(sect.querySelector('.fw-src')).toHaveTextContent(
+      'Computed from the great-circle track over the operator’s 285 FIR/UIR boundaries, sampled every ~1 % of route; times interpolated between ETD and ETA. Not an ATC clearance and not a flight-plan routing.',
+    )
+    expect(globalThis.fetch).toHaveBeenCalledTimes(1)
+  })
+})
+
 describe('F01a — les commandes du bandeau (#fwTopHost, index.html l. 30-39, js/09 l. 175-186, js/10 l. 139-148)', () => {
   test('le bandeau du produit porte #fwTopHost : LIVE, ACTIVATE ERP, FLIGHT LIST, horloge UTC', async () => {
     await open()
