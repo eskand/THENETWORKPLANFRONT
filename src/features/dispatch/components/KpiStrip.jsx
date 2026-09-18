@@ -36,7 +36,9 @@ export default function KpiStrip({ kpi }) {
     {
       label: 'Services pending',
       value: kpi.servicesPending,
-      hint: `${kpi.servicesPending} file${kpi.servicesPending === 1 ? '' : 's'} need action`,
+      hint: kpi.servicesPending
+        ? `${kpi.servicesPending} file${kpi.servicesPending === 1 ? '' : 's'} need action`
+        : 'all clear',
       accent: 'var(--pending-fg)',
       valueColor: 'var(--pending-fg)',
     },
