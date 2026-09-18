@@ -59,7 +59,7 @@ export default function KpiStrip({ kpi }) {
     {
       label: 'Delays / AOG',
       value: kpi.delaysAndAog,
-      hint: `${kpi.aog} AOG · ${kpi.maintenance} maintenance · ${kpi.delayed} delayed`,
+      hint: kpi.delaysAndAog ? 'needs attention' : 'on schedule',
       accent: 'var(--attention-fg)',
       valueColor: kpi.delaysAndAog > 0 ? 'var(--attention-fg)' : undefined,
     },

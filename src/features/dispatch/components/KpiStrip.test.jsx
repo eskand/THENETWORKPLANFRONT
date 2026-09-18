@@ -42,4 +42,12 @@ describe('KpiStrip — sous-libellés de la référence', () => {
     rerender(<KpiStrip kpi={kpi({ crewUnassigned: 0 })} />)
     expect(screen.getByText('fully crewed')).toBeInTheDocument()
   })
+
+  // ref l. 22843 : delaysAog ? 'needs attention' : 'on schedule'
+  test('Delays / AOG dit « needs attention » ou « on schedule »', () => {
+    const { rerender } = render(<KpiStrip kpi={kpi({ delaysAndAog: 3 })} />)
+    expect(screen.getByText('needs attention')).toBeInTheDocument()
+    rerender(<KpiStrip kpi={kpi({ delaysAndAog: 0, aog: 0, maintenance: 0, delayed: 0 })} />)
+    expect(screen.getByText('on schedule')).toBeInTheDocument()
+  })
 })
