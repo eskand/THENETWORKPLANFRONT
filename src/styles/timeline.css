@@ -224,384 +224,412 @@
   border-radius: 2px;
 }
 
-/* ---------------------------------------------------------- la grille */
+/* ==================================================================
+   Grille de Gantt — feuille de la référence TNP_DEMO_FINAL_v226_114.html
+   (v33) l. 1052-1452, copiée telle quelle : .timeline-wrap, .tl-*, .tail-*,
+   .hour-cell, .strip*, .ctx-menu, .now-line / .now-tag.
+   ================================================================== */
+  /* ---------- TIMELINE ---------- */
+  .timeline-wrap{ flex:1; display:flex; overflow:hidden; }
+  .tl-body{ flex:1; display:flex; flex-direction:column; overflow:hidden; }
+  .tl-scroll{ flex:1; overflow:auto; position:relative; }
 
-.tlg {
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  background: var(--surface);
-  overflow: hidden;
-}
+  .tl-grid{ position:relative; min-width:1800px; }
 
-.tlg__scroll {
-  overflow-x: auto;
-  overflow-y: visible;
-}
+  .tl-header{
+    display:flex; position:sticky; top:0; z-index:5;
+    background:var(--bg-panel); border-bottom:1px solid var(--line);
+  }
+  .tl-header .tail-col{
+    width:230px; flex-shrink:0; border-right:1px solid var(--line);
+    display:flex; align-items:center; padding:0 16px;
+    font-size:10px; color:var(--text-faint); text-transform:uppercase; letter-spacing:.1em;
+    background:var(--bg-panel); position:sticky; left:0; z-index:6;
+    will-change:transform; transform:translateZ(0); backface-visibility:hidden;
+  }
+  .tl-hours{ display:flex; flex:1; }
+  .hour-cell{
+    width:75px; flex-shrink:0; padding:10px 0 8px 8px;
+    font-family:var(--mono); font-size:10.5px; color:var(--text-faint);
+    border-right:1px solid var(--line-soft);
+  }
+  .hour-cell.now-hour{ color:var(--status-scheduled); font-weight:700; }
 
-.tlg__grid {
-  position: relative;
-}
+  .tl-row{ display:flex; border-bottom:1px solid var(--line-soft); }
+  .tl-row.section{ background:var(--bg-panel-2); }
+  .tl-row.section .tail-col{ background:var(--bg-panel-2); }
 
-.tlg__header {
-  display: flex;
-  position: sticky;
-  top: 0;
-  z-index: 4;
-  background: var(--surface);
-  border-bottom: 1px solid var(--line);
-}
+  .section-label{
+    flex:1 1 auto; border-right:1px solid var(--line);
+  }
+  .section-label-text{
+    display:inline-block; padding:7px 16px; font-size:10.5px; letter-spacing:.12em;
+    text-transform:uppercase; color:var(--gold); font-weight:600;
+    position:sticky; left:0;
+    will-change:transform; transform:translateZ(0); backface-visibility:hidden;
+  }
 
-.tlg__tailcol {
-  position: sticky;
-  left: 0;
-  z-index: 3;
-  flex-shrink: 0;
-  width: var(--tl-tail);
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 0 12px;
-  background: var(--surface);
-  border-right: 1px solid var(--line);
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-faint);
-}
+  /* Shown only while scrolled past a fleet section's own label, so the current
+     aircraft-type group stays identifiable without scrolling back up. Sits outside
+     the horizontally-scrolling #tlScroll so it can genuinely stick to the page's
+     real scroll container (see updateTlActiveSectionBar). */
+  .tl-active-section-bar{
+    position:sticky; top:0; z-index:8;
+    padding:7px 16px; font-size:10.5px; letter-spacing:.12em; font-weight:600;
+    text-transform:uppercase; color:var(--gold); background:var(--bg-panel-2);
+    border-bottom:1px solid var(--line); border-top:1px solid var(--line);
+  }
 
-.tlg__header .tlg__tailcol {
-  height: 34px;
-}
+  .tail-col{
+    width:230px; flex-shrink:0; border-right:1px solid var(--line);
+    display:flex; align-items:center; gap:10px; padding:0 16px;
+    background:var(--bg-panel); position:sticky; left:0; z-index:15;
+    will-change:transform; transform:translateZ(0); backface-visibility:hidden;
+    overflow:hidden;
+  }
+  .tail-icon{
+    width:32px; height:32px; border-radius:6px; background:var(--bg-raised);
+    border:1px solid var(--line); display:flex; align-items:center; justify-content:center;
+    color:var(--text-dim); flex-shrink:0;
+  }
+  .tail-icon-clickable{ cursor:pointer; transition:background .12s ease, color .12s ease, border-color .12s ease; }
+  .tail-icon-clickable:hover{ background:var(--tnp-navy-2); color:#fff; border-color:var(--tnp-navy-2); }
+  /* ---- canevas multi-jours ---- */
+  .tl-focus{ position:absolute; top:0; bottom:0; }
+  .tl-ctx-day{ position:absolute; top:0; bottom:0; background:rgba(10,21,48,.022); }
+  .tl-ctx-day::before{ content:''; position:absolute; left:0; top:0; bottom:0; width:1px;
+    background:var(--line); }
+  .tl-ctx-strip{ opacity:.42; cursor:pointer; z-index:4; }
+  .tl-ctx-strip:hover{ opacity:.72; }
+  .hour-cell.day-start{ border-left:2px solid var(--line); }
+  .hour-cell.off-day{ color:var(--text-faint); opacity:.72; }
+  .hour-cell .hc-date{ font-family:var(--body); font-size:9px; font-weight:800;
+    letter-spacing:.04em; text-transform:uppercase; color:var(--tnp-navy-2); white-space:nowrap; }
+  .tail-icon svg{ width:16px; height:16px; }
+  .tail-icon > svg{ display:none; }
+  .tail-icon::before{
+    content:''; display:block; width:21px; height:21px; flex-shrink:0;
+    background:url("data:image/png;base64,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") center/contain no-repeat;
+  }
+  .ac-cell .tail-icon::before{ width:18px; height:18px; }
+  /* boutons de la barre réduits à leur seule icône */
+  .hil-btn-icononly{ padding:5px 10px; }
+  .hil-btn-img{ width:20px; height:20px; display:block; object-fit:contain; }
+  .tail-info{ min-width:0; overflow:hidden; }
+  .tail-info .reg{ font-family:var(--mono); font-size:12.5px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .tail-info .type{ font-size:10.5px; color:var(--text-faint); margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .tail-status{ margin-left:auto; width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+  .tail-status.ok{ background:var(--status-enroute); box-shadow:0 0 6px var(--status-enroute); }
+  .tail-status.aog{ background:var(--status-aog); box-shadow:0 0 6px var(--status-aog); }
+  .tail-status.maint{ background:var(--status-maint); box-shadow:0 0 6px var(--status-maint); }
 
-.tlg__hours {
-  display: flex;
-  height: 34px;
-}
+  .tl-lane{
+    position:relative; flex:1; height:58px; overflow:hidden;
+    /* Fond un ton plus soutenu que le blanc de la page : les barres de vol s'en
+       detachent mieux. Le pas des lignes verticales suit la largeur d'une heure
+       (--tl-hour-w, pose par le zoom) au lieu d'etre fige a 75 px. */
+    background-color:#dce1eb;
+    background-image: repeating-linear-gradient(90deg, var(--line) 0, var(--line) 1px, transparent 1px, transparent var(--tl-hour-w, 75px));
+  }
+  #tlRows{ --tl-hour-w:75px; }
+  .tl-row.section .tl-lane{ background-color:var(--bg-panel-2); background-image:none; }
+  /* commandes de zoom */
+  .tl-zoom{ display:flex; align-items:center; gap:5px; }
+  .tl-zoom-btn{
+    width:26px; height:26px; display:flex; align-items:center; justify-content:center;
+    border:1px solid var(--line); border-radius:6px; background:var(--bg-panel);
+    color:var(--text-dim); cursor:pointer; padding:0;
+  }
+  .tl-zoom-btn svg{ width:14px; height:14px; }
+  .tl-zoom-btn:hover:not(:disabled){ border-color:var(--tnp-navy-2); color:var(--tnp-navy); }
+  .tl-zoom-btn:disabled{ opacity:.4; cursor:default; }
+  .tl-zoom-lbl{
+    font-family:var(--mono); font-size:9.5px; font-weight:700; letter-spacing:.03em;
+    color:var(--text-faint); min-width:44px; text-align:center;
+  }
 
-.tlg__hour {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  padding-left: 7px;
-  font-family: var(--mono);
-  font-size: 10px;
-  color: var(--text-faint);
-  border-left: 1px solid var(--line-soft);
-}
+  /* Unified page scroll for the Flight Timeline (Gantt) view only — Table/Map views
+     keep their own layout since they share the .timeline-wrap/.tl-body classes.
+     Vertical scrolling is handled by #viewTimeline (the outer panel) so the KPI strip,
+     toolbar and Gantt rows all move together with the mouse wheel / touch, like a normal
+     page. Horizontal scrolling stays local to #tlScroll so the aircraft column (.tail-col)
+     can remain sticky on the left while scrolling the hours grid left/right. */
+  #tlTimelineWrap{ overflow:visible; }
+  #tlTimelineWrap .tl-body{ overflow:visible; min-width:0; }
+  #tlScroll{ flex:0 0 auto; overflow-x:auto; overflow-y:visible; }
 
-.tlg__hour--day {
-  color: var(--text);
-  font-weight: 700;
-}
+  .strip{
 
-.tlg__hour b {
-  margin-right: 5px;
-  font-size: 9.5px;
-  letter-spacing: 0.06em;
-}
+  /* CAMO AOG band: full-period red bar drawn UNDER the flight strips, which stay visible and
+     draggable on top of it until the dispatcher moves them / changes aircraft. */
+  .tl-lane .strip{ z-index:1; }
+  .tl-lane .strip.aog-band{ z-index:0; opacity:.95; pointer-events:auto; }
+    position:absolute; top:6px; height:46px;
+    border-radius:var(--radius); overflow:hidden;
+    display:flex; align-items:center;
+    cursor:pointer; font-family:var(--mono);
+    border-left:3px solid transparent;
+    background: var(--bg-raised);
+    transition: transform .1s ease, box-shadow .1s ease;
+    z-index:5; /* must sit above .strip-ghost.delay-ghost (z-index:3) so the hachured "original slot"
+                  ghost never renders on top of and obscures this strip's own flight-number text */
+  }
+  .strip:hover{ transform:translateY(-1px); z-index:4; box-shadow:0 4px 14px rgba(0,0,0,.5); }
+  .strip.selected{ outline:1px solid var(--gold); }
+  /* Etiquette de vol : pastille avion + numero / route / horaires empiles.
+     La densite s'adapte a la largeur reelle de la barre (classes sz-*), sinon
+     un secteur court afficherait trois lignes tronquees illisibles. */
+  .strip-content{
+    display:flex; align-items:center; gap:8px; padding:0 9px;
+    white-space:nowrap; overflow:hidden; width:100%; box-sizing:border-box;
+  }
+  .strip-ico{
+    flex-shrink:0; width:24px; height:24px; border-radius:50%;
+    background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.26);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .strip-ico svg{ width:13px; height:13px; fill:currentColor; opacity:.95; }
+  .strip-txt{ display:flex; flex-direction:column; justify-content:center; min-width:0; line-height:1.18; }
+  .strip .fn{ font-size:11.5px; font-weight:700; letter-spacing:.01em; overflow:hidden; text-overflow:ellipsis; }
+  .strip .route{ font-size:10px; font-weight:600; opacity:.92; overflow:hidden; text-overflow:ellipsis; }
+  .strip .time{ font-size:9px; opacity:.72; font-variant-numeric:tabular-nums; }
+  /* barres etroites : on retire d'abord la pastille, puis les horaires, puis la route */
+  .strip.sz-md .strip-ico{ display:none; }
+  .strip.sz-sm .strip-ico{ display:none; }
+  .strip.sz-sm .time{ display:none; }
+  .strip.sz-xs .strip-ico, .strip.sz-xs .time, .strip.sz-xs .route{ display:none; }
+  .strip.sz-xs .strip-content{ padding:0 6px; }
+  .strip.sz-xs .fn{ font-size:10.5px; }
+  /* evenements sol (maintenance, AOG) : libelle unique, centre verticalement */
+  .strip.ground .strip-txt{ justify-content:center; }
 
-.tlg__rows {
-  position: relative;
-}
+  .strip.scheduled{ border-left-color:var(--tnp-navy); background:var(--tnp-navy-2); color:#fff; }
+  .strip.enroute{ border-left-color:#136b3c; background:var(--status-enroute); color:#fff; }
+  .strip.delayed{ border-left-color:#8a6414; background:#d1a53d; color:#1a2036; }
+  .strip.aog{ border-left-color:#8f1620; background:var(--status-aog); color:#fff; }
+  .strip.maint{ border-left-color:#5a3699; background:var(--status-maint); color:#fff; }
+  .strip.option{ border-left-color:#6b7280; background:repeating-linear-gradient(135deg,#c3c8d1 0 8px,#b4bac6 8px 16px); color:#3a4150; opacity:.85; }
+  .strip.off{ border-left-color:var(--status-off); background:var(--bg-raised); color:var(--text-faint); }
+  .strip.cancelled{ border-left-color:var(--status-aog); background:var(--bg-raised); color:var(--text-faint); text-decoration:line-through; opacity:.65; }
+/* Etude de faisabilite : hachurage gris tant que le commerce ne l'a pas
+     confirmee en vol reel. La teinte de la bordure gauche conserve malgre tout
+   l'avancement du dossier, pour que l'OCC s'y retrouve d'un coup d'oeil. */
+.strip.feas_requested, .strip.feas_progress, .strip.feas_approved, .strip.feas_rejected{ background:repeating-linear-gradient(135deg,#b9bec9 0 9px,#aeb4c0 9px 18px); color:#2b3242; }
+.strip.feas_requested{ border-left-color:#8b93a3; }
+.strip.feas_progress{ border-left-color:#5f6b80; }
+.strip.feas_approved{ border-left-color:#2a8038; }
+.strip.feas_rejected{ border-left-color:#8f1620; }
+/* ---------- SALES & COMMERCIAL OPERATIONS ---------- */
+.sales-tab{ font-family:'Poppins',sans-serif; font-size:11.5px; font-weight:600; color:var(--text-faint,#5b6178); background:none; border:none; border-bottom:2px solid transparent; padding:10px 4px; cursor:pointer; display:flex; align-items:center; gap:6px; }
+.sales-tab.active{ color:var(--navy); border-bottom-color:var(--cyan); }
+.sales-badge-count{ background:#C8202F; color:#fff; font-size:9px; font-weight:700; min-width:15px; height:15px; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; padding:0 4px; }
+.sales-kpi-row{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:18px; }
+.sales-kpi{ background:var(--card); border:1px solid var(--border); border-radius:11px; padding:14px; }
+.sales-kpi .num{ font-size:24px; font-weight:700; color:var(--navy); }
+.sales-kpi .lbl{ font-size:10px; color:var(--text-faint,#5b6178); text-transform:uppercase; letter-spacing:.04em; margin-top:2px; }
+.sales-status-pill{ font-size:9.5px; font-weight:700; padding:3px 9px; border-radius:12px; text-transform:uppercase; display:inline-block; }
+.sales-tbl{ width:100%; border-collapse:collapse; font-size:12px; }
+.sales-tbl th{ text-align:left; font-size:9.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--text-faint,#5b6178); padding:8px 10px; border-bottom:1px solid var(--line); }
+.sales-tbl td{ padding:9px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
+.sales-tbl tr:hover td{ background:rgba(0,180,216,.04); }
+.sales-modal-bg{ display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:9999; align-items:flex-start; justify-content:center; padding:30px 16px; overflow-y:auto; }
+.sales-modal-box{ background:#fff; border-radius:10px; max-width:560px; width:94%; box-shadow:0 10px 40px rgba(0,0,0,.3); }
+.sales-field label{ display:block; font-size:9.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--text-faint,#5b6178); margin-bottom:4px; }
+.sales-field input,.sales-field select,.sales-field textarea{ width:100%; font-family:inherit; font-size:12px; padding:7px 9px; border:1px solid var(--line); border-radius:6px; box-sizing:border-box; }
+.sales-connector-card{ background:var(--card); border:1px solid var(--border); border-radius:10px; padding:14px; }
 
-/* Le curseur « maintenant » traverse toutes les lignes. */
-.tlg__now {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  margin-left: -1px;
-  background: #2f7dff;
-  z-index: 2;
-  pointer-events: none;
-}
+  .strip.revised{
+    outline:2px dashed #a855f7; outline-offset:1px;
+    animation: stripPulse 1.4s ease-in-out infinite;
+  }
+  .strip.revised::after{
+    content:"⟳"; position:absolute; top:1px; right:3px; font-size:11px; color:#fff;
+    background:#a855f7; width:15px; height:15px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    line-height:1; box-shadow:0 1px 4px rgba(0,0,0,.5);
+  }
+  @keyframes stripPulse{ 0%,100%{ outline-color:#F0A500; } 50%{ outline-color:#ffd775; } }
+  .strip.airport-alert{ outline:2px solid #C8202F; outline-offset:1px; }
+  @keyframes discontinuityBlink{
+    0%, 100%{ outline-color:#C8202F; box-shadow:0 0 0 0 rgba(200,32,47,.55); }
+    50%{ outline-color:#ff6b7a; box-shadow:0 0 6px 2px rgba(200,32,47,.35); }
+  }
+  .strip.discontinuity-alert{
+    /* Dent de scie: the START (departure edge) of the bar is cut into a sawtooth so a rotation
+       discontinuity is recognisable by shape alone, not just by the blinking red halo. The old
+       outline is replaced by a drop-shadow that follows the clipped silhouette. */
+    outline:none;
+    clip-path: polygon(7px 0, 100% 0, 100% 100%, 7px 100%,
+      0 93.75%, 7px 87.5%, 0 81.25%, 7px 75%, 0 68.75%, 7px 62.5%, 0 56.25%, 7px 50%,
+      0 43.75%, 7px 37.5%, 0 31.25%, 7px 25%, 0 18.75%, 7px 12.5%, 0 6.25%, 7px 0);
+    animation:discontinuitySaw 1.1s ease-in-out infinite;
+  }
+  .strip.discontinuity-alert-right{
+    /* Mirror image on the ARRIVAL edge: the aircraft does not end this leg where the next one
+       starts, so the right-hand side of the bar is the one cut away. */
+    outline:none;
+    clip-path: polygon(0 0, calc(100% - 7px) 0,
+      100% 6.25%, calc(100% - 7px) 12.5%, 100% 18.75%, calc(100% - 7px) 25%,
+      100% 31.25%, calc(100% - 7px) 37.5%, 100% 43.75%, calc(100% - 7px) 50%,
+      100% 56.25%, calc(100% - 7px) 62.5%, 100% 68.75%, calc(100% - 7px) 75%,
+      100% 81.25%, calc(100% - 7px) 87.5%, 100% 93.75%, calc(100% - 7px) 100%, 0 100%);
+    animation:discontinuitySaw 1.1s ease-in-out infinite;
+  }
+  .strip.discontinuity-alert.discontinuity-alert-right{
+    /* Both ends broken: the bar is cut on both sides. */
+    clip-path: polygon(7px 0, calc(100% - 7px) 0,
+      100% 6.25%, calc(100% - 7px) 12.5%, 100% 18.75%, calc(100% - 7px) 25%,
+      100% 31.25%, calc(100% - 7px) 37.5%, 100% 43.75%, calc(100% - 7px) 50%,
+      100% 56.25%, calc(100% - 7px) 62.5%, 100% 68.75%, calc(100% - 7px) 75%,
+      100% 81.25%, calc(100% - 7px) 87.5%, 100% 93.75%, calc(100% - 7px) 100%,
+      7px 100%, 0 93.75%, 7px 87.5%, 0 81.25%, 7px 75%, 0 68.75%, 7px 62.5%, 0 56.25%,
+      7px 50%, 0 43.75%, 7px 37.5%, 0 31.25%, 7px 25%, 0 18.75%, 7px 12.5%, 0 6.25%);
+  }
+  .strip.discontinuity-alert-right .strip-content{ padding-right:9px; }
+  .strip.discontinuity-alert .strip-alert-badge{ left:10px; }
+  .strip.discontinuity-alert .strip-content{ padding-left:9px; }
+  @keyframes discontinuitySaw{
+    0%, 100%{ filter:drop-shadow(0 0 1px #C8202F) drop-shadow(0 0 2px rgba(200,32,47,.8)); }
+    50%{ filter:drop-shadow(0 0 3px #ff6b7a) drop-shadow(0 0 5px rgba(200,32,47,.5)); }
+  }
+  .strip-alert-badge{
+    position:absolute; top:1px; left:3px; font-size:10px; line-height:1;
+    background:#C8202F; color:#fff; width:14px; height:14px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center; box-shadow:0 1px 4px rgba(0,0,0,.5);
+  }
+  .strip.dragging{ opacity:.55; z-index:20; box-shadow:0 8px 20px rgba(0,0,0,.6); cursor:grabbing; }
+  .tl-lane.drop-target{ background-color:rgba(240,165,0,.10); outline:1px dashed rgba(240,165,0,.5); outline-offset:-1px; }
+  .strip-ghost{
+    position:absolute; top:9px; height:40px; border-radius:var(--radius);
+    border:2px dashed #F0A500; background:rgba(240,165,0,.12); pointer-events:none; z-index:19;
+  }
+  /* Original scheduled slot of a delayed flight — hachured "ghost" block left behind when the
+     actual/shifted bar (ETD-based) is drawn further right. Shape + hatching communicate the
+     delay at a glance, distinct from the drag-preview ghost above. */
+  .strip-ghost.delay-ghost{
+    border:1px dashed rgba(200,32,47,.55);
+    background: repeating-linear-gradient(135deg, rgba(200,32,47,.22) 0 6px, rgba(200,32,47,.08) 6px 12px);
+    z-index:3;
+  }
+  .strip-rotation-badge{
+    position:absolute; font-size:9px; font-weight:700; line-height:1;
+    background:#C8202F; color:#fff; min-width:14px; height:14px; padding:0 2px; border-radius:8px;
+    display:flex; align-items:center; justify-content:center; box-shadow:0 1px 4px rgba(0,0,0,.5);
+    border:1px solid var(--bg-panel, #fff); z-index:6; pointer-events:none;
+  }
+  .strip-grounded{
+    position:absolute; transform:translateY(-50%); display:flex; align-items:center; gap:6px;
+    font-size:10px; font-weight:700; letter-spacing:.03em; color:#5b6577;
+    background:#EEF1F6; border:1px dashed #C7CEDB; border-radius:8px; padding:5px 10px;
+    white-space:nowrap; pointer-events:none; z-index:2;
+  }
+  .strip-grounded .sg-dot{ width:6px; height:6px; border-radius:50%; background:#8A94A6; flex-shrink:0; }
+  /* Duty-time-remaining countdown — shown on enroute strips as the crew's FDP ceiling approaches.
+     Amber while comfortably inside the warning window, escalating to a blinking red pill once
+     inside the critical window or past the limit (negative remaining time). Sits just below the
+     strip, like the rotation-risk badge, so it never overlaps the route/time text inside the bar. */
+  .strip-duty-badge{
+    position:absolute; font-size:9px; font-weight:700; line-height:1; white-space:nowrap;
+    display:flex; align-items:center; gap:3px; padding:2px 6px; border-radius:9px;
+    box-shadow:0 1px 4px rgba(0,0,0,.35); z-index:6; pointer-events:none;
+    border:1px solid rgba(255,255,255,.5);
+  }
+  .strip-duty-badge.warn{ background:#F0A500; color:#3a2a00; }
+  .strip-duty-badge.crit{ background:#C8202F; color:#fff; animation:dutyBadgeBlink 1s ease-in-out infinite; }
+  .strip-duty-badge .sdb-dot{ width:5px; height:5px; border-radius:50%; background:currentColor; flex-shrink:0; }
+  @keyframes dutyBadgeBlink{
+    0%, 100%{ opacity:1; box-shadow:0 0 0 0 rgba(200,32,47,.6); }
+    50%{ opacity:.82; box-shadow:0 0 7px 2px rgba(200,32,47,.5); }
+  }
+  /* The strip itself also gets a subtle blinking outline once in the critical window, echoing the
+     discontinuity-alert treatment but in amber-to-red so it reads as "time pressure" rather than
+     "scheduling error". */
+  @keyframes dutyStripBlink{
+    0%, 100%{ outline-color:#C8202F; }
+    50%{ outline-color:#ffb199; }
+  }
+  .strip.duty-critical{ outline:2px solid #C8202F; outline-offset:1px; animation:dutyStripBlink 1s ease-in-out infinite; }
+  .fd-badge.gendec-alert{ background:rgba(240,81,73,.18); color:#f85149; border:1px solid rgba(248,81,73,.4); }
+  .action-btn.gendec-alert{ position:relative; border:1px solid rgba(248,81,73,.55); color:#f85149; }
+  .action-btn.gendec-alert::after{
+    content:"REVISE"; position:absolute; top:-8px; right:-6px; font-size:7.5px; font-weight:800; letter-spacing:.04em;
+    background:#f85149; color:#fff; padding:1px 4px; border-radius:4px; box-shadow:0 1px 4px rgba(0,0,0,.5);
+  }
+  .revision-banner{
+    display:flex; align-items:center; gap:10px; background:rgba(240,165,0,.12); border:1px solid rgba(240,165,0,.4);
+    border-radius:8px; padding:9px 12px; margin-bottom:12px; font-size:11.5px; color:#c98900;
+  }
+  .revision-banner .rb-btn{
+    margin-left:auto; flex-shrink:0; background:#F0A500; color:#1a2036; border:none; border-radius:5px;
+    padding:6px 10px; font-size:10.5px; font-weight:700; cursor:pointer; white-space:nowrap;
+  }
+  .tnp-confirm-row{ display:flex; gap:10px; justify-content:flex-end; margin-top:18px; }
+  .tnp-confirm-row button{ padding:9px 18px; border-radius:6px; font-size:12px; font-weight:700; cursor:pointer; border:none; }
+  .tnp-confirm-cancel{ background:var(--bg-panel-2); color:var(--text); border:1px solid var(--line) !important; }
+  .tnp-confirm-ok{ background:#F0A500; color:#1a2036; }
 
-.tlg__nowlabel {
-  position: absolute;
-  top: 4px;
-  transform: translateX(-50%);
-  z-index: 5;
-  font-family: var(--mono);
-  font-size: 10px;
-  font-weight: 700;
-  color: #fff;
-  background: #2f7dff;
-  padding: 2px 7px;
-  border-radius: 4px;
-  white-space: nowrap;
-  pointer-events: none;
-}
+  /* ---------- Flight right-click context menu (Cancel / Change / Swap) ---------- */
+  .ctx-menu{
+    display:none; position:fixed; z-index:900; min-width:190px;
+    background:var(--bg-panel); border:1px solid var(--line); border-radius:8px;
+    box-shadow:0 10px 28px rgba(0,0,0,.35); padding:5px; font-size:12.5px;
+  }
+  .ctx-item{
+    position:relative; display:flex; align-items:center; gap:8px; padding:8px 10px;
+    border-radius:6px; cursor:pointer; color:var(--text); white-space:nowrap;
+  }
+  .ctx-item:hover{ background:rgba(27,45,107,.08); }
+  .ctx-item.has-sub{ justify-content:space-between; }
+  .ctx-caret{ margin-left:auto; opacity:.6; }
+  .ctx-submenu{
+    display:none; position:absolute; left:100%; top:-5px; min-width:170px;
+    background:var(--bg-panel); border:1px solid var(--line); border-radius:8px;
+    box-shadow:0 10px 28px rgba(0,0,0,.35); padding:5px;
+  }
+  .ctx-item.has-sub:hover > .ctx-submenu{ display:block; }
+  .ctx-item.has-sub.ctx-flip-left > .ctx-submenu{ left:auto; right:100%; }
+  .ctx-item[data-action="cancel"]{ color:var(--status-aog); }
 
-.tlg__nowlabel i {
-  font-style: normal;
-  font-size: 8px;
-  opacity: 0.8;
-}
+  /* Marqueur d'heure courante : trait fin bleu, surmonte d'une pastille pleine
+     portant l'heure exacte. La pastille est centree sur le trait et pointe vers
+     lui, pour qu'on lise l'instant present sans ambiguite de quelques pixels. */
+  .now-line{
+    position:absolute; top:0; bottom:0; width:2px; margin-left:-1px;
+    background:var(--status-scheduled); z-index:7; pointer-events:none;
+    box-shadow:0 0 6px rgba(47,111,176,.55);
+  }
+  .now-line::before{
+    content:''; position:absolute; top:-3px; left:-2px; width:6px; height:6px;
+    border-radius:50%; background:var(--status-scheduled);
+  }
+  /* La pastille est posee DANS le bandeau des heures, pas au-dessus. #tlScroll
+     porte overflow-x:auto, ce qui force le rognage vertical (la specification
+     CSS remonte overflow-y:visible a auto des que l'autre axe ne l'est pas) :
+     tout ce qui depassait vers le haut etait donc invisible, et l'ancienne
+     etiquette a top:-22px ne s'est jamais affichee. Bandeau = 31,6 px de haut,
+     pastille = 19,8 px : a top:4px elle tient entierement dedans, pointe comprise. */
+  .now-tag{
+    /* Posee JUSTE SOUS le bandeau des heures (31,6 px) : a top:4px elle
+       recouvrait les libelles horaires. A 34 px elle commence sous le filet du
+       bandeau, la pointe tournee vers le haut pour rester rattachee au trait. */
+    position:absolute; top:34px; left:50%; transform:translateX(-50%);
+    font-family:var(--mono); font-size:11.5px; font-weight:700; letter-spacing:.01em;
+    color:#fff; background:var(--status-scheduled); border:none;
+    padding:3px 8px; border-radius:5px; white-space:nowrap;
+    box-shadow:0 2px 6px rgba(47,111,176,.45);
+    display:flex; align-items:baseline; gap:3px;
+  }
+  /* pointe de la pastille vers le trait */
+  /* pointe vers le HAUT : la pastille est desormais sous le bandeau */
+  .now-tag::after{
+    content:''; position:absolute; top:-4px; left:50%; transform:translateX(-50%);
+    width:0; height:0; border-left:4px solid transparent; border-right:4px solid transparent;
+    border-bottom:4px solid var(--status-scheduled);
+  }
+  /* Le fuseau reste indique : la timeline est en UTC de bout en bout et un
+     marqueur d'heure sans fuseau serait ambigu dans un OCC. */
+  .now-tag .tz{ font-size:7.5px; font-weight:700; opacity:.72; letter-spacing:.04em; }
 
-.tlg__section {
-  display: flex;
-  align-items: center;
-  height: 26px;
-  padding-left: 12px;
-  background: var(--surface-2, #f6f8fc);
-  border-top: 1px solid var(--line);
-  border-bottom: 1px solid var(--line-soft);
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--accent-orange);
-  position: sticky;
-  left: 0;
-}
-
-.tlg__section span {
-  position: sticky;
-  left: 12px;
-}
-
-.tlg__row {
-  display: flex;
-  height: var(--tl-row-h);
-  border-bottom: 1px solid var(--line-soft);
-}
-
-.tlg__row .tlg__tailcol {
-  text-transform: none;
-  letter-spacing: 0;
-}
-
-/* 32px, fond leve, filet : les mesures de `.tail-icon` du prototype
-   (l. 1110-1114). En 26px sans fond, la colonne paraissait vide. */
-.tlg__tailicon {
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  flex-shrink: 0;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  background: var(--bg-raised);
-  color: var(--text-dim);
-}
-
-.tlg__tailicon svg {
-  width: 17px;
-  height: 17px;
-}
-
-.tlg__tailinfo {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.tlg__tailinfo b {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--text);
-}
-
-.tlg__tailinfo i {
-  font-style: normal;
-  font-family: var(--mono);
-  font-size: 9.5px;
-  color: var(--text-faint);
-}
-
-.tlg__dot {
-  margin-left: auto;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  background: var(--tl-enroute);
-  box-shadow: 0 0 6px var(--tl-enroute);
-}
-
-.tlg__dot--aog {
-  background: var(--tl-aog);
-  box-shadow: 0 0 6px var(--tl-aog);
-}
-
-.tlg__dot--maintenance {
-  background: var(--tl-maint);
-  box-shadow: 0 0 6px var(--tl-maint);
-}
-
-.tlg__lane {
-  position: relative;
-  flex-shrink: 0;
-  display: flex;
-}
-
-.tlg__cell {
-  flex-shrink: 0;
-  border-left: 1px solid var(--line-soft);
-}
-
-.tlg__idle {
-  position: absolute;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  font-family: var(--mono);
-  font-size: 9.5px;
-  letter-spacing: 0.08em;
-  color: var(--text-faint);
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  padding: 3px 12px;
-  white-space: nowrap;
-}
-
-/* ----------------------------------------------------------- les barres */
-
-.tlb {
-  position: absolute;
-  top: 7px;
-  height: calc(var(--tl-row-h) - 16px);
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 0 8px;
-  border-radius: 7px;
-  border: 0;
-  overflow: hidden;
-  font-family: inherit;
-  text-align: left;
-  color: #eaf1ff;
-  background: var(--tl-scheduled);
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.tlb--enroute {
-  background: var(--tl-enroute);
-}
-
-.tlb--delayed {
-  background: var(--tl-delayed);
-  color: #2a1f00;
-}
-
-.tlb--closed {
-  background: var(--tl-closed);
-}
-
-.tlb--cancelled {
-  background: var(--tl-cancelled);
-  text-decoration: line-through;
-}
-
-.tlb--aog {
-  background: var(--tl-aog);
-}
-
-.tlb--maint {
-  background: var(--tl-maint);
-}
-
-/* Une bande AOG ou maintenance prend toute la fenetre : la ligne est vide
-   parce que l'avion ne vole pas, et l'ecran doit dire pourquoi. */
-.tlb--band {
-  top: 6px;
-  height: calc(var(--tl-row-h) - 14px);
-  border-radius: 5px;
-  padding: 0 14px;
-  font-family: var(--mono);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  cursor: default;
-}
-
-/* Une escale trop courte : un liseré, pas une barre pleine. */
-.tlb--tight {
-  top: auto;
-  bottom: 6px;
-  height: 14px;
-  padding: 0 6px;
-  border-radius: 4px;
-  background: repeating-linear-gradient(
-    45deg,
-    rgba(217, 164, 6, 0.85),
-    rgba(217, 164, 6, 0.85) 4px,
-    rgba(217, 164, 6, 0.5) 4px,
-    rgba(217, 164, 6, 0.5) 8px
-  );
-  color: #2a1f00;
-  font-family: var(--mono);
-  font-size: 9px;
-  font-weight: 800;
-  cursor: default;
-}
-
-.tlb__ico {
-  display: grid;
-  place-items: center;
-  width: 18px;
-  height: 18px;
-  flex-shrink: 0;
-  border-radius: 5px;
-  background: rgba(255, 255, 255, 0.16);
-}
-
-.tlb__ico svg {
-  width: 11px;
-  height: 11px;
-}
-
-.tlb__txt {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  line-height: 1.25;
-  overflow: hidden;
-}
-
-.tlb__txt b {
-  font-size: 10.5px;
-  font-weight: 800;
-  letter-spacing: 0.02em;
-}
-
-.tlb__txt i,
-.tlb__txt u {
-  font-style: normal;
-  text-decoration: none;
-  font-family: var(--mono);
-  font-size: 8.5px;
-  opacity: 0.85;
-}
-
-.tlb__chip,
-.tlb__ftl {
-  margin-left: auto;
-  flex-shrink: 0;
-  font-family: var(--mono);
-  font-size: 8.5px;
-  font-weight: 800;
-  padding: 1px 5px;
-  border-radius: 3px;
-  background: rgba(255, 255, 255, 0.22);
-}
-
-.tlb__chip--stop {
-  background: #ffd400;
-  color: #2a1f00;
-}
-
-.tlb__ftl--warning {
-  background: #ffd400;
-  color: #2a1f00;
-}
-
-.tlb__ftl--breach {
-  background: #ff5247;
-  color: #fff;
-}
+  /* ---------- RIGHT DETAIL PANEL ---------- */
 
 /* ------------------------------------------------------------- le mode Table */
 
