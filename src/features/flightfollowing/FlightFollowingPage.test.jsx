@@ -653,6 +653,55 @@ describe('F09b — le WATCH REPORT (js/06 fwRapportHtml l. 877-914, fwOpenReport
   })
 })
 
+describe('F09c — le REPLAY sur la trace reçue (index.html l. 167-173 ; js/06 fwReplayToggle l. 855-873, fwReplaySeek l. 845-854 ; trace = GET /flight-following/legs/{id}/track)', () => {
+  const tracked = () =>
+    flight({
+      lastPosition: { latitude: 40.1, longitude: 8.9, trackDeg: 312, groundSpeedKt: 450, altitudeFt: 39000, reportedAt: '2026-09-18T07:30:00Z', ageMinutes: 1, provider: 'OPENSKY', automatic: true },
+    })
+  const track = [
+    { reportedAt: '2026-09-18T07:00:00Z', latitude: 37.0, longitude: 10.0, trackDeg: 300, altitudeFt: 20000 },
+    { reportedAt: '2026-09-18T07:10:00Z', latitude: 38.0, longitude: 9.7, trackDeg: 305, altitudeFt: 39000 },
+    { reportedAt: '2026-09-18T07:20:00Z', latitude: 39.0, longitude: 9.3, trackDeg: 310, altitudeFt: 39000 },
+    { reportedAt: '2026-09-18T07:30:00Z', latitude: 40.1, longitude: 8.9, trackDeg: 312, altitudeFt: 39000 },
+  ]
+
+  test('#fw-replay fermé au départ ; sans trace, REPLAY dit « Nothing recorded yet — the track builds up as the watch runs. »', async () => {
+    routes['/flight-following/legs/l1/track'] = []
+    await open(board([tracked()]))
+    const box = q('#mapwrap #fw-replay')
+    expect(box).not.toHaveClass('on')
+    expect(box.querySelector('.fw-rp-l')).toHaveTextContent('Replay')
+    const slider = box.querySelector('input#fw-replay-sl[type="range"]')
+    expect(slider).toHaveAttribute('min', '0')
+    expect(slider).toHaveAttribute('max', '100')
+    expect(slider.value).toBe('100')
+    expect(slider).toHaveAttribute('title', 'Move back through the track kept for this watch')
+    expect(box.querySelector('.fw-rp-at#fw-replay-at')).toHaveTextContent('now')
+    fireEvent.click(q('#fw-replay-btn'))
+    await waitFor(() => expect(box).toHaveClass('on'))
+    expect(box.querySelector('.fw-rp-msg')).toHaveTextContent('Nothing recorded yet — the track builds up as the watch runs.')
+    expect(q('#fw-replay-btn')).not.toHaveClass('on')
+  })
+
+  test('avec une trace : REPLAY s’allume, le curseur remonte le temps et l’étiquette dit « −n min » ; un second clic rend la main', async () => {
+    routes['/flight-following/legs/l1/track'] = track
+    await open(board([tracked()]))
+    fireEvent.click(q('#fw-replay-btn'))
+    await waitFor(() => expect(q('#fw-replay-btn')).toHaveClass('on'))
+    expect(q('#fw-replay-btn')).toHaveAttribute('aria-pressed', 'true')
+    expect(q('#fw-replay')).toHaveClass('on')
+    expect(q('#fw-replay .fw-rp-msg')).toHaveTextContent('')
+    expect(q('#fw-replay-at')).toHaveTextContent('now')
+    fireEvent.input(q('#fw-replay-sl'), { target: { value: '0' } })
+    expect(q('#fw-replay-at')).toHaveTextContent('−30 min')
+    fireEvent.input(q('#fw-replay-sl'), { target: { value: '50' } })
+    expect(q('#fw-replay-at')).toHaveTextContent('−15 min')
+    fireEvent.click(q('#fw-replay-btn'))
+    expect(q('#fw-replay')).not.toHaveClass('on')
+    expect(q('#fw-replay-btn')).not.toHaveClass('on')
+  })
+})
+
 describe('F01a — les commandes du bandeau (#fwTopHost, index.html l. 30-39, js/09 l. 175-186, js/10 l. 139-148)', () => {
   test('le bandeau du produit porte #fwTopHost : LIVE, ACTIVATE ERP, FLIGHT LIST, horloge UTC', async () => {
     await open()

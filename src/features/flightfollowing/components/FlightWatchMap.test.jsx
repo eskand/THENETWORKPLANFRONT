@@ -1,5 +1,6 @@
 import { act, render } from '@testing-library/react'
 import { vi } from 'vitest'
+import L from 'leaflet'
 import FlightWatchMap from './FlightWatchMap'
 
 /**
@@ -164,6 +165,21 @@ describe('F19 — le radar suit le curseur d’opacité (js/06 l. 1652-1655)', (
     expect(radarImg.closest('.leaflet-layer').style.opacity).toBe('0.4')
     const irImg = qa('#map img.leaflet-tile').find((img) => img.src.includes('/v2/satellite/'))
     expect(irImg.closest('.leaflet-layer').style.opacity).toBe('0.55')
+  })
+})
+
+describe('F09c — pendant le rejeu, les appareils se posent sur la trace (fwReplayPose js/06 l. 832-844)', () => {
+  test('la position rejouée remplace la position vivante, avec son cap', () => {
+    const { rerender } = draw()
+    const props = { flights: [flight()], airports, traffic: [], showTraffic: false, basemap: 'SATELLITE', layers: LAYERS, radarFrame: null, selectedId: null, onSelect: () => {} }
+    rerender(<FlightWatchMap {...props} replay={{ on: true, positions: { l1: { lat: 38.0, lon: 9.7, hdg: 305 } } }} />)
+    const icon = q('#map .leaflet-ac-pane .leaflet-marker-icon')
+    expect(icon.querySelector('svg').style.transform).toBe('rotate(305deg)')
+    const shown = window.__fwMap.layerPointToLatLng(L.point(parseFloat(icon.style.left) || 0, parseFloat(icon.style.top) || 0))
+    expect(shown.lat).toBeCloseTo(38.0, 0)
+    expect(shown.lng).toBeCloseTo(9.7, 0)
+    rerender(<FlightWatchMap {...props} replay={{ on: false, positions: {} }} />)
+    expect(q('#map .leaflet-ac-pane .leaflet-marker-icon svg').style.transform).toBe('rotate(312deg)')
   })
 })
 

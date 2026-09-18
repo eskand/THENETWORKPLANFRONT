@@ -1,5 +1,7 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
+import { fetchTrack } from '../../api/operations'
 import TopBar from '../../components/TopBar'
 import { ErrorState } from '../../components/States'
 import { useAirports, useFollowingBoard, useLiveTraffic } from '../../hooks/useOperations'
@@ -114,6 +116,40 @@ function passesFilters(flight, filters) {
   if (filters.op !== 'ALL' && flight.operator !== filters.op) return false
   return true
 }
+
+/** L'étendue des traces : première et dernière heure, nombre de points (TNP_FWTRACE.span js/06 l. 817-824). */
+function replaySpan(tracks) {
+  let from = null
+  let to = null
+  let points = 0
+  Object.values(tracks).forEach((track) => {
+    track.forEach((point) => {
+      const t = new Date(point.reportedAt).getTime()
+      if (Number.isNaN(t)) return
+      points += 1
+      if (from === null || t < from) from = t
+      if (to === null || t > to) to = t
+    })
+  })
+  return from === null ? null : { from, to, points }
+}
+
+/** Pour chaque vol, le dernier point de trace à l'instant s (fwReplayPose js/06 l. 832-844). */
+function replayPositions(tracks, s) {
+  const out = {}
+  Object.entries(tracks).forEach(([legId, track]) => {
+    if (!track.length) return
+    let p = track[0]
+    for (const point of track) {
+      if (new Date(point.reportedAt).getTime() <= s) p = point
+      else break
+    }
+    out[legId] = { lat: Number(p.latitude), lon: Number(p.longitude), hdg: p.trackDeg ?? 0 }
+  })
+  return out
+}
+
+const REPLAY_OFF = { on: false, s: null, span: null, tracks: {}, msg: '', slider: 100 }
 
 /** Style en ligne du bouton ERP tel que js/10 l. 145 le pose. */
 const ERP_STYLE = {
@@ -260,6 +296,8 @@ export default function FlightFollowingPage() {
   const [copied, setCopied] = useState(false)
   const reportBodyRef = useRef(null)
   const [focus, setFocus] = useState(null)
+  const [replay, setReplay] = useState(REPLAY_OFF)
+  const queryClient = useQueryClient()
   const [detailOpen, setDetailOpen] = useState(false)
   // « FOLLOW THIS FLIGHT ON MAP » — followSelected js/06 l. 1604-1608.
   const [following, setFollowing] = useState(false)
@@ -313,6 +351,55 @@ export default function FlightFollowingPage() {
     setDetailOpen(true)
     if (fly) setFocus((current) => ({ legId, n: (current?.n ?? 0) + 1 }))
   }, [])
+
+  /* Le rejeu — fwReplayToggle js/06 l. 855-873 : la trace est celle que le serveur a
+     reçue (GET /flight-following/legs/{id}/track), lue pour chaque vol qui a une
+     position au moment où REPLAY s'allume ; la référence rejouait sa trace simulée
+     gardée en mémoire (A-D14). */
+  const toggleReplay = useCallback(async () => {
+    if (replay.on) {
+      setReplay(REPLAY_OFF)
+      return
+    }
+    const withPosition = all.filter((flight) => flight.lastPosition)
+    const entries = await Promise.all(
+      withPosition.map(async (flight) => {
+        try {
+          const track = await queryClient.fetchQuery({
+            queryKey: ['following-track', flight.legId],
+            queryFn: () => fetchTrack(flight.legId),
+          })
+          return [flight.legId, Array.isArray(track) ? track : []]
+        } catch {
+          return [flight.legId, []]
+        }
+      }),
+    )
+    const tracks = Object.fromEntries(entries)
+    const span = replaySpan(tracks)
+    if (!span || span.points < 4) {
+      setReplay({ ...REPLAY_OFF, msg: 'Nothing recorded yet — the track builds up as the watch runs.' })
+      return
+    }
+    setReplay({ on: true, s: span.to, span, tracks, msg: '', slider: 100 })
+  }, [replay.on, all, queryClient])
+
+  /* fwReplaySeek js/06 l. 845-854. */
+  const seekReplay = (value) =>
+    setReplay((current) => {
+      if (!current.span) return current
+      const v = Number(value)
+      return { ...current, slider: v, s: current.span.from + (current.span.to - current.span.from) * (v / 100) }
+    })
+  const replayLabel = (() => {
+    if (!replay.on || !replay.span) return 'now'
+    const recule = Math.round((replay.span.to - replay.s) / 60000)
+    return recule <= 0 ? 'now' : `−${recule} min`
+  })()
+  const replayForMap = useMemo(
+    () => ({ on: replay.on, positions: replay.on ? replayPositions(replay.tracks, replay.s) : {} }),
+    [replay.on, replay.tracks, replay.s],
+  )
 
   /* La vue TABLE : les filtres retranchent, pas la recherche ; tri par niveau puis
      indice (fwTableHtml js/06 l. 1074-1076). */
@@ -551,6 +638,7 @@ export default function FlightFollowingPage() {
               onSelect={selectFlight}
               following={following}
               focus={focus}
+              replay={replayForMap}
             />
 
             <div id="fwMapCtl">
@@ -652,7 +740,14 @@ export default function FlightFollowingPage() {
 
             {/* Les commandes de veille — index.html l. 154-166. */}
             <div id="fw-watch-ctl">
-              <button id="fw-replay-btn" type="button" aria-pressed="false" title="Replay the track kept for this watch">
+              <button
+                id="fw-replay-btn"
+                type="button"
+                className={replay.on ? 'on' : undefined}
+                aria-pressed={replay.on ? 'true' : 'false'}
+                title="Replay the track kept for this watch"
+                onClick={() => toggleReplay()}
+              >
                 ⏰ REPLAY
               </button>
               <button
@@ -743,6 +838,24 @@ export default function FlightFollowingPage() {
                   </table>
                 ) : null}
               </div>
+            </div>
+
+            {/* Le curseur du rejeu — index.html l. 167-173. */}
+            <div id="fw-replay" className={replay.on || replay.msg ? 'on' : undefined}>
+              <span className="fw-rp-l">Replay</span>
+              <input
+                id="fw-replay-sl"
+                type="range"
+                min="0"
+                max="100"
+                value={replay.slider}
+                onChange={(event) => seekReplay(event.target.value)}
+                title="Move back through the track kept for this watch"
+              />
+              <span className="fw-rp-at" id="fw-replay-at">
+                {replayLabel}
+              </span>
+              <span className="fw-rp-msg">{replay.msg}</span>
             </div>
 
             <div id="basemap-switch">

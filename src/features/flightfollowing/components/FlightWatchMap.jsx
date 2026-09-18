@@ -16,7 +16,7 @@ import { RISK_COLOUR } from './FlightWatchList'
  * sélection l. 1236-1239 (flyTo zoom 6), suivi caméra l. 508-511 et 1604-1608
  * (zoom 7 puis panTo sans animation à chaque position), trafic ADS-B fwSetAdsb
  * l. 1703-1740 (icône bleue 11 px, infobulle, fenêtre), radar RainViewer à
- * l'opacité du curseur l. 1637-1655.
+ * l'opacité du curseur l. 1637-1655, rejeu fwReplayPose l. 832-844.
  *
  * Un appareil ne se dessine que s'il a une position reçue : la référence
  * simulait les positions (A-D14). La liste dit « NO SOURCE » pour les autres.
@@ -84,6 +84,8 @@ export default function FlightWatchMap({
   radarOpacity = 70,
   /** { legId, n } : chaque demande de centrage (selectFlight(id, true)) ; la vue TABLE n'en émet pas. */
   focus = null,
+  /** { on, positions: { legId: { lat, lon, hdg } } } : pendant le rejeu les appareils se posent sur la trace (fwReplayPose l. 832-844). */
+  replay = null,
   selectedId,
   onSelect,
   following = false,
@@ -223,9 +225,13 @@ export default function FlightWatchMap({
         ).addTo(routes)
       }
 
-      const position = flight.lastPosition
-      if (!position || position.latitude == null || position.longitude == null) return
+      const live = flight.lastPosition
+      if (!live || live.latitude == null || live.longitude == null) return
       seen.add(flight.legId)
+      const replayed = replay?.on ? replay.positions?.[flight.legId] : null
+      const position = replayed
+        ? { latitude: replayed.lat, longitude: replayed.lon, trackDeg: replayed.hdg }
+        : live
       const latLng = [Number(position.latitude), Number(position.longitude)]
       const colour = RISK_COLOUR[flight.risk?.level] ?? RISK_COLOUR.LOW
       const icon = L.divIcon({ className: '', html: aircraftSVG(colour), iconSize: [26, 26], iconAnchor: [13, 13] })
@@ -253,7 +259,7 @@ export default function FlightWatchMap({
         markersRef.current.delete(legId)
       }
     })
-  }, [flights, airports, onSelect])
+  }, [flights, airports, onSelect, replay])
 
   /* Choisir un vol centre la carte sur lui — selectFlight(id, fly) js/06 l. 1236-1239 :
      la liste, la carte et la pile d'alertes demandent le vol (fly = true), la vue
