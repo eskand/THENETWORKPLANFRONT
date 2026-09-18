@@ -22,7 +22,7 @@ import { RISK_COLOUR } from './FlightWatchList'
 const R_EARTH_NM = 3440.065
 
 /** HH:MMZ — fwZ js/06 l. 1264-1267. */
-function zTime(iso) {
+export function zTime(iso) {
   if (!iso) return null
   const date = new Date(iso)
   if (Number.isNaN(date.getTime())) return null
@@ -30,7 +30,7 @@ function zTime(iso) {
 }
 
 /** « 2h15 » — fwDur js/06 l. 1273-1278. */
-function fwDur(minutes) {
+export function fwDur(minutes) {
   let min = Math.round(minutes)
   const sign = min < 0 ? '-' : ''
   min = Math.abs(min)
@@ -55,7 +55,7 @@ function coordinatesOf(entry) {
 }
 
 /** Les heures du vol — fwTimes js/06 l. 1288-1316, sur ce que l'étape porte. */
-function timesOf(flight, now) {
+export function timesOf(flight, now) {
   if (!flight.std || !flight.sta) return null
   const std = new Date(flight.std)
   const sta = new Date(flight.sta)

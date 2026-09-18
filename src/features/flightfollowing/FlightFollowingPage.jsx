@@ -4,8 +4,8 @@ import TopBar from '../../components/TopBar'
 import { ErrorState } from '../../components/States'
 import { useAirports, useFollowingBoard, useLiveTraffic } from '../../hooks/useOperations'
 import { isoDate } from '../../lib/format'
-import FlightWatchDetail from './components/FlightWatchDetail'
-import FlightWatchList from './components/FlightWatchList'
+import FlightWatchDetail, { fwDur, timesOf } from './components/FlightWatchDetail'
+import FlightWatchList, { RISK_COLOUR } from './components/FlightWatchList'
 import FlightWatchMap from './components/FlightWatchMap'
 import RiskPanel from './components/RiskPanel'
 
@@ -95,6 +95,16 @@ function fwPhase(flight) {
 
 const FW_RANG = { LOW: 1, MEDIUM: 2, HIGH: 3, CRITICAL: 4 }
 const NO_FILTER = { fleet: 'ALL', phase: 'ALL', risk: 'ALL', op: 'ALL' }
+
+/** Le libellé de phase de la vue TABLE — fwPhaseTxt js/06 l. 1066-1073. */
+function fwPhaseTxt(flight, now) {
+  const p = fwPhase(flight)
+  if (p === 'air') return 'Airborne'
+  if (p === 'divert') return 'Diverting'
+  const sta = flight.sta ? new Date(flight.sta) : null
+  if (flight.status !== 'ARRIVED' && flight.status !== 'CLOSED' && sta && now < sta) return 'Not departed'
+  return 'Landed'
+}
 
 /** fwPasseFiltres js/06 l. 697-703. */
 function passesFilters(flight, filters) {
@@ -243,6 +253,8 @@ export default function FlightFollowingPage() {
   const [layersOpen, setLayersOpen] = useState(false)
   const [listOpen, setListOpen] = useState(false)
   const [filters, setFilters] = useState(NO_FILTER)
+  const [tableOpen, setTableOpen] = useState(false)
+  const [focus, setFocus] = useState(null)
   const [detailOpen, setDetailOpen] = useState(false)
   // « FOLLOW THIS FLIGHT ON MAP » — followSelected js/06 l. 1604-1608.
   const [following, setFollowing] = useState(false)
@@ -290,11 +302,25 @@ export default function FlightFollowingPage() {
 
   /* Un seul point d'entrée pour choisir un vol — liste ou carte — qui ouvre
      le détail (js/07 : selectFlight → openDetail). */
-  const selectFlight = useCallback((legId) => {
+  const selectFlight = useCallback((legId, fly = true) => {
     setSelectedId(legId)
     setFollowing(false)
     setDetailOpen(true)
+    if (fly) setFocus((current) => ({ legId, n: (current?.n ?? 0) + 1 }))
   }, [])
+
+  /* La vue TABLE : les filtres retranchent, pas la recherche ; tri par niveau puis
+     indice (fwTableHtml js/06 l. 1074-1076). */
+  const tableRows = useMemo(
+    () =>
+      all
+        .filter((flight) => passesFilters(flight, filters))
+        .sort(
+          (a, b) =>
+            (FW_RANG[b.risk?.level] || 0) - (FW_RANG[a.risk?.level] || 0) || (b.risk?.index ?? 0) - (a.risk?.index ?? 0),
+        ),
+    [all, filters],
+  )
 
   /* Échap : une couche à la fois, jamais deux (js/06 l. 311, js/07 l. 62-72). */
   useEffect(() => {
@@ -519,6 +545,7 @@ export default function FlightFollowingPage() {
               selectedId={selectedId}
               onSelect={selectFlight}
               following={following}
+              focus={focus}
             />
 
             <div id="fwMapCtl">
@@ -616,6 +643,97 @@ export default function FlightFollowingPage() {
             <div className="map-note">
               FIR/UIR boundaries: real ATC data, geometry simplified for display — verify against official
               AIP/eAIP for operational use.
+            </div>
+
+            {/* Les commandes de veille — index.html l. 154-166. */}
+            <div id="fw-watch-ctl">
+              <button id="fw-replay-btn" type="button" aria-pressed="false" title="Replay the track kept for this watch">
+                ⏰ REPLAY
+              </button>
+              <button
+                id="fw-table-btn"
+                type="button"
+                className={tableOpen ? 'on' : undefined}
+                aria-pressed={tableOpen ? 'true' : 'false'}
+                title="See the watched flights as a table instead of the map"
+                onClick={() => setTableOpen((current) => !current)}
+              >
+                ☰ TABLE
+              </button>
+              <button
+                id="fw-report-btn"
+                type="button"
+                title="Flight watch report — flights, times, delays, risk and the alerts acknowledged"
+              >
+                📋 WATCH REPORT
+              </button>
+            </div>
+            <div id="fw-table" className={tableOpen ? 'on' : undefined}>
+              <div className="fw-tab-head">
+                <b>WATCHED FLIGHTS</b>
+                <button type="button" onClick={() => setTableOpen(false)} title="Back to the map">
+                  ×
+                </button>
+              </div>
+              <div className="fw-tab-body">
+                {tableOpen ? (
+                  <table className="fw-tab-t">
+                    <thead>
+                      <tr>
+                        <th>Flight</th>
+                        <th>Route</th>
+                        <th>Reg</th>
+                        <th>Phase</th>
+                        <th>ETD/ATD</th>
+                        <th>ETA/ATA</th>
+                        <th>Delay</th>
+                        <th>To run</th>
+                        <th>Risk</th>
+                        <th>MEL</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {tableRows.length === 0 ? (
+                        <tr>
+                          <td colSpan="10">No flight matches the current filters.</td>
+                        </tr>
+                      ) : (
+                        tableRows.map((flight) => {
+                          const T = timesOf(flight, now)
+                          const delay = T
+                            ? T.delayMin === 0
+                              ? 'on time'
+                              : `${T.delayMin > 0 ? '+' : '−'}${Math.abs(T.delayMin)} min`
+                            : '—'
+                          const toRun = T ? (T.pose ? 'landed' : T.parti ? fwDur(T.resteMin) : 'not departed') : '—'
+                          return (
+                            <tr key={flight.legId} data-fwrow={flight.legId} onClick={() => selectFlight(flight.legId, false)}>
+                              <td>
+                                <b>{flight.flightNo}</b>
+                              </td>
+                              <td>
+                                {flight.depIcao} → {flight.arrIcao}
+                              </td>
+                              <td>{flight.registration}</td>
+                              <td>{fwPhaseTxt(flight, now)}</td>
+                              <td>{T ? T.etdTxt || '—' : '—'}</td>
+                              <td>{T ? T.etaTxt || '—' : '—'}</td>
+                              <td>{delay}</td>
+                              <td>{toRun}</td>
+                              <td>
+                                <span style={{ color: RISK_COLOUR[flight.risk?.level] ?? RISK_COLOUR.LOW }}>
+                                  {flight.risk?.level ?? 'LOW'}
+                                </span>
+                              </td>
+                              <td>{flight.melReference ?? '—'}</td>
+                            </tr>
+                          )
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                ) : null}
+              </div>
             </div>
 
             <div id="basemap-switch">

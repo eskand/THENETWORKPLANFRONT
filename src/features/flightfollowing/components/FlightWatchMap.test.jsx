@@ -129,7 +129,7 @@ describe('F01d — la sélection centre la carte (selectFlight l. 1236-1239)', (
     const { rerender } = draw()
     const zoomBefore = q('#map .leaflet-control-zoom-in').getAttribute('aria-disabled')
     expect(zoomBefore).not.toBe('true')
-    rerender(<FlightWatchMap flights={[flight()]} airports={airports} bases={[]} traffic={[]} showTraffic={false} basemap="SATELLITE" layers={LAYERS} radarFrame={null} selectedId="l1" onSelect={() => {}} />)
+    rerender(<FlightWatchMap flights={[flight()]} airports={airports} bases={[]} traffic={[]} showTraffic={false} basemap="SATELLITE" layers={LAYERS} radarFrame={null} selectedId="l1" focus={{ legId: 'l1', n: 1 }} onSelect={() => {}} />)
     // flyTo dure 0,8 s : on attend la fin de l'animation avant de lire le zoom.
     await act(async () => {
       await new Promise((r) => setTimeout(r, 1100))
@@ -140,7 +140,7 @@ describe('F01d — la sélection centre la carte (selectFlight l. 1236-1239)', (
 
 describe('F04g — le suivi caméra (followbtn js/06 l. 1604-1608, tick l. 508-511)', () => {
   test('FOLLOW passe au zoom 7 puis recentre la carte sur chaque nouvelle position, sans animation', async () => {
-    const props = { flights: [flight()], airports, traffic: [], showTraffic: false, basemap: 'SATELLITE', layers: LAYERS, radarFrame: null, selectedId: 'l1', onSelect: () => {} }
+    const props = { flights: [flight()], airports, traffic: [], showTraffic: false, basemap: 'SATELLITE', layers: LAYERS, radarFrame: null, selectedId: 'l1', focus: { legId: 'l1', n: 1 }, onSelect: () => {} }
     const { rerender } = render(<FlightWatchMap {...props} following={false} />)
     await act(async () => { await new Promise((r) => setTimeout(r, 1100)) })
     rerender(<FlightWatchMap {...props} following />)

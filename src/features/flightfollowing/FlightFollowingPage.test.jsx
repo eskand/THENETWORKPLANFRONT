@@ -540,6 +540,68 @@ describe('F19 — radar météo : curseur d’opacité et commande d’animation
   })
 })
 
+describe('F09a — les commandes de veille et la vue TABLE (index.html l. 154-166, js/06 fwTableHtml l. 1066-1115)', () => {
+  const trio = () => [
+    flight({ legId: 'a', flightNo: 'TNP101', status: 'DEPARTED', minutesToDestination: 45 }),
+    flight({ legId: 'b', flightNo: 'TNP202', registration: 'TS-NPB', status: 'PLANNED', sta: '2099-01-01T08:15:00Z', std: '2099-01-01T06:00:00Z',
+      melReference: 'MEL 21-51-01', melBlocking: true,
+      risk: { level: 'HIGH', index: 12, severity: 4, likelihood: 3, action: '', factors: [] } }),
+    flight({ legId: 'c', flightNo: 'TNP303', status: 'ARRIVED', etaRevised: '2026-09-18T08:27:00Z',
+      risk: { level: 'MEDIUM', index: 6, severity: 3, likelihood: 2, action: '', factors: [] } }),
+  ]
+
+  test('#fw-watch-ctl : REPLAY, TABLE, WATCH REPORT ; #fw-table fermé avec son en-tête', async () => {
+    await open()
+    const ctl = q('#mapwrap #fw-watch-ctl')
+    const buttons = [...ctl.querySelectorAll('button')]
+    expect(buttons.map((b) => b.id)).toEqual(['fw-replay-btn', 'fw-table-btn', 'fw-report-btn'])
+    expect(buttons[0]).toHaveTextContent('⏰ REPLAY')
+    expect(buttons[0]).toHaveAttribute('aria-pressed', 'false')
+    expect(buttons[0]).toHaveAttribute('title', 'Replay the track kept for this watch')
+    expect(buttons[1]).toHaveTextContent('☰ TABLE')
+    expect(buttons[1]).toHaveAttribute('title', 'See the watched flights as a table instead of the map')
+    expect(buttons[2]).toHaveTextContent('📋 WATCH REPORT')
+    expect(buttons[2]).toHaveAttribute('title', 'Flight watch report — flights, times, delays, risk and the alerts acknowledged')
+    const table = q('#mapwrap #fw-table')
+    expect(table).not.toHaveClass('on')
+    expect(table.querySelector('.fw-tab-head b')).toHaveTextContent('WATCHED FLIGHTS')
+    expect(table.querySelector('.fw-tab-head button')).toHaveAttribute('title', 'Back to the map')
+  })
+
+  test('TABLE ouvre la table : dix colonnes, tri par risque puis indice, cellules de la référence', async () => {
+    await open(board(trio()))
+    fireEvent.click(q('#fw-table-btn'))
+    expect(q('#fw-table')).toHaveClass('on')
+    expect(q('#fw-table-btn')).toHaveClass('on')
+    expect(q('#fw-table-btn')).toHaveAttribute('aria-pressed', 'true')
+    const heads = qa('#fw-table .fw-tab-body table.fw-tab-t thead th').map((th) => th.textContent)
+    expect(heads).toEqual(['Flight', 'Route', 'Reg', 'Phase', 'ETD/ATD', 'ETA/ATA', 'Delay', 'To run', 'Risk', 'MEL'])
+    const rows = qa('#fw-table .fw-tab-t tbody tr')
+    expect(rows.map((r) => r.querySelector('td b').textContent)).toEqual(['TNP202', 'TNP303', 'TNP101'])
+    const cells = (i) => [...rows[i].querySelectorAll('td')].map((td) => td.textContent)
+    expect(cells(2)).toEqual(['TNP101', 'DTTA → LFMN', 'TS-NPA', 'Airborne', '06:00Z', '08:15Z', 'on time', '0h45', 'LOW', '—'])
+    expect(cells(0)).toEqual(['TNP202', 'DTTA → LFMN', 'TS-NPB', 'Not departed', '06:00Z', '08:15Z', 'on time', 'not departed', 'HIGH', 'MEL 21-51-01'])
+    expect(cells(1)).toEqual(['TNP303', 'DTTA → LFMN', 'TS-NPA', 'Landed', '06:00Z', '08:27Z', '+12 min', 'landed', 'MEDIUM', '—'])
+    expect(rows[0].querySelector('td:nth-child(9) span')).toHaveStyle({ color: '#E67E22' })
+  })
+
+  test('les filtres retranchent la table, la ligne vide dit « No flight matches the current filters. » ; une ligne cliquée ouvre le détail ; × referme', async () => {
+    await open(board(trio()))
+    fireEvent.click(q('#fw-table-btn'))
+    fireEvent.change(q('#fwRisk'), { target: { value: 'CRITICAL' } })
+    expect(qa('#fw-table .fw-tab-t tbody tr')).toHaveLength(1)
+    expect(q('#fw-table .fw-tab-t tbody td')).toHaveAttribute('colspan', '10')
+    expect(q('#fw-table .fw-tab-t tbody td')).toHaveTextContent('No flight matches the current filters.')
+    fireEvent.change(q('#fwRisk'), { target: { value: 'ALL' } })
+    fireEvent.click(qa('#fw-table .fw-tab-t tbody tr')[0])
+    expect(q('#right')).toHaveClass('fw-open')
+    expect(q('#detailpane .detail-call')).toHaveTextContent('TNP202')
+    fireEvent.click(q('#fw-table .fw-tab-head button'))
+    expect(q('#fw-table')).not.toHaveClass('on')
+    expect(q('#fw-table-btn')).not.toHaveClass('on')
+  })
+})
+
 describe('F01a — les commandes du bandeau (#fwTopHost, index.html l. 30-39, js/09 l. 175-186, js/10 l. 139-148)', () => {
   test('le bandeau du produit porte #fwTopHost : LIVE, ACTIVATE ERP, FLIGHT LIST, horloge UTC', async () => {
     await open()

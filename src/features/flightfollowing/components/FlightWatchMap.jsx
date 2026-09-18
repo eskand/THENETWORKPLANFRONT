@@ -82,6 +82,8 @@ export default function FlightWatchMap({
   layers,
   radarFrame,
   radarOpacity = 70,
+  /** { legId, n } : chaque demande de centrage (selectFlight(id, true)) ; la vue TABLE n'en émet pas. */
+  focus = null,
   selectedId,
   onSelect,
   following = false,
@@ -253,12 +255,15 @@ export default function FlightWatchMap({
     })
   }, [flights, airports, onSelect])
 
-  /* Choisir un vol centre la carte sur lui — selectFlight js/06 l. 1236-1239. */
+  /* Choisir un vol centre la carte sur lui — selectFlight(id, fly) js/06 l. 1236-1239 :
+     la liste, la carte et la pile d'alertes demandent le vol (fly = true), la vue
+     TABLE non (l. 1113). */
   useEffect(() => {
     const map = mapRef.current
-    if (!map || !selectedId || flownRef.current === selectedId) return
-    flownRef.current = selectedId
-    const flight = (flights ?? []).find((entry) => entry.legId === selectedId)
+    const key = focus ? `${focus.legId}#${focus.n}` : null
+    if (!map || !key || flownRef.current === key) return
+    flownRef.current = key
+    const flight = (flights ?? []).find((entry) => entry.legId === focus.legId)
     if (!flight) return
     let target = null
     const position = flight.lastPosition
@@ -269,7 +274,7 @@ export default function FlightWatchMap({
       if (from) target = [from.lat, from.lon]
     }
     if (target) map.flyTo(target, 6, { duration: 0.8 })
-  }, [selectedId, flights, airports])
+  }, [focus, flights, airports])
 
   /* « FOLLOW THIS FLIGHT ON MAP » : zoom 7 à l'allumage (js/06 l. 1607), puis la
      carte se recentre sur chaque position reçue, sans animation (l. 508-511). */
