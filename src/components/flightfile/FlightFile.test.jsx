@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react'
+import { fireEvent, screen } from '@testing-library/react'
 import { vi } from 'vitest'
 import { renderWithProviders } from '../../test/renderWithProviders'
 
@@ -99,5 +99,28 @@ describe('FLIGHT — bloc « Flight note » (ref l. 14747-14757)', () => {
     const { container } = open(row())
     await screen.findByText('TNP526')
     expect(container.querySelector('.fd-note')).toBeNull()
+  })
+})
+
+describe('AIRPORT INFO — rangée des quatre cartes (ref l. 14821-14824)', () => {
+  function openAirportTab() {
+    routes['/legs/leg-1/readiness'] = { legId: 'leg-1', releasable: true, blocking: [], derogable: [], info: [] }
+    routes['/airports/DTTA'] = {
+      airport: { icao: 'DTTA', operatingHours: 'H24', rffsCategory: '8', aerodromeCategory: '4E' },
+      runways: [{ designator: '01/19', lengthFt: 10499 }, { designator: '11/29', lengthFt: 6234 }],
+    }
+    routes['/airports/HECA'] = {
+      airport: { icao: 'HECA', operatingHours: 'H24', rffsCategory: '9', aerodromeCategory: '4F' },
+      runways: [{ designator: '05L/23R', lengthFt: 13123 }],
+    }
+    open(row())
+    fireEvent.click(screen.getByTitle('Airport Info'))
+  }
+
+  // ref l. 14823 : <div class="val"><span class="fd-badge amber">${meta.cat}</span></div>
+  test('« Airport CAT » est un badge ambre', async () => {
+    openAirportTab()
+    const cat = await screen.findByText('4E')
+    expect(cat).toHaveClass('fd-badge', 'amber')
   })
 })

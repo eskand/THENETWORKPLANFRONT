@@ -1103,7 +1103,9 @@ function AirportSide({ role, icao, iata, name, city, iso2, at, observed, verdict
         </div>
         <div className="fd-card">
           <div className="lbl">Airport CAT</div>
-          <div className="val">{airport?.aerodromeCategory ?? 'NO DATA'}</div>
+          <div className="val">
+            <span className="fd-badge amber">{airport?.aerodromeCategory ?? 'NO DATA'}</span>
+          </div>
         </div>
         <div className="fd-card">
           <div className="lbl">Longest RWY</div>
