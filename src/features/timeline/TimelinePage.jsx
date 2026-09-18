@@ -3,12 +3,11 @@ import TopBar from '../../components/TopBar'
 import { ErrorState, LoadingState } from '../../components/States'
 import { useTimeline } from '../../hooks/useOperations'
 import { isoDate } from '../../lib/format'
-import { findTimelineIssues } from '../../lib/timelineFindings'
 import TimelineGrid from './components/TimelineGrid'
 import TimelineKpiStrip from './components/TimelineKpiStrip'
 import TimelineTable from './components/TimelineTable'
 import FlightFile from '../../components/flightfile/FlightFile'
-import OptimizePanel from './components/OptimizePanel'
+import TimelineOptimizer from './components/TimelineOptimizer'
 import TimelineToolbar from './components/TimelineToolbar'
 
 /**
@@ -38,10 +37,6 @@ export default function TimelinePage() {
   )
   const timeline = useTimeline(filters)
   const data = timeline.data
-
-  // La pastille du bouton compte les memes constats que le panneau : ils
-  // viennent de la meme fonction, appelee une fois.
-  const findings = useMemo(() => findTimelineIssues(data), [data])
 
   /**
    * Ouvrir une etape depuis la barre du Gantt.
@@ -94,7 +89,6 @@ export default function TimelinePage() {
                 options={{ fleetSections: data.fleetSections, bases: data.bases }}
                 onJumpToNow={() => gridRef.current?.scrollToNow()}
                 onOptimize={() => setOptimizeOpen(true)}
-                findingCount={findings.length}
               />
 
               {data.rows.length === 0 ? (
@@ -113,9 +107,14 @@ export default function TimelinePage() {
                   que l'identifiant sous la main ; le panneau lit la ligne. */}
               <FlightFile legId={selectedLeg} onClose={() => setSelectedLeg(null)} />
 
-              {optimizeOpen ? (
-                <OptimizePanel data={data} onClose={() => setOptimizeOpen(false)} />
-              ) : null}
+              {/* Le Timeline Optimizer de l'annexe (TNPOptimizer.open, l. 95582) :
+                  la fenetre s'ouvre sur la fenetre de dates affichee. */}
+              <TimelineOptimizer
+                open={optimizeOpen}
+                onClose={() => setOptimizeOpen(false)}
+                defaultStart={from}
+                defaultDays={days}
+              />
             </>
           )}
         </main>

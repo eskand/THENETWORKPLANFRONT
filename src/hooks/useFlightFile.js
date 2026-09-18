@@ -5,6 +5,7 @@ import {
   deleteLegPassenger,
   fetchFlightNote,
   fetchLegEvents,
+  fetchOccTimeline,
   fetchLegFuel,
   fetchLegLvp,
   fetchStationLvp,
@@ -14,6 +15,8 @@ import {
   saveLegPassenger,
   saveFlightNote,
   saveTripRemark,
+  setLegSlot,
+  signRelease,
   uploadLegDocument,
 } from '../api/flightfile'
 import { closeLeg } from '../api/operations'
@@ -161,4 +164,41 @@ export function useFlightFileLvp({ legId, stations }) {
     staleTime: 120_000,
   })
   return legId ? byLeg : byStation
+}
+
+/**
+ * La frise OCC Dispatch — dix etapes, statuts calcules par le serveur.
+ *
+ * <p>Elle se rafraichit toute seule toutes les trente secondes, comme chez
+ * l'annexe (`setInterval` l. 14142) : les fenetres avancent et une etape passe
+ * de « scheduled » a « in progress » sans que personne ne clique. Le serveur
+ * rend l'instant du calcul, donc l'ecran n'a pas a faire confiance a l'horloge
+ * du poste.
+ */
+export function useOccTimeline(legId, enabled = true) {
+  return useQuery({
+    queryKey: ['occ-timeline', legId],
+    queryFn: () => fetchOccTimeline(legId),
+    enabled: Boolean(legId) && enabled,
+    refetchInterval: 30_000,
+    staleTime: 15_000,
+  })
+}
+
+/**
+ * « Confirm release » — la signature de la mise en ligne.
+ *
+ * <p>Chez l'annexe le bouton posait un booleen ; ici il signe vraiment, et le
+ * serveur refuse tant qu'un constat bloquant tient. Ce refus est le point : un
+ * bouton qui ne peut pas echouer n'est pas une release.
+ */
+export function useSignRelease(legId) {
+  return useLegMutation((command) => signRelease(legId, command), legId,
+    ['occ-timeline', 'leg-events', 'leg-release'])
+}
+
+/** « Set CTOT / Slot ref » — le creneau ATC recu pour l'etape. */
+export function useSetSlot(legId) {
+  return useLegMutation((command) => setLegSlot(legId, command), legId,
+    ['occ-timeline', 'leg-events'])
 }

@@ -3,7 +3,6 @@ import {
   ChevronRight,
   Clock,
   TriangleAlert,
-  Wand2,
   ZoomIn,
   ZoomOut,
 } from 'lucide-react'
@@ -19,11 +18,11 @@ import { useNavigate } from 'react-router-dom'
  * une base ne doit pas faire disparaitre les autres bases de la liste qui
  * permet d'y revenir.
  *
- * Le bouton « Optimize » est celui du prototype (l. 7653), mais il n'ouvre pas
- * le meme moteur : celui du prototype est declare stub et tire son taux de
- * resolution de Math.random(). Celui-ci relit le plan affiche et enumere ce qui
- * ne tient pas — continuite, chevauchements, avions cloues au sol, equipage
- * manquant. Il trouve, il ne resout pas, et il ecrit encore moins.
+ * Le bouton « Optimize » est celui du prototype (#tlOptimizeBtn, l. 7653) et
+ * ouvre la meme fenetre, TIMELINE OPTIMIZER (TNPOptimizer.open, l. 95582).
+ * Le moteur derriere tourne sur le serveur, sur la base : le detecteur, le
+ * modele de couts et les instructions sont ceux de l'annexe, sans le tirage
+ * au sort de son moteur « stub ».
  */
 
 const ZOOMS = [1, 3, 7]
@@ -72,7 +71,6 @@ export default function TimelineToolbar({
   options,
   onJumpToNow,
   onOptimize,
-  findingCount,
 }) {
   const navigate = useNavigate()
   const zoomIndex = Math.max(0, ZOOMS.indexOf(days))
@@ -160,12 +158,14 @@ export default function TimelineToolbar({
         <button
           type="button"
           className="tltb__btn"
-          title="Check the plan over this window — continuity, overlaps, grounded tails, crew. Proposals only, nothing is written."
+          title="Optimize the live plan over a chosen date range and time window — proposals only, nothing is written"
           onClick={onOptimize}
         >
-          <Wand2 size={13} />
+          {/* Le viseur de l'annexe (#tlOptimizeBtn, l. 7656) : quatre traits et un cercle. */}
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <path d="M12 3v3M12 18v3M3 12h3M18 12h3" /><circle cx="12" cy="12" r="5" />
+          </svg>
           Optimize
-          {findingCount > 0 ? <span className="tltb__pill">{findingCount}</span> : null}
         </button>
 
         <div className="tltb__filters">

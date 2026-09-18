@@ -16,7 +16,8 @@ import FlightHero, { nature } from './FlightHero'
 import { vigilFor } from './vigil'
 import CrewTab from './CrewTab'
 import FuelTab from './FuelTab'
-import HeaderMenu, { EventsModal, FlightDataModal } from './HeaderMenu'
+import HeaderMenu, { FlightDataModal } from './HeaderMenu'
+import OccTimelineModal from './OccTimelineModal'
 import LvpModal from './LvpModal'
 import MvtModal from './MvtModal'
 import OvfTab from './OvfTab'
@@ -205,7 +206,8 @@ export default function FlightFile({ row: given, legId, onClose }) {
       </aside>
 
       {flightData ? <FlightDataModal row={row} onClose={() => setFlightData(false)} /> : null}
-      {occTimeline ? <EventsModal row={row} onClose={() => setOccTimeline(false)} /> : null}
+      {occTimeline
+        ? <OccTimelineModal row={row} onClose={() => setOccTimeline(false)} /> : null}
     </>
   )
 }

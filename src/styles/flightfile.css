@@ -918,31 +918,6 @@
 .fl-menu .fl-menu-dot.sev-amber{ background:#c98900; box-shadow:0 0 5px rgba(201,137,0,.7); }
 .fl-menu .fl-menu-dot.sev-red{ background:#C8202F; box-shadow:0 0 5px rgba(200,32,47,.7); }
 
-/* Le panneau « Open VIGIL » : les huit verdicts, les uns sous les autres. */
-.vigil-row{
-  display:flex; align-items:flex-start; gap:10px;
-  padding:9px 0; border-bottom:1px solid var(--line-soft, var(--line));
-  font-size:12px;
-}
-.vigil-row:last-of-type{ border-bottom:none; }
-.vigil-row-tab{
-  flex:none; min-width:92px; font-size:9px; font-weight:800; letter-spacing:.07em;
-  text-transform:uppercase; color:var(--text-faint);
-  background:var(--bg-raised); border-radius:5px; padding:4px 8px; text-align:center;
-}
-.vigil-row-body{ flex:1; min-width:0; }
-.vigil-row-body b{ display:block; font-weight:600; color:var(--text); }
-.vigil-row-body span{
-  display:block; margin-top:2px; font-size:10.5px; color:var(--text-faint); line-height:1.45;
-}
-.vigil-row-dot{
-  flex:none; width:9px; height:9px; border-radius:50%; margin-top:4px;
-  background:var(--text-faint);
-}
-.vigil-row-dot.ok{ background:var(--status-enroute); }
-.vigil-row-dot.warn{ background:var(--status-delayed); }
-.vigil-row-dot.crit{ background:var(--status-aog); }
-.vigil-row-dot.grey{ background:#8d99ad; }
 
 /* ============================================================
    LE BROUILLON MVT — __tnpSendMvt() de l'annexe (l. 67380).
@@ -1031,3 +1006,108 @@ table.gendec-crew td{ padding:6px 8px; font-size:11.5px; border-bottom:1px solid
   #gendecPrintArea{ position:absolute; left:0; top:0; width:100%; padding:20px; }
   .tnp-modal-actions{ display:none; }
 }
+
+/* La note de vol — openFlightNoteModal() de l'annexe (l. 12053). */
+.fd-note-ta{
+  width:100%; box-sizing:border-box; min-height:120px; resize:vertical;
+  font-family:var(--body); font-size:12.5px; line-height:1.55;
+  padding:12px 14px; border:1px solid var(--line); border-radius:8px;
+  background:var(--bg-panel); color:var(--text);
+}
+.fd-note-ta:focus{ outline:none; border-color:var(--tnp-navy-2); box-shadow:0 0 0 2px rgba(27,45,107,.12); }
+.fd-note-hint{ font-size:10.5px; color:var(--text-faint); margin-top:8px; line-height:1.5; }
+
+/* Le bouton OR de l'annexe : sa couleur d'action sur un formulaire, distincte
+   du bleu qui, chez elle, ouvre ou navigue. */
+.fd-btn-gold{
+  display:flex; align-items:center; justify-content:center; gap:7px;
+  font-family:var(--body); font-size:12.5px; font-weight:700;
+  padding:9px 18px; border-radius:6px; cursor:pointer;
+  background:var(--sb-gold, #C9A227); color:#0d1b3e; border:1px solid var(--sb-gold, #C9A227);
+}
+.fd-btn-gold:hover{ filter:brightness(1.08); }
+
+/* ============================================================
+   LA FRISE OCC DISPATCH — prototype l. 1479-1609, copiee au
+   caractere pres. Elle sert la modale « OCC Dispatch » : filet
+   vertical, pastille par etape, fenetre horaire en chasse fixe,
+   note de retard et bouton d'action sur les etapes qui en ont un.
+   ============================================================ */
+.occ-modal-hdr{ display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+.occ-modal-hdr h3{ font-size:15px; font-weight:700; color:var(--text); margin:0; }
+.occ-modal-hdr span{ font-size:11px; color:var(--text-faint); }
+.occ-summary{ display:flex; gap:14px; flex-wrap:wrap; background:var(--bg-raised); border:1px solid var(--line); border-radius:8px; padding:10px 12px; margin-bottom:10px; }
+.occ-summary > div{ display:flex; flex-direction:column; gap:2px; }
+.occ-summary span{ font-size:9.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--text-faint); }
+.occ-summary b{ font-size:12.5px; font-family:var(--mono); color:var(--text); }
+.occ-timeline-list{ display:flex; flex-direction:column; gap:0; position:relative; }
+.occ-event{ display:flex; gap:10px; padding:10px 2px; border-left:2px solid var(--line); margin-left:9px; padding-left:16px; position:relative; }
+.occ-icon{ position:absolute; left:-11px; top:10px; width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; background:var(--bg-raised); border:2px solid var(--line); flex-shrink:0; }
+.occ-completed .occ-icon{ border-color:var(--status-enroute); color:var(--status-enroute); }
+.occ-in_progress .occ-icon{ border-color:var(--status-delayed); color:var(--status-delayed); }
+.occ-scheduled .occ-icon{ border-color:var(--status-scheduled); color:var(--status-scheduled); }
+.occ-delayed .occ-icon{ border-color:var(--status-aog); color:var(--status-aog); background:rgba(200,32,47,.08); }
+.occ-cancelled .occ-icon{ border-color:var(--text-faint); color:var(--text-faint); }
+.occ-pending .occ-icon{ border-color:var(--line); color:var(--text-faint); }
+.occ-body{ flex:1; min-width:0; }
+.occ-row-top{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.occ-label{ font-size:12.5px; font-weight:600; color:var(--text); }
+.occ-window{ font-size:10.5px; font-family:var(--mono); color:var(--text-faint); margin-top:2px; }
+.occ-note{ font-size:10.5px; color:var(--status-delayed); margin-top:3px; }
+.occ-delayed .occ-note{ color:var(--status-aog); font-weight:600; }
+.occ-confirm-btn{ display:inline-block; margin-top:6px; font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--status-scheduled); cursor:pointer; padding:3px 8px; border:1px solid var(--status-scheduled); border-radius:5px; }
+.occ-confirm-btn:hover{ background:rgba(47,111,176,.1); }
+
+/* Les deux champs du creneau ATC, sous la ligne « ATC Slot ». L'annexe ouvre
+   deux window.prompt successifs : rien a copier, donc la saisie reprend la
+   geometrie de .occ-confirm-btn pour rester dans la meme ligne visuelle. */
+.occ-slot-form{ display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin-top:6px; }
+.occ-inline-input{
+  margin-top:6px; padding:4px 8px; font-size:11px; font-family:var(--mono);
+  color:var(--text); background:var(--bg); border:1px solid var(--line);
+  border-radius:5px; min-width:150px; flex:1;
+}
+.occ-slot-form .occ-inline-input{ margin-top:0; }
+.occ-inline-input:focus{ outline:none; border-color:var(--status-scheduled); }
+.occ-slot-form .occ-confirm-btn{ margin-top:0; }
+
+/* ============================================================
+   LES REGLES DE LA MODALE, HORS DU PANNEAU
+
+   L'annexe pose ses modales dans #tnpModalHost, a la racine du
+   document (l. 16615), et ses regles .fd-badge / .fd-banner /
+   .fd-section y sont GLOBALES (l. 1582, 1611, 1633). Notre port les
+   avait portees sous .fd-root — donc elles disparaissaient des que
+   la modale sortait du panneau, et tant qu'elle y restait, la
+   feuille « FLIGHT LABEL · MASTER DESIGN » les ecrasait en
+   !important (banniere bleue pleine largeur au lieu du petit
+   libelle gris).
+
+   Ce bloc est la copie conforme des regles globales de l'annexe,
+   bornee a .tnp-modal-box pour ne rien changer ailleurs.
+   ============================================================ */
+.tnp-modal-box .fd-section{ font-size:10.5px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:var(--text-faint); margin:18px 0 8px; }
+.tnp-modal-box .fd-section:first-child{ margin-top:0; }
+.tnp-modal-box .fd-badge{ display:inline-flex; align-items:center; font-size:11px; font-weight:600; padding:2px 9px; border-radius:11px; }
+.tnp-modal-box .fd-badge.green{ background:rgba(31,157,92,.13); color:var(--status-enroute); }
+.tnp-modal-box .fd-badge.amber{ background:rgba(184,121,10,.13); color:var(--status-delayed); }
+.tnp-modal-box .fd-badge.red{ background:rgba(200,32,47,.12); color:var(--status-aog); }
+.tnp-modal-box .fd-badge.blue{ background:rgba(47,111,176,.13); color:var(--status-scheduled); }
+.tnp-modal-box .fd-badge.gray{ background:var(--bg-raised); color:var(--text-faint); }
+.tnp-modal-box .fd-banner{ display:flex; align-items:center; gap:8px; background:rgba(31,157,92,.1); color:#146339; border-radius:8px; padding:10px 12px; font-size:12px; font-weight:500; margin-bottom:4px; }
+.tnp-modal-box .fd-banner.warn{ background:rgba(184,121,10,.1); color:#7a5205; }
+.tnp-modal-box .fd-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.tnp-modal-box .fd-card{ background:var(--bg-panel-2); border-radius:8px; padding:10px 12px; }
+.tnp-modal-box .fd-card .lbl{ font-size:9.5px; color:var(--text-faint); text-transform:uppercase; letter-spacing:.07em; margin-bottom:4px; }
+.tnp-modal-box .fd-card .val{ font-size:13px; font-weight:600; color:var(--text); }
+.tnp-modal-box .fd-card .val.mono{ font-family:var(--mono); }
+
+/* Les deux boutons de .tnp-modal-actions. L'annexe n'en a pas de
+   feuille propre — ses modales portent des boutons bruts — donc ce
+   sont ceux du pied du dossier, ramenes ici a l'identique. */
+.tnp-modal-box .fd-btn-outline{
+  background:var(--bg-panel); border:1px solid var(--line); color:var(--text-dim);
+  font-size:12px; font-weight:600; padding:10px; border-radius:var(--radius);
+  cursor:pointer; text-align:center;
+}
+.tnp-modal-box .fd-btn-outline:hover{ border-color:var(--tnp-navy-2); color:var(--text); }

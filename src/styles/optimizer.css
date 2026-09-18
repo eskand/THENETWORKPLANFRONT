@@ -1,0 +1,128 @@
+/* ============================================================
+   TIMELINE OPTIMIZER — la fenetre de l'annexe (SC.optOpen, l. 95388).
+
+   Copie au caractere pres du bloc `.sc-opt-*` (prototype l. 89332-89360)
+   et des regles `.sc-*` / `.ops-*` du Simulation Center qu'il reutilise
+   (l. 88978-89037, 89214-89237), bornees a `.sc-opt-ov` : la feuille du
+   Simulation Center porte des variantes BEM des memes noms
+   (`.sc-panel__head`, `.sc-btn--gold`), et la fenetre emprunte les
+   siens propres (`.sc-panel-head`, `.sc-btn.gold`). Les deux vivent
+   sans se toucher.
+   ============================================================ */
+.sc-opt-ov{position:fixed;inset:0;background:rgba(4,8,20,.88);backdrop-filter:blur(3px);display:none;
+  align-items:flex-start;justify-content:center;z-index:99993;padding:24px 16px;overflow:auto;
+  --sc-navy:#0F1B3D;--sc-navy2:#1B2D6B;--sc-panel:#121F45;--sc-panel2:#182757;
+  --sc-line:#2A3B78;--sc-lsoft:#22315F;--sc-gold:#C9A227;--sc-gold2:#F5B800;--sc-red:#C8202F;
+  --sc-redsoft:#E85463;--sc-green:#2FA36B;--sc-amber:#E8A13D;--sc-blue:#4F7DE0;--sc-ink:#EAF0FF;
+  --sc-dim:#9FB0DC;--sc-faint:#6B7BAA;--sc-mono:Consolas,'Cascadia Mono','Courier New',monospace;
+  font-family:'Segoe UI',system-ui,sans-serif;}
+.sc-opt-ov.on{display:flex;}
+.sc-opt-ov *{box-sizing:border-box;}
+.sc-opt-win{background:#0B1430;border:1px solid #2A3B78;border-radius:10px;width:min(1500px,98vw);
+  color:#EAF0FF;box-shadow:0 30px 90px rgba(0,0,0,.8);overflow:hidden;}
+.sc-opt-head{background:linear-gradient(180deg,#1B2D6B,#0F1B3D);border-bottom:2px solid #C9A227;
+  padding:12px 18px;display:flex;align-items:center;gap:14px;}
+.sc-opt-t1{font-size:15px;font-weight:700;letter-spacing:2.5px;}
+.sc-opt-t1 b{color:#F5B800;}
+.sc-opt-t2{font-size:10px;letter-spacing:1.4px;color:#6B7BAA;text-transform:uppercase;}
+.sc-opt-body{padding:16px 18px 24px;max-height:82vh;overflow:auto;}
+.sc-opt-body .sc-panel{background:#121F45;border:1px solid #22315F;border-radius:6px;margin-bottom:14px;}
+.sc-opt-body .ops-card{background:#16224E;}
+.sc-opt-body input,.sc-opt-body select{background:#0B1430;border:1px solid #2A3B78;color:#F5B800;
+  font-family:Consolas,'Courier New',monospace;font-size:12px;padding:4px 6px;border-radius:3px;}
+.sc-opt-body input[type=date]{color:#EAF0FF;}
+/* ── optimization scope selector ── */
+.sc-opt-ov .sc-scope{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:8px;margin-bottom:12px;}
+.sc-opt-ov .sc-scope label{display:flex;align-items:center;gap:8px;background:#16224E;border:1px solid var(--sc-lsoft);border-radius:4px;padding:7px 10px;font-size:11px;color:var(--sc-dim);cursor:pointer;}
+.sc-opt-ov .sc-scope label:hover{border-color:var(--sc-gold);color:var(--sc-ink);}
+.sc-opt-ov .sc-scope label.on{border-color:var(--sc-gold2);color:var(--sc-ink);background:#1B2A5C;}
+.sc-opt-ov .sc-scope input{accent-color:#C9A227;width:14px;height:14px;}
+.sc-opt-ov .sc-scope .cnt{margin-left:auto;font-family:var(--sc-mono);font-size:10px;color:var(--sc-faint);}
+
+/* ── regles du Simulation Center reprises par la fenetre (l. 88954-89037) ── */
+.sc-opt-ov .sc-spacer{flex:1;}
+.sc-opt-ov .sc-panel{background:var(--sc-panel);border:1px solid var(--sc-lsoft);border-radius:6px;margin-bottom:14px;}
+.sc-opt-ov .sc-panel-head{padding:9px 14px;border-bottom:1px solid var(--sc-lsoft);display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.sc-opt-ov .sc-panel-head .sc-ph-title{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--sc-gold);}
+.sc-opt-ov .sc-panel-head .sc-ph-sub{font-size:10.5px;color:var(--sc-faint);}
+.sc-opt-ov .sc-ph-sub{font-size:10.5px;color:var(--sc-faint);}
+.sc-opt-ov .sc-panel-body{padding:14px;}
+.sc-opt-ov .sc-btn{background:var(--sc-panel2);border:1px solid var(--sc-line);color:var(--sc-ink);font-size:11px;font-weight:600;
+  letter-spacing:.8px;padding:7px 14px;border-radius:4px;cursor:pointer;font-family:inherit;text-transform:uppercase;transition:all .15s;}
+.sc-opt-ov .sc-btn:hover{border-color:var(--sc-gold);}
+.sc-opt-ov .sc-btn:disabled{opacity:.35;cursor:not-allowed;}
+.sc-opt-ov .sc-btn.gold{background:var(--sc-gold);border-color:var(--sc-gold);color:#1A1503;}
+.sc-opt-ov .sc-btn.gold:hover{background:var(--sc-gold2);}
+.sc-opt-ov .sc-btn.red{background:transparent;border-color:var(--sc-red);color:var(--sc-redsoft);}
+.sc-opt-ov .sc-btn.red:hover{background:var(--sc-red);color:#fff;}
+.sc-opt-ov .sc-btn.ghost{background:transparent;}
+.sc-opt-ov .sc-btn.sm{font-size:10px;padding:4px 9px;letter-spacing:.5px;}
+.sc-opt-ov .sc-custom-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;}
+.sc-opt-ov .sc-cf{display:flex;align-items:center;justify-content:space-between;gap:8px;background:#16224E;border:1px solid var(--sc-lsoft);border-radius:4px;padding:7px 10px;}
+.sc-opt-ov .sc-cf label{font-size:10.5px;color:var(--sc-dim);}
+.sc-opt-ov .sc-cf input{width:58px;background:#0B1430;border:1px solid var(--sc-line);color:var(--sc-gold2);font-family:var(--sc-mono);font-size:12px;padding:4px 6px;border-radius:3px;text-align:center;}
+.sc-opt-ov .sc-cf input:focus{outline:none;border-color:var(--sc-gold);}
+.sc-opt-ov .sc-table{width:100%;border-collapse:collapse;font-size:11.5px;}
+.sc-opt-ov .sc-table th{text-align:left;padding:7px 10px;font-size:9.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--sc-faint);border-bottom:1px solid var(--sc-line);white-space:nowrap;}
+.sc-opt-ov .sc-table td{padding:7px 10px;border-bottom:1px solid var(--sc-lsoft);color:var(--sc-dim);vertical-align:middle;}
+.sc-opt-ov .sc-table tr:hover td{background:rgba(201,162,39,0.04);}
+.sc-opt-ov .sc-table .mono{font-family:var(--sc-mono);font-size:11px;}
+.sc-opt-ov .sc-table .num{text-align:right;font-family:var(--sc-mono);}
+.sc-opt-ov .sc-chip{display:inline-block;font-size:9.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:2px 8px;border-radius:3px;}
+.sc-opt-ov .sc-chip.archived{background:#242C48;color:#8A97C2;}
+.sc-opt-ov .sc-stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;}
+.sc-opt-ov .sc-stat{background:#16224E;border:1px solid var(--sc-lsoft);border-radius:5px;padding:10px 12px;}
+.sc-opt-ov .sc-stat .v{font-family:var(--sc-mono);font-size:21px;font-weight:700;color:var(--sc-ink);}
+.sc-opt-ov .sc-stat .v.gold{color:var(--sc-gold2);}
+.sc-opt-ov .sc-stat .v.red{color:var(--sc-redsoft);}
+.sc-opt-ov .sc-stat .v.green{color:#6FE3A8;}
+.sc-opt-ov .sc-stat .l{font-size:9.5px;letter-spacing:1.2px;text-transform:uppercase;color:var(--sc-faint);margin-top:2px;}
+.sc-opt-ov .sc-sev{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;}
+.sc-opt-ov .sc-sev.low{background:var(--sc-green);}
+.sc-opt-ov .sc-sev.med{background:var(--sc-amber);}
+.sc-opt-ov .sc-sev.high{background:#E8703D;}
+.sc-opt-ov .sc-sev.crit{background:var(--sc-redsoft);}
+.sc-opt-ov .sc-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.sc-opt-ov .sc-empty{color:var(--sc-faint);font-size:11px;}
+/* ── ops instructions (l. 89214-89237) ── */
+.sc-opt-ov .ops-wrap{--ops-line:#22315F;}
+.sc-opt-ov .ops-head{margin:2px 0 12px;}
+.sc-opt-ov .ops-h1{font-size:12px;font-weight:800;letter-spacing:2.2px;text-transform:uppercase;color:#F5B800;}
+.sc-opt-ov .ops-h2{font-size:11px;color:#9FB0DC;margin-top:2px;}
+.sc-opt-ov .ops-card{display:flex;gap:12px;align-items:flex-start;background:#16224E;border:1px solid var(--ops-line);
+  border-radius:8px;padding:11px 13px;margin-bottom:9px;}
+.sc-opt-ov .ops-num{width:26px;height:26px;border-radius:50%;background:#1B2D6B;border:1px solid #4F7DE0;color:#8AACF5;
+  font:700 12px/24px 'Segoe UI',system-ui,sans-serif;text-align:center;flex-shrink:0;}
+.sc-opt-ov .ops-ico{color:#4F7DE0;flex-shrink:0;margin-top:3px;}
+.sc-opt-ov .ops-body{flex:1;min-width:0;}
+.sc-opt-ov .ops-title{font-size:11px;font-weight:800;letter-spacing:1.4px;color:#EAF0FF;margin-bottom:3px;}
+.sc-opt-ov .ops-why{font-size:10.5px;line-height:1.45;color:#8A97C2;margin-bottom:6px;font-style:italic;}
+.sc-opt-ov .ops-list{list-style:none;margin:0;padding:0;}
+.sc-opt-ov .ops-list li{display:flex;align-items:center;gap:8px;padding:3px 0;border-bottom:1px dashed rgba(42,59,120,.5);}
+.sc-opt-ov .ops-list li:last-child{border-bottom:none;}
+.sc-opt-ov .ops-txt{flex:1;font-size:11.5px;line-height:1.5;color:#C6D3F2;}
+.sc-opt-ov .ops-txt b{color:#EAF0FF;}
+.sc-opt-ov .ops-apply{background:#C9A227;border:1px solid #C9A227;color:#1A1503;font:700 9.5px/1 'Segoe UI',system-ui,sans-serif;
+  letter-spacing:.6px;text-transform:uppercase;padding:4px 8px;border-radius:3px;cursor:pointer;flex-shrink:0;}
+.sc-opt-ov .ops-apply:hover{background:#F5B800;}
+.sc-opt-ov .ops-apply:disabled{opacity:.5;cursor:wait;}
+.sc-opt-ov .ops-done{font:700 9px/1 Consolas,monospace;letter-spacing:1px;color:#6FE3A8;background:#123524;
+  border:1px solid #2FA36B;border-radius:3px;padding:3px 6px;flex-shrink:0;}
+.sc-opt-ov .ops-manual{font:700 9px/1 Consolas,monospace;letter-spacing:.8px;color:#E8A13D;background:#3A2B10;
+  border:1px solid #8A6A1E;border-radius:3px;padding:3px 6px;flex-shrink:0;}
+/* ── la boite de dialogue du module (l. 89063-89074), pour Action Plan et Apply all ── */
+.sc-opt-ov .sc-modal-ov{position:fixed;inset:0;background:rgba(4,8,20,.86);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;z-index:99995;}
+.sc-opt-ov .sc-modal{background:#121F45;border:1px solid #2A3B78;border-radius:8px;min-width:420px;max-width:760px;max-height:84vh;overflow:auto;display:flex;flex-direction:column;box-shadow:0 30px 90px rgba(0,0,0,.8);}
+.sc-opt-ov .sc-modal-head{background:#182757;padding:12px 16px;border-bottom:1px solid #2A3B78;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#F5B800;}
+.sc-opt-ov .sc-modal-body{background:#121F45;padding:16px;font-size:12px;color:#C6D3F2;overflow:auto;}
+.sc-opt-ov .sc-modal-foot{background:#0F1B3D;padding:12px 16px;border-top:1px solid #2A3B78;display:flex;justify-content:flex-end;gap:8px;}
+/* ── le toast du module (sc-toast), pour « Applied » et les refus ── */
+.sc-opt-ov .sc-toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:#182757;border:1px solid #C9A227;color:#EAF0FF;
+  font-size:12px;padding:10px 16px;border-radius:6px;box-shadow:0 12px 40px rgba(0,0,0,.6);z-index:99996;max-width:70vw;}
+.sc-opt-ov .sc-toast.err{border-color:#C8202F;color:#F58BA0;}
+/* ce que le port ajoute : le rappel de l'unite, en style inline chez l'annexe */
+.sc-opt-ov .sc-opt-objline{font-size:11px;color:var(--sc-dim);margin:-4px 0 12px;}
+.sc-opt-ov .sc-opt-objline b{color:var(--sc-gold2);}
+.sc-opt-ov .sc-opt-sec{font-size:10.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--sc-gold);margin:4px 0 8px;}
+.sc-opt-ov .sc-opt-sec.amber{color:var(--sc-amber);margin-top:10px;}
+.sc-opt-ov .sc-opt-scroll{max-height:240px;overflow:auto;margin-bottom:6px;}

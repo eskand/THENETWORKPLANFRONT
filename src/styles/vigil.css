@@ -1,0 +1,62 @@
+/* ============================================================
+   VIGIL — le panneau et le tableau de bord de l'annexe.
+
+   Copie au caractere pres de la chaine `css` de UI (prototype
+   l. 99170-99210), injectee dans <head> par UI.ensure(). Les regles
+   du bouton d'en-tete (#vigilTopBtn, #vigilDot) ne sont pas
+   reprises ici : shell.css les porte deja sous .vigil-btn / .vgl-dot,
+   avec les memes valeurs.
+
+   Le panneau est FIXE, en haut a droite, hors de tout module : c'est
+   la disposition de l'annexe, et c'est ce qui le rend ouvrable
+   depuis n'importe quel ecran sans en changer la mise en page.
+   ============================================================ */
+#vigilPanel{position:fixed;top:58px;right:14px;width:440px;max-height:calc(100vh - 80px);overflow:hidden auto;background:#081226;color:#dbe6f7;border:1px solid rgba(47,125,255,.4);border-radius:12px;box-shadow:0 18px 50px rgba(0,0,0,.55);z-index:2600;font-family:var(--body,Inter,sans-serif);}
+#vigilPanel .vp-head{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid rgba(47,125,255,.25);background:linear-gradient(180deg,#0b1c3f,#081226);position:sticky;top:0;z-index:2;}
+#vigilPanel .vp-title{font-family:var(--mono,monospace);font-weight:800;letter-spacing:.2em;font-size:14px;color:#e8f1ff;}
+#vigilPanel .vp-title b{color:#39c1ff;}
+#vigilPanel .vp-sub{font-size:10px;color:#7f97c4;letter-spacing:.08em;text-transform:uppercase;}
+.vp-kpis{display:flex;gap:8px;padding:10px 14px;}
+.vp-kpi{flex:1;background:#0b1730;border:1px solid #1b2c52;border-radius:8px;padding:8px 10px;text-align:center;}
+.vp-kpi .n{font-family:var(--mono,monospace);font-size:19px;font-weight:800;}
+.vp-kpi .l{font-size:9px;letter-spacing:.1em;color:#7f97c4;text-transform:uppercase;}
+.vp-ask{display:flex;gap:6px;padding:4px 14px 10px;}
+.vp-ask input{flex:1;background:#0b1730;border:1px solid #1b2c52;border-radius:8px;color:#dbe6f7;padding:9px 11px;font:inherit;font-size:12px;outline:none;}
+.vp-ask input:focus{border-color:#2f7dff;}
+.vp-ask button,.vgl-btn{background:#12264d;border:1px solid #2f7dff66;border-radius:8px;color:#cfe4ff;padding:8px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--mono,monospace);letter-spacing:.05em;}
+.vp-ask button:hover,.vgl-btn:hover{background:#1a3468;}
+.vp-quick{display:flex;flex-wrap:wrap;gap:6px;padding:0 14px 10px;}
+.vp-quick .q{font-size:10px;padding:5px 9px;border-radius:20px;border:1px solid #1b2c52;background:#0b1730;color:#9fb6e2;cursor:pointer;}
+.vp-quick .q:hover{border-color:#2f7dff;color:#dbe6f7;}
+.vp-answer{margin:0 14px 10px;background:#050d1f;border:1px solid #1b2c52;border-radius:8px;padding:10px 12px;font-family:var(--mono,monospace);font-size:10.5px;line-height:1.55;white-space:pre-wrap;color:#c5d8f5;max-height:260px;overflow:auto;}
+.vp-sec{padding:8px 14px 4px;font-size:10px;letter-spacing:.14em;color:#7f97c4;text-transform:uppercase;border-top:1px solid #10203f;}
+.vgl-alert{margin:6px 14px;background:#0b1730;border:1px solid #1b2c52;border-left:3px solid #888;border-radius:8px;padding:8px 10px;}
+.vgl-alert.critical{border-left-color:#f85149;}.vgl-alert.high{border-left-color:#F0A500;}.vgl-alert.warning{border-left-color:#d9c04a;}.vgl-alert.info{border-left-color:#39c1ff;}
+.vgl-alert .t{display:flex;justify-content:space-between;gap:8px;font-size:11px;font-weight:700;color:#e8f1ff;}
+.vgl-alert .w{font-size:10.5px;color:#a9bde4;margin-top:3px;line-height:1.45;}
+.vgl-alert .a{font-size:10px;color:#7fd0a0;margin-top:3px;}
+.vgl-alert .meta{font-size:9px;color:#63799f;margin-top:4px;display:flex;gap:8px;flex-wrap:wrap;}
+.vgl-alert .acts{margin-top:5px;display:flex;gap:5px;}
+.vgl-alert .acts span{font-size:9px;padding:3px 7px;border-radius:5px;border:1px solid #1b2c52;color:#9fb6e2;cursor:pointer;}
+.vgl-alert .acts span:hover{border-color:#2f7dff;color:#fff;}
+#vigilDash{position:fixed;inset:0;background:rgba(3,7,16,.82);z-index:2650;}
+#vigilDash .vd-box{position:absolute;inset:26px;background:#060f22;border:1px solid rgba(47,125,255,.4);border-radius:14px;display:flex;flex-direction:column;overflow:hidden;color:#dbe6f7;font-family:var(--body,Inter,sans-serif);}
+#vigilDash .vd-head{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid rgba(47,125,255,.25);background:linear-gradient(180deg,#0b1c3f,#060f22);}
+#vigilDash .vd-body{flex:1;overflow:auto;padding:16px 18px;}
+.vd-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;}
+.vd-card{background:#0b1730;border:1px solid #1b2c52;border-radius:10px;padding:12px 14px;}
+.vd-card h4{margin:0 0 8px;font-size:10px;letter-spacing:.14em;color:#7f97c4;text-transform:uppercase;font-weight:700;}
+.vd-risk{font-family:var(--mono,monospace);font-size:30px;font-weight:800;}
+.vd-row{display:flex;justify-content:space-between;font-size:11px;padding:3px 0;border-bottom:1px dashed #142348;color:#b9cbee;}
+.vd-row:last-child{border-bottom:none;}
+.vd-tag{font-size:9px;padding:2px 7px;border-radius:10px;border:1px solid #2f7dff55;color:#9fd2ff;}
+.vgl-bar{height:7px;border-radius:4px;background:#142348;overflow:hidden;margin-top:3px;}
+.vgl-bar i{display:block;height:100%;background:linear-gradient(90deg,#2f7dff,#39c1ff);}
+.vd-mono{font-family:var(--mono,monospace);font-size:10.5px;white-space:pre-wrap;line-height:1.5;color:#c5d8f5;}
+
+/* Ce que le port ajoute, et rien d'autre : ces quatre lignes etaient
+   des styles inline chez l'annexe (l. 99306, 99245, 99365). */
+.vp-empty{padding:10px 16px;font-size:11px;color:#7f97c4;}
+.vp-grow{flex:1;}
+.vd-sub{font-size:9.5px;color:#7f97c4;margin:2px 0 6px;}
+.vd-none{color:#63799f;}

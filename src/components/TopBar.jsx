@@ -2,8 +2,10 @@ import { useEffect, useRef, useState } from 'react'
 import { Bell, ChevronLeft, TriangleAlert } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useOpenAlerts } from '../hooks/useDispatchBoard'
+import { useVigilPanel } from '../hooks/useVigil'
 import NotificationsPanel from './NotificationsPanel'
 import VigilMark from './VigilMark'
+import { useVigil } from './vigil/VigilContext'
 
 /**
  * En-tete operationnel : degrade navy souligne d'un filet or, comme sur le
@@ -54,11 +56,18 @@ export default function TopBar({ title, subtitle, inbox = null, initials = 'AD' 
     }
   }, [open])
 
-  // La pastille de VIGIL dit l'etat du reseau, pas celui du module : rouge
-  // des qu'une alerte critique est ouverte, ambre s'il reste des alertes de
-  // moindre severite, verte sinon. Les trois couleurs sont celles du
-  // prototype (#f85149 / #F0A500 / #22c88a).
-  const vigilTone = critical.length > 0 ? 'crit' : all.length > 0 ? 'warn' : 'ok'
+  // La pastille de VIGIL dit l'etat du balayage VIGIL — UI.refresh() de
+  // l'annexe (l. 99290) : rouge des qu'une alerte critique est active, ambre
+  // s'il reste du « high », verte sinon. Les trois couleurs sont celles du
+  // prototype (#f85149 / #F0A500 / #22c88a). Tant que le premier balayage
+  // n'a pas repondu, la pastille lit le mur d'alertes, pour ne pas etre
+  // verte par defaut.
+  const { togglePanel } = useVigil()
+  const vigilPanel = useVigilPanel()
+  const vigilState = vigilPanel.data?.state
+  const vigilTone = vigilState
+    ? (vigilState === 'CRITICAL' ? 'crit' : vigilState === 'WARNING' ? 'warn' : 'ok')
+    : critical.length > 0 ? 'crit' : all.length > 0 ? 'warn' : 'ok'
 
   const toggle = (which) => setOpen((current) => (current === which ? null : which))
 
@@ -76,7 +85,11 @@ export default function TopBar({ title, subtitle, inbox = null, initials = 'AD' 
       <div className="topbar-right" ref={rightRef}>
         <div
           className="vigil-btn"
+          role="button"
+          tabIndex={0}
           title="VIGIL — Continuous Operational Intelligence. Always watching. Always ahead."
+          onClick={() => { setOpen(null); togglePanel() }}
+          onKeyDown={(event) => { if (event.key === 'Enter') togglePanel() }}
         >
           <VigilMark size={26} />
           <span className="vgl-word">

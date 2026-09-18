@@ -12,6 +12,8 @@ import './styles/operations.css'
 import './styles/timeline.css'
 import './styles/flightwatch.css'
 import './styles/commercial.css'
+import './styles/vigil.css'
+import './styles/optimizer.css'
 
 const queryClient = new QueryClient({
   defaultOptions: {

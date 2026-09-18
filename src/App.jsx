@@ -2,6 +2,8 @@ import { Suspense, lazy } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import Sidebar from './components/Sidebar'
 import { LoadingState } from './components/States'
+import { VigilProvider } from './components/vigil/VigilContext'
+import VigilPanel from './components/vigil/VigilPanel'
 
 import OccPage from './features/occ/OccPage'
 import ModulePlaceholder from './features/ModulePlaceholder'
@@ -58,7 +60,12 @@ const SettingsPage = lazy(() => import('./features/settings/SettingsPage'))
 
 export default function App() {
   return (
+    <VigilProvider>
     <div className="shell">
+      {/* VIGIL est monte une fois, a la racine, comme UI.ensure() de l'annexe
+          le pose sur document.body : ouvrable depuis n'importe quel ecran,
+          et sa requete colore la pastille de l'en-tete meme panneau ferme. */}
+      <VigilPanel />
       <Sidebar />
       <div className="shell__main">
         {/* Le meme etat d'attente que partout ailleurs : un ecran qui arrive
@@ -103,5 +110,6 @@ export default function App() {
         </Suspense>
       </div>
     </div>
+    </VigilProvider>
   )
 }

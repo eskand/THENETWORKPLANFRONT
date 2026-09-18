@@ -4,12 +4,14 @@ import { LoadingState } from '../States'
 import { useRecordMovement, useSendMvt } from '../../hooks/useOperations'
 import { useSchedulingBoard } from '../../hooks/useCrewScheduling'
 import {
-  useFlightFileLvp, useFlightNote, useLegEvents, useSaveFlightNote,
+  useFlightFileLvp, useFlightNote, useSaveFlightNote,
 } from '../../hooks/useFlightFile'
 import { hhmm, isoDate, titleCase } from '../../lib/format'
 import LvpModal from './LvpModal'
+import Modal from './Modal'
+import OccTimelineModal from './OccTimelineModal'
 import MvtModal from './MvtModal'
-import { vigilFor } from './vigil'
+import { useVigil } from '../vigil/VigilContext'
 
 /**
  * Le menu ⋮ de l'en-tete du dossier de vol — {@code TNPFL.headerMenuHtml()}
@@ -24,16 +26,16 @@ import { vigilFor } from './vigil'
  * <b>Cinq entrees, dans son ordre.</b> L'annexe n'affiche une entree que si
  * l'action existe reellement dans l'application ({@code typeof root.xxx ===
  * 'function'}) — c'est sa propre regle, et elle est bonne : un menu qui propose
- * ce qui n'existe pas apprend a ne plus ouvrir le menu. Les quatre premieres
- * entrees ont ici une action derriere ; la cinquieme, « Open VIGIL », est
- * rendue desactivee avec la raison, parce que le module VIGIL n'est pas encore
- * porte et que le masquer ferait croire que l'annexe n'en a que quatre.
+ * ce qui n'existe pas apprend a ne plus ouvrir le menu. Les cinq entrees ont
+ * ici une action derriere ; « Open VIGIL » ouvre le panneau VIGIL de
+ * l'application, le meme que le bouton de l'en-tete.
  */
 export default function HeaderMenu({ row }) {
   const [open, setOpen] = useState(false)
   const [modal, setModal] = useState(null)
   const [mvtError, setMvtError] = useState(null)
   const host = useRef(null)
+  const { openPanel: openVigil } = useVigil()
 
   const sendMvt = useSendMvt()
   // Le verdict de faible visibilite, pour l'entree « Open LVP ». Le bandeau de
@@ -104,13 +106,11 @@ export default function HeaderMenu({ row }) {
             <FileText size={15} />Open Flight Data
           </div>
 
-          {/* ACTIVE. Le module VIGIL de l'annexe n'est pas porte, mais la bande
-              VIGIL du pied du dossier calcule deja un verdict par onglet
-              (vigilFor) : risque SMS, aerodromes, services, permis, carburant,
-              equipage, passagers, dossier. L'entree ouvre ces huit verdicts
-              d'un coup, au lieu d'obliger a parcourir les huit onglets. */}
-          <div onClick={() => choose(() => setModal('vigil'))}
-               title="What VIGIL reads on each part of this file">
+          {/* Le panneau VIGIL de l'annexe — TNPVIGIL.openPanel() (l. 99436) :
+              le meme panneau que le bouton de l'en-tete, fixe en haut a
+              droite, avec les alertes du balayage serveur. */}
+          <div onClick={() => choose(openVigil)}
+               title="VIGIL — Continuous Operational Intelligence">
             <ShieldCheck size={15} />Open VIGIL
           </div>
 
@@ -144,95 +144,17 @@ export default function HeaderMenu({ row }) {
         </Modal>
       ) : null}
 
-      {modal === 'events' ? <EventsModal row={row} onClose={() => setModal(null)} /> : null}
+      {modal === 'events'
+        ? <OccTimelineModal row={row} onClose={() => setModal(null)} /> : null}
       {modal === 'note' ? <NoteModal row={row} onClose={() => setModal(null)} /> : null}
       {modal === 'data' ? <FlightDataModal row={row} onClose={() => setModal(null)} /> : null}
       {modal === 'lvp'
         ? <LvpModal verdict={lvp.data} onClose={() => setModal(null)} /> : null}
       {modal === 'mvt' ? <MvtModal row={row} onClose={() => setModal(null)} /> : null}
-      {modal === 'vigil' ? <VigilModal row={row} onClose={() => setModal(null)} /> : null}
     </>
   )
 }
 
-/** La boite de l'annexe — .tnp-modal-overlay / .tnp-modal-box (l. 2029). */
-function Modal({ title, subtitle, children, actions, onClose }) {
-  useEffect(() => {
-    function onKey(event) { if (event.key === 'Escape') onClose() }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [onClose])
-
-  return (
-    <div className="tnp-modal-overlay"
-         onClick={(event) => { if (event.target === event.currentTarget) onClose() }}>
-      <div className="tnp-modal-box">
-        <div className="tnp-modal-close" role="button" tabIndex={0} onClick={onClose}>✕</div>
-        <div className="tnp-modal-title">{title}</div>
-        {subtitle ? <div className="tnp-modal-sub">{subtitle}</div> : null}
-        {children}
-        {actions ? <div className="tnp-modal-actions">{actions}</div> : null}
-      </div>
-    </div>
-  )
-}
-
-/**
- * « OCC Dispatch — event timeline ».
- *
- * <b>Ce que l'annexe montre ici est faux, et c'est le point.</b> Son
- * {@code tabOccTimeline()} (l. 14009) dessine dix etapes d'un cycle de dispatch
- * — creation, mise en ligne, avitaillement, equipage, creneau, handling… — dont
- * les statuts sont deduits de l'heure qu'il est, pas de ce qui s'est produit.
- * Un vol dont personne n'a fait l'avitaillement affichait « Refueling ·
- * Completed » parce que l'heure etait passee.
- *
- * <b>Ici la frise est le journal.</b> Une ligne par evenement reellement
- * enregistre dans {@code ops.leg_events}, avec son horodatage, son auteur et sa
- * raison. Une etape sur laquelle rien ne s'est passe rend une liste vide.
- */
-export function EventsModal({ row, onClose }) {
-  const events = useLegEvents(row.legId)
-
-  return (
-    <Modal
-      title={`OCC Dispatch — ${row.flightNo ?? row.registration}`}
-      subtitle="Event timeline · every change recorded on this leg, most recent first"
-      onClose={onClose}
-    >
-      {events.isLoading ? <LoadingState label="Reading the leg history…" /> : null}
-      {events.isError
-        ? <div className="fd-banner warn">History unavailable — {events.error.message}</div>
-        : null}
-
-      {events.data?.length === 0 ? (
-        <div className="fd-banner ok">
-          Nothing has happened to this leg yet — it was loaded with the programme and has not been
-          moved, released, delayed or closed since.
-        </div>
-      ) : null}
-
-      {(events.data ?? []).map((event) => (
-        <div className="occ-evt" key={event.id}>
-          <span className={`occ-evt-kind kind-${event.kind.toLowerCase()}`}>
-            {titleCase(event.kind.replace(/_/g, ' '))}
-          </span>
-          <div className="occ-evt-body">
-            <b>{event.reason ?? '—'}</b>
-            {event.payloadAfter && event.payloadAfter !== '{}' ? (
-              <span className="occ-evt-payload">{event.payloadAfter}</span>
-            ) : null}
-          </div>
-          <span className="occ-evt-at" title={event.at}>
-            {new Date(event.at).toLocaleDateString('en-GB', {
-              day: '2-digit', month: 'short', timeZone: 'UTC',
-            })} {hhmm(event.at)}Z
-          </span>
-        </div>
-      ))}
-    </Modal>
-  )
-}
 
 /**
  * « Flight note » — la consigne d'exploitation portee par l'etape.
@@ -252,18 +174,24 @@ function NoteModal({ row, onClose }) {
     if (note.data && !loaded) { setText(note.data.note ?? ''); setLoaded(true) }
   }, [note.data, loaded])
 
+  /* Le sous-titre de l'annexe : vol · route · date, pas une phrase.
+     openFlightNoteModal(), l. 12053. */
+  const subtitle = [
+    row.flightNo ?? row.registration,
+    `${row.depCode ?? row.depIcao} → ${row.arrCode ?? row.arrIcao}`,
+    row.std ? new Date(row.std).toISOString().slice(0, 10) : null,
+  ].filter(Boolean).join(' · ')
+
   return (
-    <Modal
-      title={`Flight note — ${row.flightNo ?? row.registration}`}
-      subtitle={note.data?.noteAt
-        ? `Last written ${new Date(note.data.noteAt).toLocaleString('en-GB', { timeZone: 'UTC' })} UTC`
-        : 'Nothing recorded on this leg yet'}
-      onClose={onClose}
+    <Modal title="Flight note" subtitle={subtitle} onClose={onClose}
       actions={(
         <>
           <div className="fd-btn-outline" role="button" tabIndex={0} onClick={onClose}>Cancel</div>
+          {/* Le bouton d'enregistrement de l'annexe est OR, pas bleu : c'est sa
+              couleur d'action sur un formulaire, et elle le distingue ainsi du
+              bouton primaire de navigation. */}
           <div
-            className="fd-btn-solid"
+            className="fd-btn-gold"
             role="button"
             tabIndex={0}
             onClick={() => save.mutate(text, {
@@ -279,12 +207,20 @@ function NoteModal({ row, onClose }) {
       {note.isLoading ? <LoadingState label="Reading the note…" /> : null}
       {error ? <div className="fd-banner warn">{error}</div> : null}
       <textarea
-        className="fd-trip-remarks"
+        className="fd-note-ta"
         rows={5}
         value={text}
         onChange={(event) => setText(event.target.value)}
-        placeholder="What the next shift must know before this flight departs. Leave empty to clear the note."
+        placeholder="Anything the next shift should know about this flight — handling, crew, ATC, customer request…"
       />
+      {/* La phrase de l'annexe, mot pour mot : elle dit OU la note reapparait,
+          ce qu'aucune zone de texte ne dit d'elle-meme. */}
+      <div className="fd-note-hint">
+        The note appears on the Flight tab of the flight tag and is kept with the flight.
+        {note.data?.noteAt
+          ? ` Last written ${new Date(note.data.noteAt).toISOString().slice(0, 16).replace('T', ' ')} UTC.`
+          : ''}
+      </div>
     </Modal>
   )
 }
@@ -373,58 +309,6 @@ function hhmmNow() {
   return `${String(now.getUTCHours()).padStart(2, '0')}:${String(now.getUTCMinutes()).padStart(2, '0')}`
 }
 
-/**
- * « Open VIGIL » — les huit verdicts, d'un coup.
- *
- * <b>Ce que ce panneau est, et ce qu'il n'est pas.</b> Le module VIGIL de
- * l'annexe est une scene a lui seul, qui n'est pas portee. Mais la bande VIGIL
- * du pied du dossier calcule deja un verdict par onglet — risque SMS,
- * aerodromes, services, permis, carburant, equipage, passagers, dossier — et
- * l'agent devait parcourir les huit onglets pour les lire. Le panneau les pose
- * les uns sous les autres. C'est la meme fonction ({@code vigilFor}), donc les
- * deux ne peuvent pas se contredire.
- */
-function VigilModal({ row, onClose }) {
-  const parts = [
-    ['flight', 'Flight'],
-    ['airport', 'Airport Info'],
-    ['services', 'Services'],
-    ['ovf', 'OVF Permit'],
-    ['fuel', 'Fuel'],
-    ['crew', 'Crew'],
-    ['pax', 'Pax'],
-    ['tripfolder', 'Trip Folder'],
-  ]
-
-  return (
-    <Modal
-      title={`VIGIL — ${row.flightNo ?? row.registration}`}
-      subtitle="What the operations assistant reads on each part of this file"
-      onClose={onClose}
-      actions={<div className="fd-btn-outline" role="button" tabIndex={0} onClick={onClose}>Close</div>}
-    >
-      {parts.map(([key, label]) => {
-        const verdict = vigilFor(key, row)
-        return (
-          <div className={`vigil-row lvl-${verdict.level}`} key={key}>
-            <span className="vigil-row-tab">{label}</span>
-            <div className="vigil-row-body">
-              <b>{verdict.title}</b>
-              {verdict.sub ? <span>{verdict.sub}</span> : null}
-            </div>
-            <i className={`vigil-row-dot ${verdict.level}`} />
-          </div>
-        )
-      })}
-
-      {/* Le panneau ne se fait pas passer pour le module. */}
-      <div className="lvp-thresholds">
-        These are the same verdicts the VIGIL strip shows one tab at a time. The full VIGIL
-        module — its own screen, with the fleet-wide picture — is not ported.
-      </div>
-    </Modal>
-  )
-}
 
 /**
  * « Open Flight Data » — le document de l'annexe (openFlightDataModal,

@@ -135,3 +135,30 @@ export async function fetchStationLvp(stations) {
   const { data } = await client.get('/weather/lvp', { params: { stations: stations.join(',') } })
   return data
 }
+
+/* ──────────────────────────── frise OCC Dispatch ────────────────────────── */
+
+/**
+ * GET /v1/legs/{id}/occ-timeline — les dix etapes du cycle de dispatch.
+ *
+ * <p>Les statuts viennent du serveur, pas de l'horloge du poste : c'est la
+ * difference avec `computeOccTimeline()` de l'annexe, qui declarait
+ * « Refueling · Completed » des que l'heure etait passee, meme si personne
+ * n'avait avitaille.
+ */
+export async function fetchOccTimeline(legId) {
+  const { data } = await client.get(`/legs/${legId}/occ-timeline`)
+  return data
+}
+
+/** POST /v1/legs/{id}/release — le bouton « Confirm release » de la frise. */
+export async function signRelease(legId, command) {
+  const { data } = await client.post(`/legs/${legId}/release`, command ?? {})
+  return data
+}
+
+/** PATCH /v1/legs/{id}/slot — le bouton « Set CTOT / Slot ref ». */
+export async function setLegSlot(legId, command) {
+  const { data } = await client.patch(`/legs/${legId}/slot`, command)
+  return data
+}
