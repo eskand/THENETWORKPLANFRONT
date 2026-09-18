@@ -29,7 +29,7 @@ import { useVigil } from './vigil/VigilContext'
  *               alors, plutot que d'afficher un zero qui se lirait comme
  *               « rien en attente »
  */
-export default function TopBar({ title, subtitle, inbox = null, initials = 'AD' }) {
+export default function TopBar({ title, subtitle, inbox = null, initials = 'AD', controls = null }) {
   const navigate = useNavigate()
   const alerts = useOpenAlerts()
   const [open, setOpen] = useState(null) // 'critical' | 'all' | null
@@ -83,6 +83,15 @@ export default function TopBar({ title, subtitle, inbox = null, initials = 'AD' 
       </div>
 
       <div className="topbar-right" ref={rightRef}>
+        {/* L'ancre des commandes de Flight Following (référence
+            NETPLUS_FLIGHT_FOLLOWING index.html l. 30-39) : le module y pose
+            LIVE, FLIGHT LIST et l'horloge tant que la vue est affichee
+            (body.fw-topbar). Absente sur les autres ecrans. */}
+        {controls ? (
+          <div id="fwTopHost" aria-label="Flight Watch controls">
+            {controls}
+          </div>
+        ) : null}
         <div
           className="vigil-btn"
           role="button"

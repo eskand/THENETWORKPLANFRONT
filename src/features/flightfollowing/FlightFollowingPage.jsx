@@ -1,8 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Layers, Radio, Search, TriangleAlert } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import TopBar from '../../components/TopBar'
-import { ErrorState, LoadingState } from '../../components/States'
+import { ErrorState } from '../../components/States'
 import { useAirports, useFollowingBoard, useLiveTraffic } from '../../hooks/useOperations'
 import { isoDate } from '../../lib/format'
 import FlightWatchDetail from './components/FlightWatchDetail'
@@ -13,20 +12,24 @@ import RiskPanel from './components/RiskPanel'
 /**
  * Flight Following — TNP Flight Watch.
  *
- * Une carte, une liste triable, une evaluation SMS par vol. Tout vient d'un
- * seul appel, GET /v1/flight-following/board.
+ * Cadre de la référence NETPLUS_FLIGHT_FOLLOWING (module v226.174) :
+ * `flight-following/index.html` l. 21-206 et `js/07` (TNP_FWUI) l. 20-121.
  *
- * Deux ecarts assumes avec le prototype, tous deux du meme ordre :
+ *   · la vue s'ouvre sur la CARTE SEULE ; la liste des vols et le détail d'un
+ *     vol sont des TIROIRS (#left, #right), fermés au départ ;
+ *   · le bouton « FLIGHT LIST » du bandeau ouvre et ferme la liste ;
+ *   · choisir un vol — dans la liste OU sur la carte — ouvre le détail ;
+ *   · Échap referme, du plus récent au plus ancien : le menu des calques,
+ *     puis le détail, puis la liste ;
+ *   · le bandeau du produit porte les commandes du module tant qu'on est
+ *     dans la vue (classe body.fw-topbar, ancre #fwTopHost).
  *
- * 1. **Le prototype simule.** Son bandeau de pied dit « flight data simulated »
- *    et « Simulation active », et ses multiplicateurs 60x / 300x / 1200x font
- *    avancer des avions inventes. Ici les symboles viennent de
- *    `ops.position_reports`. Un vol sans position n'apparait pas sur la carte,
- *    et la liste le dit — « NO SOURCE » — au lieu de le faire voler.
- * 2. **Le rythme remplace la vitesse.** Les quatre boutons restent, mais ils
- *    reglent la frequence de rafraichissement du tableau, pas la vitesse d'une
- *    horloge fictive. Accelerer le temps sur des positions reelles n'a pas de
- *    sens : il n'y a rien a accelerer.
+ * Tout vient d'un seul appel, GET /v1/flight-following/board. Les positions
+ * sont celles reçues (ops.position_reports) : un vol sans position n'apparaît
+ * pas sur la carte, et la liste le dit — « NO SOURCE » — au lieu de le faire
+ * voler (défaut A-D14 de la référence, non reproduit). Les quatre boutons du
+ * groupe `.timemult` règlent la cadence de lecture du tableau, pas la vitesse
+ * d'une horloge fictive.
  */
 
 const REFRESH = [
@@ -36,20 +39,22 @@ const REFRESH = [
   { id: 'OFF', label: 'HOLD', ms: false },
 ]
 
-/** Objet stable : recree a chaque rendu, il changerait la cle de requete
- *  de TanStack Query a chaque passage et relancerait la lecture sans fin. */
+/** Objet stable : recréé à chaque rendu, il changerait la clé de requête
+ *  de TanStack Query à chaque passage et relancerait la lecture sans fin. */
 const USED_STATIONS = { usedOnly: true }
 
+/** `data-base` de la référence (index.html l. 176-178) → fond de FlightWatchMap. */
 const BASEMAPS = [
-  ['SATELLITE', 'Satellite'],
-  ['DARK', 'Dark ops'],
-  ['STREET', 'Street'],
+  ['sat', 'SATELLITE', 'SATELLITE'],
+  ['dark', 'DARK OPS', 'DARK'],
+  ['street', 'STREET', 'STREET'],
 ]
 
-/** Les couches de la carte, dans l'ordre du prototype. */
+/** Les calques de la carte, dans l'ordre et avec les libellés de la référence
+ *  (index.html l. 116-147). */
 const OVERLAYS = [
   ['flights', '✈', 'Flights & active routes'],
-  ['adsb', '📡', 'Live ADS-B traffic'],
+  ['adsb', '📡', 'Live ADS-B traffic (OpenSky)'],
   ['airports', '🛬', 'Airports / waypoints'],
   ['fir', '▦', 'FIR/UIR boundaries'],
   ['radar', '🌧', 'Weather radar (live)'],
@@ -67,14 +72,25 @@ const DEFAULT_LAYERS = {
   labels: true,
 }
 
+/** Style en ligne du bouton ERP tel que js/10 l. 145 le pose. */
+const ERP_STYLE = {
+  marginLeft: 8,
+  background: '#C8202F',
+  color: '#fff',
+  border: 'none',
+  padding: '5px 10px',
+  borderRadius: 6,
+  font: '800 11px system-ui',
+  cursor: 'pointer',
+  letterSpacing: '.5px',
+}
+
 /**
- * Les trames RainViewer : radar de precipitations et infrarouge.
+ * Les trames RainViewer : radar de précipitations et infrarouge.
  *
- * Chargees une seule fois, et seulement quand une des deux couches est
- * allumee. L'heure de la trame revient avec elle : une image radar dont on
- * ignore l'heure ne dit pas si elle date de cinq minutes ou d'une heure, et
- * une image d'il y a une heure lue comme une image du moment est pire que pas
- * d'image du tout.
+ * Chargées une seule fois, et seulement quand une des deux couches est
+ * allumée. L'heure de la trame revient avec elle : une image radar dont on
+ * ignore l'heure ne dit pas si elle date de cinq minutes ou d'une heure.
  */
 function useRadarFrame(enabled) {
   const [frame, setFrame] = useState(null)
@@ -95,8 +111,6 @@ function useRadarFrame(enabled) {
         })
       })
       .catch(() => {
-        // The weather is context. Losing it must not take the flights with it,
-        // and the chip says "unavailable" rather than showing a stale image.
         if (!cancelled) setFrame({ radar: null, infrared: null, at: null, failed: true })
       })
     return () => {
@@ -107,7 +121,7 @@ function useRadarFrame(enabled) {
   return frame
 }
 
-/** L'horloge UTC de l'en-tete, comme celle du prototype. */
+/** L'horloge UTC du bandeau — js/06 l. 546-552 : HH:MM:SS<small>UTC</small>. */
 function useUtcClock() {
   const [now, setNow] = useState(() => new Date())
   useEffect(() => {
@@ -117,42 +131,41 @@ function useUtcClock() {
   return now.toISOString().slice(11, 19)
 }
 
+/** La classe body.fw-topbar vit le temps de la vue (js/07 l. 78, js/12 l. 6). */
+function useTopbarClass() {
+  useEffect(() => {
+    document.body.classList.add('fw-topbar')
+    return () => document.body.classList.remove('fw-topbar')
+  }, [])
+}
+
 export default function FlightFollowingPage() {
   const navigate = useNavigate()
   const clock = useUtcClock()
+  useTopbarClass()
+
   const [date] = useState(() => isoDate(new Date()))
   const [sort, setSort] = useState('risk')
-  const [basemap, setBasemap] = useState('SATELLITE')
+  const [basemap, setBasemap] = useState('sat')
   const [query, setQuery] = useState('')
   const [selectedId, setSelectedId] = useState(null)
   const [refresh, setRefresh] = useState('LIVE')
   const [layers, setLayers] = useState(DEFAULT_LAYERS)
   const [layersOpen, setLayersOpen] = useState(false)
-  const showTraffic = layers.adsb
-  const setShowTraffic = (next) =>
-    setLayers((current) => ({
-      ...current,
-      adsb: typeof next === 'function' ? next(current.adsb) : next,
-    }))
+  const [listOpen, setListOpen] = useState(false)
+  const [detailOpen, setDetailOpen] = useState(false)
+  // LIVE (js/09 l. 175-186) : éteint au départ, comme NP.adsb._on.
+  const [live, setLive] = useState(false)
+  const showTraffic = live && layers.adsb
   const radarFrame = useRadarFrame(layers.radar || layers.ir)
 
   const interval = REFRESH.find((entry) => entry.id === refresh)?.ms ?? 15_000
   const board = useFollowingBoard(date, interval)
   const data = board.data
 
-  /* Le reseau dessine sous les appareils : les aerodromes que l'exploitant
-     CONNAIT, avec leurs coordonnees, depuis refdata.airports. Sans eux la
-     carte n'est qu'une photo satellite.
-
-     « Connait » veut dire « ou il va » : usedOnly. Le filtre etait inutile tant
-     que refdata.airports tenait vingt-six lignes, parce que les deux voulaient
-     dire la meme chose. V51 en a pose 9 584, et la couche est devenue neuf
-     mille marqueurs Leaflet sur une carte qui en montre trente. */
+  /* Le réseau dessiné sous les appareils : les aérodromes que l'exploitant
+     dessert (usedOnly), depuis refdata.airports. */
   const airports = useAirports(USED_STATIONS)
-
-  // Le trafic tiers reellement entendu dans la boite de l exploitant. Une
-  // couche a part : ce ne sont pas nos vols, et la carte ne doit pas laisser
-  // croire le contraire.
   const traffic = useLiveTraffic(showTraffic, interval || 30_000)
 
   const flights = useMemo(() => {
@@ -161,7 +174,7 @@ export default function FlightFollowingPage() {
     const needle = query.trim().toUpperCase()
     if (!needle) return all
     return all.filter((flight) =>
-      [flight.flightNo, flight.registration, flight.icaoType, flight.depIcao, flight.arrIcao]
+      [flight.flightNo, flight.registration, flight.icaoType, flight.depIcao, flight.arrIcao, flight.operator]
         .filter(Boolean)
         .some((field) => field.toUpperCase().includes(needle)),
     )
@@ -174,39 +187,187 @@ export default function FlightFollowingPage() {
     [flights],
   )
 
-  return (
-    <>
-      <TopBar title="Flight Following — TNP Flight Watch" subtitle="Live ADS-B tracking" />
+  /* Un seul point d'entrée pour choisir un vol — liste ou carte — qui ouvre
+     le détail (js/07 : selectFlight → openDetail). */
+  const selectFlight = useCallback((legId) => {
+    setSelectedId(legId)
+    setDetailOpen(true)
+  }, [])
 
-      <div className="shell__scroll">
-        {board.isError ? (
+  /* Échap : une couche à la fois, jamais deux (js/06 l. 311, js/07 l. 62-72). */
+  useEffect(() => {
+    function onKey(event) {
+      if (event.key !== 'Escape') return
+      if (layersOpen) {
+        setLayersOpen(false)
+        return
+      }
+      if (detailOpen) {
+        setDetailOpen(false)
+        event.stopPropagation()
+        return
+      }
+      if (listOpen) {
+        setListOpen(false)
+        event.stopPropagation()
+      }
+    }
+    document.addEventListener('keydown', onKey, true)
+    return () => document.removeEventListener('keydown', onKey, true)
+  }, [layersOpen, detailOpen, listOpen])
+
+  /* Un clic hors du groupe LAYERS referme le menu (js/06 l. 307-310). */
+  useEffect(() => {
+    if (!layersOpen) return undefined
+    function onClick(event) {
+      const wrap = document.getElementById('layers-wrap')
+      if (wrap && !wrap.contains(event.target)) setLayersOpen(false)
+    }
+    document.addEventListener('click', onClick)
+    return () => document.removeEventListener('click', onClick)
+  }, [layersOpen])
+
+  const toggleLayer = (key) => (event) =>
+    setLayers((current) => ({ ...current, [key]: event.target.checked }))
+
+  const controls = (
+    <>
+      <button
+        id="fw-live-btn"
+        type="button"
+        className={live ? 'on' : undefined}
+        title="Live ADS-B traffic (OpenSky)"
+        onClick={() => setLive((current) => !current)}
+      >
+        {live ? '📡 LIVE ●' : '📡 LIVE'}
+      </button>
+      <button id="fw-erp-btn" type="button" style={ERP_STYLE} onClick={() => navigate('/erp')}>
+        ⚠ ACTIVATE ERP
+      </button>
+      <button
+        id="fwListBtn"
+        className={`fw-listbtn${listOpen ? ' on' : ''}`}
+        type="button"
+        aria-pressed={listOpen ? 'true' : 'false'}
+        title={listOpen ? 'Hide the active flight list' : 'Show the active flight list'}
+        onClick={() => setListOpen((current) => !current)}
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.9"
+          strokeLinecap="round"
+          aria-hidden="true"
+        >
+          <path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01" />
+        </svg>
+        FLIGHT LIST
+      </button>
+      <div id="utcclock">
+        {clock}
+        <small>UTC</small>
+      </div>
+    </>
+  )
+
+  if (board.isError) {
+    return (
+      <>
+        <TopBar title="Flight Following — TNP Flight Watch" subtitle="Live ADS-B tracking" controls={controls} />
+        <div className="shell__scroll">
           <main className="page">
             <ErrorState error={board.error} onRetry={() => board.refetch()} />
           </main>
-        ) : !data ? (
-          <main className="page">
-            <LoadingState label="Loading the flight watch…" />
-          </main>
-        ) : (
-          <div className="fw">
-            <div className="fw__bar">
-              <span className="fw__eyebrow">Live map &amp; SMS risk monitor</span>
+        </div>
+      </>
+    )
+  }
 
-              <label className="fw__search">
-                <Search size={12} />
-                <input
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  placeholder="ICAO / CALLSIGN / OP"
-                />
-              </label>
+  return (
+    <>
+      <TopBar title="Flight Following — TNP Flight Watch" subtitle="Live ADS-B tracking" controls={controls} />
 
-              <div className="fw__seg">
+      <div
+        id="viewFlightFollowing"
+        style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden' }}
+      >
+        <div id="app" className={detailOpen ? 'fw-right-open' : undefined}>
+          <div id="left" className={listOpen ? 'fw-open' : undefined} aria-hidden={listOpen ? 'false' : 'true'}>
+            <div className="fw-head">
+              <h3>FLIGHT LIST</h3>
+              <button
+                id="fwListClose"
+                className="fw-x"
+                type="button"
+                aria-label="Close the flight list"
+                title="Close the flight list"
+                onClick={() => setListOpen(false)}
+              >
+                ×
+              </button>
+            </div>
+
+            {data ? <RiskPanel board={data} flights={flights} onSelect={selectFlight} /> : null}
+
+            <div className="fw__sorts">
+              <button type="button" className={sort === 'risk' ? 'is-on' : ''} onClick={() => setSort('risk')}>
+                Sort: Risk
+              </button>
+              <button
+                type="button"
+                className={sort === 'callsign' ? 'is-on' : ''}
+                onClick={() => setSort('callsign')}
+              >
+                Sort: Callsign
+              </button>
+            </div>
+
+            <div className="fw__listhead">
+              <span>Active flights</span>
+              <b>{flights.length}</b>
+            </div>
+
+            <FlightWatchList flights={flights} sort={sort} selectedId={selectedId} onSelect={selectFlight} />
+
+            <div className="legend-box">
+              <div style={{ fontSize: 9, color: 'var(--gold)', letterSpacing: '1.5px', marginBottom: 8 }}>
+                RISK LEVEL LEGEND
+              </div>
+              <div className="legend-row"><span className="dot" style={{ background: '#27AE60' }} /> Low — acceptable, routine watch</div>
+              <div className="legend-row"><span className="dot" style={{ background: '#E0C22A' }} /> Medium — monitor, review trend</div>
+              <div className="legend-row"><span className="dot" style={{ background: '#E67E22' }} /> High — mitigation required</div>
+              <div className="legend-row"><span className="dot" style={{ background: '#C0392B' }} /> Critical — immediate action</div>
+            </div>
+          </div>
+
+          <div id="mapwrap">
+            <FlightWatchMap
+              flights={flights}
+              airports={airports.data?.rows ?? []}
+              bases={bases}
+              traffic={traffic.data ?? []}
+              showTraffic={showTraffic}
+              basemap={BASEMAPS.find(([id]) => id === basemap)?.[2] ?? 'SATELLITE'}
+              layers={layers}
+              radarFrame={radarFrame}
+              selectedId={selectedId}
+              onSelect={selectFlight}
+            />
+
+            <div id="fwMapCtl">
+              <input
+                id="searchbox"
+                placeholder="⌕ ICAO / CALLSIGN / OP"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+              />
+              <div className="timemult">
                 {REFRESH.map((entry) => (
                   <button
                     type="button"
                     key={entry.id}
-                    className={refresh === entry.id ? 'is-on' : ''}
+                    className={refresh === entry.id ? 'active' : undefined}
                     title={
                       entry.ms
                         ? `Refresh the board every ${entry.ms / 1000} s`
@@ -218,177 +379,131 @@ export default function FlightFollowingPage() {
                   </button>
                 ))}
               </div>
-
-              <span className={`fw__live${board.isFetching ? ' is-on' : ''}`}>
-                <Radio size={12} />
-                {board.isFetching ? 'READING' : 'IDLE'}
-              </span>
-
-              <button type="button" className="fw__erp" onClick={() => navigate('/erp')}>
-                <TriangleAlert size={12} />
-                ACTIVATE ERP
-              </button>
-
-              <button
-                type="button"
-                className={showTraffic ? `fw__traffic is-on` : `fw__traffic`}
-                title="Show other operators' aircraft heard by the ADS-B feed"
-                onClick={() => setShowTraffic((current) => !current)}
-              >
-                TRAFFIC {traffic.data?.length ? `· ${traffic.data.length}` : ''}
-              </button>
-
-              <div className="fw__seg fw__seg--layers">
-                {BASEMAPS.map(([id, label]) => (
-                  <button
-                    type="button"
-                    key={id}
-                    className={basemap === id ? 'is-on' : ''}
-                    onClick={() => setBasemap(id)}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-
-              <div className="fw__layers">
+              <div className="layers-wrap" id="layers-wrap">
                 <button
+                  className={`layers-btn${layersOpen ? ' open' : ''}`}
+                  id="layers-btn"
                   type="button"
-                  className={`fw__layersbtn${layersOpen ? ' is-on' : ''}`}
                   title="Map layers"
-                  onClick={() => setLayersOpen((current) => !current)}
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    setLayersOpen((current) => !current)
+                  }}
                 >
-                  <Layers size={12} />
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <polygon points="12 2 22 8 12 14 2 8 12 2" />
+                    <polyline points="2 14 12 20 22 14" />
+                    <polyline points="2 11 12 17 22 11" />
+                  </svg>
                   LAYERS
                 </button>
-
-                {layersOpen ? (
-                  <div className="fw__layersmenu">
-                    {OVERLAYS.map(([key, icon, label]) => (
-                      <label className="fw__layerrow" key={key}>
-                        <span className="fw__layerico">{icon}</span>
-                        <span className="fw__layerlbl">{label}</span>
-                        <input
-                          type="checkbox"
-                          checked={!!layers[key]}
-                          onChange={(event) =>
-                            setLayers((current) => ({ ...current, [key]: event.target.checked }))
-                          }
-                        />
-                        <span className="fw__switch" />
+                <div id="layerctl" className={layersOpen ? 'open' : undefined} onClick={(event) => event.stopPropagation()}>
+                  <div className="lc-head">MAP LAYERS</div>
+                  {OVERLAYS.map(([key, icon, label]) => (
+                    <div className="lc-item" key={key}>
+                      <label htmlFor={`ly-${key}`}>
+                        <span className="lc-icon">{icon}</span> {label}
                       </label>
-                    ))}
-
-                    {layers.radar || layers.ir ? (
-                      <div className="fw__layernote">
-                        {radarFrame == null
-                          ? 'Loading the weather imagery…'
-                          : radarFrame.failed
-                            ? 'Weather imagery unavailable — the provider did not answer.'
-                            : `RainViewer · frame ${radarFrame.at} UTC`}
+                      <label className="switch">
+                        <input type="checkbox" id={`ly-${key}`} checked={!!layers[key]} onChange={toggleLayer(key)} />
+                        <span className="slider" />
+                      </label>
+                    </div>
+                  ))}
+                  {layers.radar || layers.ir ? (
+                    <div className="lc-sub">
+                      <div className="lc-sub-label">
+                        <span>
+                          {radarFrame == null
+                            ? 'Loading the weather imagery…'
+                            : radarFrame.failed
+                              ? 'Weather imagery unavailable — the provider did not answer.'
+                              : `RainViewer · frame ${radarFrame.at} UTC`}
+                        </span>
                       </div>
-                    ) : null}
-                  </div>
-                ) : null}
-              </div>
-
-              <span className="fw__clock">
-                {clock}
-                <i>UTC</i>
-              </span>
-            </div>
-
-            <div className="fw__body">
-              <div className="fw__left">
-                <RiskPanel board={data} flights={flights} onSelect={setSelectedId} />
-
-                <div className="fw__sorts">
-                  <button
-                    type="button"
-                    className={sort === 'risk' ? 'is-on' : ''}
-                    onClick={() => setSort('risk')}
-                  >
-                    Sort: Risk
-                  </button>
-                  <button
-                    type="button"
-                    className={sort === 'callsign' ? 'is-on' : ''}
-                    onClick={() => setSort('callsign')}
-                  >
-                    Sort: Callsign
-                  </button>
-                </div>
-
-                <div className="fw__listhead">
-                  <span>Active flights</span>
-                  <b>{flights.length}</b>
-                </div>
-
-                <FlightWatchList
-                  flights={flights}
-                  sort={sort}
-                  selectedId={selectedId}
-                  onSelect={setSelectedId}
-                />
-              </div>
-
-              <div className="fw__map">
-                <FlightWatchMap
-                  flights={flights}
-                  airports={airports.data?.rows ?? []}
-                  bases={bases}
-                  traffic={traffic.data ?? []}
-                  showTraffic={showTraffic}
-                  basemap={basemap}
-                  layers={layers}
-                  radarFrame={radarFrame}
-                  selectedId={selectedId}
-                  onSelect={setSelectedId}
-                />
-                {/* La legende du risque : quatre bandes, et ce qu'on attend
-                    de l'operateur pour chacune. Une couleur sans sa consigne
-                    est une couleur qu'on interprete. */}
-                <div className="fw__risklegend">
-                  <span><i style={{ background: '#27AE60' }} />Low — acceptable, routine watch</span>
-                  <span><i style={{ background: '#E0C22A' }} />Medium — monitor, review trend</span>
-                  <span><i style={{ background: '#E67E22' }} />High — mitigation required</span>
-                  <span><i style={{ background: '#C0392B' }} />Critical — immediate action</span>
-                </div>
-
-                <div className="fw__mapfoot">
-                  <span className={`fw__src fw__src--${(data.adsb?.state ?? 'not_run').toLowerCase()}`}>
-                    {data.adsb?.provider ?? 'ADS-B'} · {data.adsb?.state ?? 'NOT RUN'}
-                  </span>
-                  {data.adsb?.state === 'LIVE' ? (
-                    <>
-                      {' '}
-                      {data.adsb.seen} aircraft seen in the box, {data.adsb.matched} ours
-                      {data.adsb.withoutModeS?.length > 0 ? (
-                        <>
-                          {' · '}
-                          <b title={data.adsb.withoutModeS.join(', ')}>
-                            {data.adsb.withoutModeS.length} of our tails carry no Mode-S code
-                          </b>
-                          {' — they cannot be correlated until one is entered'}
-                        </>
-                      ) : null}
-                    </>
-                  ) : data.adsb?.state === 'NO_ANSWER' ? (
-                    ' — the feed did not answer; the last known positions stand, with their age'
-                  ) : data.adsb?.state === 'NO_SOURCE' ? (
-                    ' — no live source configured'
+                    </div>
                   ) : null}
-                  {' · '}
-                  {plotted.length} of {flights.length} legs plotted · {data.withoutSource} with no
-                  position ever received · {data.trackedStale} stale beyond{' '}
-                  {data.staleThresholdMinutes} min
                 </div>
               </div>
-
-              <FlightWatchDetail flight={selected} />
             </div>
+
+            <div className="map-note">
+              FIR/UIR boundaries: real ATC data, geometry simplified for display — verify against official
+              AIP/eAIP for operational use.
+            </div>
+
+            <div id="basemap-switch">
+              {BASEMAPS.map(([id, label]) => (
+                <button
+                  type="button"
+                  key={id}
+                  data-base={id}
+                  className={basemap === id ? 'active' : undefined}
+                  onClick={() => setBasemap(id)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {data ? (
+              <div className="fw__mapfoot">
+                <span className={`fw__live${board.isFetching ? ' is-on' : ''}`}>
+                  {board.isFetching ? 'READING' : 'IDLE'}
+                </span>{' '}
+                <span className={`fw__src fw__src--${(data.adsb?.state ?? 'not_run').toLowerCase()}`}>
+                  {data.adsb?.provider ?? 'ADS-B'} · {data.adsb?.state ?? 'NOT RUN'}
+                </span>
+                {data.adsb?.state === 'LIVE' ? (
+                  <>
+                    {' '}
+                    {data.adsb.seen} aircraft seen in the box, {data.adsb.matched} ours
+                    {data.adsb.withoutModeS?.length > 0 ? (
+                      <>
+                        {' · '}
+                        <b title={data.adsb.withoutModeS.join(', ')}>
+                          {data.adsb.withoutModeS.length} of our tails carry no Mode-S code
+                        </b>
+                        {' — they cannot be correlated until one is entered'}
+                      </>
+                    ) : null}
+                  </>
+                ) : data.adsb?.state === 'NO_ANSWER' ? (
+                  ' — the feed did not answer; the last known positions stand, with their age'
+                ) : data.adsb?.state === 'NO_SOURCE' ? (
+                  ' — no live source configured'
+                ) : null}
+                {' · '}
+                {plotted.length} of {flights.length} legs plotted · {data.withoutSource} with no position ever
+                received · {data.trackedStale} stale beyond {data.staleThresholdMinutes} min
+              </div>
+            ) : null}
           </div>
-        )}
+
+          <div id="right" className={detailOpen ? 'fw-open' : undefined} aria-hidden={detailOpen ? 'false' : 'true'}>
+            <div className="fw-head">
+              <h3>FLIGHT DETAIL</h3>
+              <button
+                id="fwDetailClose"
+                className="fw-x"
+                type="button"
+                aria-label="Close the flight detail"
+                title="Close the flight detail"
+                onClick={() => setDetailOpen(false)}
+              >
+                ×
+              </button>
+            </div>
+            <FlightWatchDetail flight={selected} />
+          </div>
+        </div>
       </div>
     </>
   )
