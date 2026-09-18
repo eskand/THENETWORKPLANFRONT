@@ -218,6 +218,40 @@ describe('F01b — le tiroir gauche (index.html l. 46-92, renderList js/06 l. 11
   })
 })
 
+describe('F11 — la pile d’alertes : texte, facteur dominant, mitigation, huit lignes (js/06 fwAlertList l. 1478-1487, FW_MITIG l. 568-574)', () => {
+  test('chaque ligne dit « ⚠ FN — (A→B) — LEVEL RISK · <facteur>: <détail> — Mitigation: <consigne> »', async () => {
+    const high = flight({
+      legId: 'l2', flightNo: 'TNP202', depIcao: 'DTTA', arrIcao: 'LFPB',
+      risk: {
+        level: 'HIGH', index: 12, severity: 4, likelihood: 3, action: 'Mitigation required.',
+        factors: [
+          { factor: 'WEATHER', level: 'MINOR', detail: 'Alternate below minima' },
+          { factor: 'MEL', level: 'MAJOR', detail: 'MEL 21-51-01 open, category B' },
+        ],
+      },
+    })
+    await open(board([flight(), high]))
+    expect(q('#fwAlertBanner .fw-al .fw-al-txt')).toHaveTextContent(
+      '⚠ TNP202 — (DTTA→LFPB) — HIGH RISK · Aircraft performance / MEL: MEL 21-51-01 open, category B — Mitigation: apply MEL (O)/(M) procedure, revalidate performance',
+    )
+  })
+
+  test('les vols se classent par indice décroissant et la pile s’arrête à huit', async () => {
+    const many = Array.from({ length: 10 }, (_, i) =>
+      flight({
+        legId: `m${i}`, flightNo: `TNP${300 + i}`,
+        risk: { level: 'MEDIUM', index: 5 + i, severity: 3, likelihood: 2, action: 'Monitor.', factors: [] },
+      }),
+    )
+    await open(board(many))
+    const rows = qa('#fwAlertBanner .fw-al')
+    expect(rows).toHaveLength(8)
+    expect(rows[0].querySelector('b')).toHaveTextContent('TNP309')
+    expect(rows[0].querySelector('.fw-al-txt')).toHaveTextContent('(DTTA→LFMN) — MEDIUM RISK')
+    expect(rows[0].textContent).not.toContain('Mitigation')
+  })
+})
+
 describe('F01a — les commandes du bandeau (#fwTopHost, index.html l. 30-39, js/09 l. 175-186, js/10 l. 139-148)', () => {
   test('le bandeau du produit porte #fwTopHost : LIVE, ACTIVATE ERP, FLIGHT LIST, horloge UTC', async () => {
     await open()
