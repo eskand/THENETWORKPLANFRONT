@@ -602,6 +602,57 @@ describe('F09a — les commandes de veille et la vue TABLE (index.html l. 154-16
   })
 })
 
+describe('F09b — le WATCH REPORT (js/06 fwRapportHtml l. 877-914, fwOpenReport l. 915-939)', () => {
+  const pair = () => [
+    flight({ legId: 'b', flightNo: 'TNP202', registration: 'TS-NPB', status: 'PLANNED',
+      risk: { level: 'HIGH', index: 12, severity: 4, likelihood: 3, action: '', factors: [] } }),
+    flight({ legId: 'a', flightNo: 'TNP101', status: 'DEPARTED', etaRevised: '2026-09-18T08:27:00Z' }),
+  ]
+
+  test('WATCH REPORT ouvre #fw-report-ov : barre Copy as text / Close, titre, sous-titre, deux tables, note', async () => {
+    await open(board(pair()))
+    expect(q('#viewFlightFollowing #fw-report-ov')).toBeNull()
+    fireEvent.click(q('#fw-report-btn'))
+    const ov = q('#viewFlightFollowing #fw-report-ov')
+    expect(ov).toHaveClass('on')
+    const bar = ov.querySelector('.fw-rep-box .fw-rep-bar')
+    expect([...bar.querySelectorAll('button')].map((b) => b.id + ':' + b.textContent)).toEqual(['fw-rep-copy:Copy as text', 'fw-rep-close:Close'])
+    const rep = ov.querySelector('.fw-rep-body .fw-rep')
+    expect(rep.querySelector('h3')).toHaveTextContent('FLIGHT WATCH REPORT')
+    expect(rep.querySelector('.fw-rep-sub').textContent).toMatch(/^issued \d\d:\d\dZ · \d\d [A-Z][a-z]{2} \d{4} · 2 flight\(s\) watched$/)
+    expect([...rep.querySelectorAll('h4')].map((h) => h.textContent)).toEqual(['FLIGHTS WATCHED', 'ALERTS ACKNOWLEDGED'])
+
+    const tables = rep.querySelectorAll('table.fw-rep-t')
+    expect([...tables[0].querySelectorAll('thead th')].map((th) => th.textContent)).toEqual(['Flight', 'Route', 'Reg', 'ETD/ATD', 'ETA/ATA', 'Delay', 'Risk', 'Track pts'])
+    const rows = [...tables[0].querySelectorAll('tbody tr')]
+    expect(rows.map((r) => r.querySelector('td b').textContent)).toEqual(['TNP101', 'TNP202'])
+    expect([...rows[0].querySelectorAll('td')].map((td) => td.textContent)).toEqual(['TNP101', 'DTTA → LFMN', 'TS-NPA', '06:00Z', '08:27Z', '+12 min', 'LOW · 2', '—'])
+    expect(rows[1].querySelector('td:nth-child(7) span')).toHaveStyle({ color: '#E67E22' })
+    expect([...tables[1].querySelectorAll('thead th')].map((th) => th.textContent)).toEqual(['Flight', 'Kind', 'Level', 'Alert', 'By', 'At'])
+    const alertCell = tables[1].querySelector('tbody td')
+    expect(alertCell).toHaveAttribute('colspan', '6')
+    expect(alertCell).toHaveTextContent('No alert acknowledged during this watch.')
+    expect(rep.querySelector('.fw-rep-note')).toHaveTextContent('Times are read from the operational schedule (STD/STA, OCC delays, ATD/ATA when logged).')
+  })
+
+  test('Close referme, un clic sur le voile aussi ; Copy as text écrit le rapport dans le presse-papiers et dit « Copied »', async () => {
+    const writeText = vi.fn(() => Promise.resolve())
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } })
+    await open(board(pair()))
+    fireEvent.click(q('#fw-report-btn'))
+    fireEvent.click(q('#fw-rep-copy'))
+    expect(writeText).toHaveBeenCalledTimes(1)
+    expect(writeText.mock.calls[0][0]).toContain('FLIGHT WATCH REPORT')
+    expect(q('#fw-rep-copy')).toHaveTextContent('Copied')
+    fireEvent.click(q('#fw-rep-close'))
+    expect(q('#fw-report-ov')).not.toHaveClass('on')
+    fireEvent.click(q('#fw-report-btn'))
+    expect(q('#fw-report-ov')).toHaveClass('on')
+    fireEvent.click(q('#fw-report-ov'))
+    expect(q('#fw-report-ov')).not.toHaveClass('on')
+  })
+})
+
 describe('F01a — les commandes du bandeau (#fwTopHost, index.html l. 30-39, js/09 l. 175-186, js/10 l. 139-148)', () => {
   test('le bandeau du produit porte #fwTopHost : LIVE, ACTIVATE ERP, FLIGHT LIST, horloge UTC', async () => {
     await open()

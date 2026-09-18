@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import TopBar from '../../components/TopBar'
 import { ErrorState } from '../../components/States'
@@ -254,6 +254,11 @@ export default function FlightFollowingPage() {
   const [listOpen, setListOpen] = useState(false)
   const [filters, setFilters] = useState(NO_FILTER)
   const [tableOpen, setTableOpen] = useState(false)
+  const [reportOpen, setReportOpen] = useState(false)
+  // Le voile est cree a la premiere ouverture puis reste dans le DOM (fwOpenReport l. 916-931).
+  const [reportCreated, setReportCreated] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const reportBodyRef = useRef(null)
   const [focus, setFocus] = useState(null)
   const [detailOpen, setDetailOpen] = useState(false)
   // « FOLLOW THIS FLIGHT ON MAP » — followSelected js/06 l. 1604-1608.
@@ -664,6 +669,10 @@ export default function FlightFollowingPage() {
                 id="fw-report-btn"
                 type="button"
                 title="Flight watch report — flights, times, delays, risk and the alerts acknowledged"
+                onClick={() => {
+                  setReportCreated(true)
+                  setReportOpen(true)
+                }}
               >
                 📋 WATCH REPORT
               </button>
@@ -835,6 +844,122 @@ export default function FlightFollowingPage() {
               </div>
             ) : null}
           </div>
+
+          {reportCreated ? (
+            /* Le rapport de veille — fwOpenReport js/06 l. 915-939, fwRapportHtml l. 877-914.
+               La table « ALERTS ACKNOWLEDGED » attend le journal d'acquittement (F03b, Q19) :
+               elle porte la ligne vide de la référence. « Track pts » attend une lecture des
+               traces reçues : tiret. */
+            <div
+              id="fw-report-ov"
+              className={reportOpen ? 'on' : undefined}
+              onClick={(event) => {
+                if (event.target === event.currentTarget) setReportOpen(false)
+              }}
+            >
+              <div className="fw-rep-box">
+                <div className="fw-rep-bar">
+                  <button
+                    id="fw-rep-copy"
+                    type="button"
+                    onClick={() => {
+                      const text = reportBodyRef.current?.innerText ?? reportBodyRef.current?.textContent ?? ''
+                      try {
+                        navigator.clipboard.writeText(text)
+                      } catch {
+                        /* presse-papiers indisponible */
+                      }
+                      setCopied(true)
+                      setTimeout(() => setCopied(false), 1400)
+                    }}
+                  >
+                    {copied ? 'Copied' : 'Copy as text'}
+                  </button>
+                  <button id="fw-rep-close" type="button" onClick={() => setReportOpen(false)}>
+                    Close
+                  </button>
+                </div>
+                <div className="fw-rep-body" ref={reportBodyRef}>
+                  <div className="fw-rep">
+                    <h3>FLIGHT WATCH REPORT</h3>
+                    <div className="fw-rep-sub">
+                      issued {now.toISOString().slice(11, 16)}Z · {now.toUTCString().slice(5, 16)} · {all.length} flight(s) watched
+                    </div>
+                    <h4>FLIGHTS WATCHED</h4>
+                    <table className="fw-rep-t">
+                      <thead>
+                        <tr>
+                          <th>Flight</th>
+                          <th>Route</th>
+                          <th>Reg</th>
+                          <th>ETD/ATD</th>
+                          <th>ETA/ATA</th>
+                          <th>Delay</th>
+                          <th>Risk</th>
+                          <th>Track pts</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {[...all]
+                          .sort((a, b) => a.flightNo.localeCompare(b.flightNo))
+                          .map((flight) => {
+                            const T = timesOf(flight, now)
+                            const delay = T
+                              ? T.delayMin === 0
+                                ? 'on schedule'
+                                : `${T.delayMin > 0 ? '+' : '−'}${Math.abs(T.delayMin)} min`
+                              : '—'
+                            return (
+                              <tr key={flight.legId}>
+                                <td>
+                                  <b>{flight.flightNo}</b>
+                                </td>
+                                <td>
+                                  {flight.depIcao} → {flight.arrIcao}
+                                </td>
+                                <td>{flight.registration}</td>
+                                <td>{T ? T.etdTxt || '—' : '—'}</td>
+                                <td>{T ? T.etaTxt || '—' : '—'}</td>
+                                <td>{delay}</td>
+                                <td>
+                                  <span style={{ color: RISK_COLOUR[flight.risk?.level] ?? RISK_COLOUR.LOW }}>
+                                    {flight.risk?.level ?? 'LOW'} · {flight.risk?.index ?? '—'}
+                                  </span>
+                                </td>
+                                <td>—</td>
+                              </tr>
+                            )
+                          })}
+                      </tbody>
+                    </table>
+                    <h4>ALERTS ACKNOWLEDGED</h4>
+                    <table className="fw-rep-t">
+                      <thead>
+                        <tr>
+                          <th>Flight</th>
+                          <th>Kind</th>
+                          <th>Level</th>
+                          <th>Alert</th>
+                          <th>By</th>
+                          <th>At</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td colSpan="6" style={{ color: '#8fa2bd' }}>
+                            No alert acknowledged during this watch.
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <div className="fw-rep-note">
+                      Times are read from the operational schedule (STD/STA, OCC delays, ATD/ATA when logged).
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : null}
 
           <div id="right" className={detailOpen ? 'fw-open' : undefined} aria-hidden={detailOpen ? 'false' : 'true'}>
             <div className="fw-head">
