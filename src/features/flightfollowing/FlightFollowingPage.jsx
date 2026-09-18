@@ -128,7 +128,24 @@ function useUtcClock() {
     const timer = setInterval(() => setNow(new Date()), 1000)
     return () => clearInterval(timer)
   }, [])
-  return now.toISOString().slice(11, 19)
+  return now
+}
+
+/** « 12 s ago » / « 3 min ago » / « 2 h ago » — fwAgeTxt js/06 l. 749-755. */
+function fwAgeTxt(ms) {
+  const s = Math.max(0, Math.round(ms / 1000))
+  if (s < 90) return `${s} s ago`
+  const m = Math.round(s / 60)
+  if (m < 90) return `${m} min ago`
+  return `${Math.round(m / 60)} h ago`
+}
+
+/** ok < 2 min, warn < 10 min, stale au-delà — fwAgeClasse js/06 l. 756-761. */
+function fwAgeClasse(ms) {
+  const m = ms / 60000
+  if (m < 2) return 'ok'
+  if (m < 10) return 'warn'
+  return 'stale'
 }
 
 /** La classe body.fw-topbar vit le temps de la vue (js/07 l. 78, js/12 l. 6). */
@@ -141,7 +158,8 @@ function useTopbarClass() {
 
 export default function FlightFollowingPage() {
   const navigate = useNavigate()
-  const clock = useUtcClock()
+  const now = useUtcClock()
+  const clock = now.toISOString().slice(11, 19)
   useTopbarClass()
 
   const [date] = useState(() => isoDate(new Date()))
@@ -184,10 +202,6 @@ export default function FlightFollowingPage() {
 
   const selected = flights.find((flight) => flight.legId === selectedId) ?? null
   const plotted = flights.filter((flight) => flight.lastPosition)
-  const bases = useMemo(
-    () => [...new Set(flights.map((flight) => flight.depIcao))],
-    [flights],
-  )
 
   /* Un seul point d'entrée pour choisir un vol — liste ou carte — qui ouvre
      le détail (js/07 : selectFlight → openDetail). */
@@ -348,7 +362,6 @@ export default function FlightFollowingPage() {
             <FlightWatchMap
               flights={flights}
               airports={airports.data?.rows ?? []}
-              bases={bases}
               traffic={traffic.data ?? []}
               showTraffic={showTraffic}
               basemap={BASEMAPS.find(([id]) => id === basemap)?.[2] ?? 'SATELLITE'}
@@ -455,6 +468,48 @@ export default function FlightFollowingPage() {
                 </button>
               ))}
             </div>
+
+            {/* La source et l'âge de la position — fwRefreshFeedAge js/06 l. 763-780.
+                La référence dit « Simulated — computed continuously » hors ADS-B
+                (A-D14) ; ici la position est toujours reçue, jamais calculée. */}
+            {(() => {
+              const adsb = data?.adsb
+              const ranAt = adsb?.ranAt ? new Date(adsb.ranAt) : null
+              const ms = adsb?.state === 'LIVE' && ranAt ? now - ranAt : null
+              const cls = ms == null ? null : fwAgeClasse(ms)
+              return (
+                <div id="fw-feed-age" className={cls ? `fw-feed ${cls}` : 'fw-feed'}>
+                  <b>POSITION SOURCE</b>
+                  {ms == null ? (
+                    <>
+                      {adsb?.provider ?? 'ADS-B'} · {(adsb?.state ?? 'NOT_RUN').replace('_', ' ')} — received fixes only.
+                      Press LIVE for ADS-B traffic.
+                    </>
+                  ) : (
+                    <>
+                      ADS-B ({adsb.provider}) · last sweep <b className="age">{fwAgeTxt(ms)}</b>
+                      {cls === 'stale' ? ' — treat these positions as out of date' : ''}
+                    </>
+                  )}
+                </div>
+              )
+            })()}
+
+            {/* L'encart du trafic — fwSetAdsb js/06 l. 1731-1733, posé quand LIVE est allumé. */}
+            {live && traffic.data ? (
+              <div
+                id="fw-adsb-status"
+                style={{
+                  position: 'absolute', bottom: 10, left: 10, zIndex: 600, background: 'rgba(10,22,40,.85)',
+                  border: '1px solid #24406b', color: '#cfe0f5', font: '11px/1.4 system-ui', padding: '6px 9px',
+                  borderRadius: 6, pointerEvents: 'none',
+                }}
+              >
+                <span style={{ color: '#4DA3FF' }}>✈</span> ADS-B live: {traffic.data.length} traffic ·{' '}
+                <span style={{ color: '#2ECC71' }}>✈</span> {data?.adsb?.matched ?? 0} fleet
+                {data?.adsb?.ranAt ? ` · ${new Date(data.adsb.ranAt).toLocaleTimeString()}` : ''}
+              </div>
+            ) : null}
 
             {data ? (
               <div className="fw__mapfoot">

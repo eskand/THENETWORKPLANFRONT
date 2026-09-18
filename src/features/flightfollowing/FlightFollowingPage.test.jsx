@@ -380,6 +380,40 @@ describe('F01c — le panneau de détail (renderDetailPane js/06 l. 1520-1610, f
   })
 })
 
+describe('F01d — la source et l’âge de la position, l’encart du trafic (fwRefreshFeedAge js/06 l. 763-780, fwSetAdsb l. 1731-1733)', () => {
+  test('#fw-feed-age dit la source ; en ADS-B LIVE il porte l’âge du dernier balayage et sa classe', async () => {
+    const data = board()
+    data.adsb = { provider: 'OpenSky', state: 'LIVE', seen: 12, matched: 2, withoutModeS: [], ranAt: new Date(Date.now() - 30_000).toISOString() }
+    await open(data)
+    const feed = q('#mapwrap #fw-feed-age')
+    expect(feed).toHaveClass('fw-feed', 'ok')
+    expect(feed.querySelector('b')).toHaveTextContent('POSITION SOURCE')
+    expect(feed).toHaveTextContent(/ADS-B \(OpenSky\) · last sweep \d+ s ago/)
+    expect(feed.querySelector('b.age')).toHaveTextContent(/\d+ s ago/)
+  })
+
+  test('sans balayage ADS-B, #fw-feed-age reste neutre et invite à presser LIVE', async () => {
+    await open()
+    const feed = q('#mapwrap #fw-feed-age')
+    expect(feed.className).toBe('fw-feed')
+    expect(feed).toHaveTextContent('POSITION SOURCE')
+    expect(feed).toHaveTextContent('Press LIVE for ADS-B traffic.')
+  })
+
+  test('LIVE allumé et trafic lu : #fw-adsb-status « ✈ ADS-B live: n traffic · ✈ m fleet »', async () => {
+    routes['/flight-following/traffic'] = [
+      { modeSHex: '3c6444', callsign: 'DLH4YA', latitude: 41.2, longitude: 9.1, altitudeFt: 37025, groundSpeedKt: 445, trackDeg: 95 },
+    ]
+    const data = board()
+    data.adsb = { provider: 'OpenSky', state: 'LIVE', seen: 12, matched: 2, withoutModeS: [], ranAt: '2026-09-18T07:00:00Z' }
+    await open(data)
+    expect(q('#fw-adsb-status')).toBeNull()
+    fireEvent.click(q('#fw-live-btn'))
+    await waitFor(() => expect(q('#mapwrap #fw-adsb-status')).not.toBeNull())
+    expect(q('#fw-adsb-status')).toHaveTextContent('✈ ADS-B live: 1 traffic · ✈ 2 fleet ·')
+  })
+})
+
 describe('F01a — les commandes du bandeau (#fwTopHost, index.html l. 30-39, js/09 l. 175-186, js/10 l. 139-148)', () => {
   test('le bandeau du produit porte #fwTopHost : LIVE, ACTIVATE ERP, FLIGHT LIST, horloge UTC', async () => {
     await open()

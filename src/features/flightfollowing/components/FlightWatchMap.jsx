@@ -1,101 +1,79 @@
 import { useEffect, useRef } from 'react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+import { RISK_COLOUR } from './FlightWatchList'
 
 /**
- * La carte de Flight Watch.
+ * La carte de Flight Watch — `#map`.
  *
- * Une image satellite nue n'est pas une carte : sans noms de pays, sans
- * aerodromes et sans routes, elle ne repond a aucune question qu'un OCC se
- * pose. Quatre couches sont donc empilees, dans cet ordre :
+ * Référence NETPLUS_FLIGHT_FOLLOWING js/06 : MAP INIT l. 243-266 (vue
+ * [38, 15] au zoom 4, zoom en haut à gauche, fonds Esri / CARTO dark_all /
+ * CARTO voyager, libellés Esri à 0.9 sur le satellite seulement), volets
+ * l. 285-289, FIR l. 297-341 (fond or, libellé .fir-label au centre),
+ * aérodromes l. 346-359 (pastille r4 or sur fond navy + .apt-label), vol suivi
+ * l. 1748-1757 (route #F0A500 · 1.6 · .55 · 2,6 ; icône aircraftSVG 26 px
+ * colorée par le niveau, tournée au cap ; infobulle « CS — LEVEL »),
+ * sélection l. 1236-1239 (flyTo zoom 6), trafic ADS-B fwSetAdsb l. 1703-1740
+ * (icône bleue 11 px, infobulle, fenêtre).
  *
- *   1. le fond — imagerie Esri, fond sombre ou fond rue ;
- *   2. les libelles — frontieres, pays et villes, en surimpression du
- *      satellite, qui n'en porte aucun ;
- *   3. le reseau de l'exploitant — les aerodromes de refdata.airports avec
- *      leur code OACI, et la route de chaque etape du jour ;
- *   4. les appareils, a leur derniere position connue.
- *
- * Les trois premieres viennent de la base ou du fournisseur de tuiles. La
- * quatrieme ne se dessine que si une position existe : le prototype simulait
- * les appareils sans position, ce qui produisait des symboles en mouvement
- * sans qu'aucun signal n'ait ete recu. Ici, pas de position, pas de symbole —
- * et le pied de carte compte ceux qui manquent.
+ * Un appareil ne se dessine que s'il a une position reçue : la référence
+ * simulait les positions (A-D14). La liste dit « NO SOURCE » pour les autres.
  */
 
 const BASEMAPS = {
   SATELLITE: {
     url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    attribution: 'Esri World Imagery',
-    maxZoom: 18,
-    // L'imagerie satellite ne porte aucun texte. Sans cette couche de
-    // reference, on regarde une photo, pas une carte.
-    labels:
-      'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+    options: { maxZoom: 19, attribution: 'Esri World Imagery' },
   },
   DARK: {
-    url: 'https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-    attribution: 'CARTO',
-    maxZoom: 19,
-    labels: null,
+    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    options: { maxZoom: 19, attribution: '&copy; OpenStreetMap &copy; CARTO', subdomains: 'abcd' },
   },
   STREET: {
-    url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-    attribution: 'OpenStreetMap',
-    maxZoom: 19,
-    labels: null,
+    url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+    options: { maxZoom: 19, attribution: '&copy; OpenStreetMap &copy; CARTO', subdomains: 'abcd' },
   },
 }
 
-const RISK_COLOUR = {
-  LOW: '#27ae60',
-  MEDIUM: '#e0c22a',
-  HIGH: '#e67e22',
-  CRITICAL: '#c0392b',
+const LABELS = {
+  url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+  options: { maxZoom: 19, opacity: 0.9 },
 }
 
-/** Le symbole avion, oriente au cap quand il est connu. */
-function aircraftIcon(flight, selected) {
-  const colour = RISK_COLOUR[flight.risk?.level] ?? '#27ae60'
-  const track = flight.lastPosition?.trackDeg
-  const rotation = track === null || track === undefined ? 0 : track
-  const stale = flight.tracking === 'STALE'
+/** aircraftSVG — js/06 l. 381-385. */
+function aircraftSVG(color) {
+  return `<svg width="26" height="26" viewBox="0 0 24 24" style="filter:drop-shadow(0 0 3px rgba(0,0,0,.8))">
+    <path d="M12 1 L15 9 L23 13 L23 15.5 L15 13.5 L13.3 21 L16.5 23.2 L16.5 24.5 L12 23.3 L7.5 24.5 L7.5 23.2 L10.7 21 L9 13.5 L1 15.5 L1 13 L9 9 Z"
+    fill="${color}" stroke="#0A1628" stroke-width="0.6"/></svg>`
+}
 
+/** __adsbIcon — js/06 l. 1706-1711 (own = 18 px vert, tiers = 11 px bleu). */
+function adsbIcon(color, track, own) {
+  const size = own ? 18 : 11
   return L.divIcon({
-    className: 'fwm-icon',
-    iconSize: [30, 30],
-    iconAnchor: [15, 15],
-    html: `
-      <div class="fwm-mark${selected ? ' is-on' : ''}${stale ? ' is-stale' : ''}"
-           style="--fwm-c:${colour};transform:rotate(${rotation}deg)">
-        <svg viewBox="0 0 24 24"><path d="M12 2.2l2 7.3 8 4v2l-8-2.2v5l2.6 2v1.6L12 20.6l-4.6 1.3v-1.6l2.6-2v-5l-8 2.2v-2l8-4z"/></svg>
-      </div>
-      <span class="fwm-tag">${flight.flightNo}</span>`,
+    className: 'adsb-ac',
+    html: `<div style="width:${size}px;height:${size}px;transform:rotate(${track || 0}deg);transform-origin:center;filter:drop-shadow(0 0 2px #000)">${aircraftSVG(color)}</div>`,
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
   })
 }
 
-/** Une pastille d'aerodrome, avec son code OACI. */
-function airportIcon(icao, isBase) {
-  return L.divIcon({
-    className: 'fwm-apt-icon',
-    iconSize: [8, 8],
-    iconAnchor: [4, 4],
-    html: `<span class="fwm-apt${isBase ? ' is-base' : ''}"></span>
-           <span class="fwm-aptlbl">${icao}</span>`,
-  })
-}
-
-/** Lat/lon d'une fiche d'aerodrome, quelle que soit la forme de la reponse. */
+/** Lat/lon d'une fiche d'aérodrome, quelle que soit la forme de la réponse. */
 function coordinatesOf(entry) {
   const airport = entry?.airport ?? entry
   if (!airport || airport.latitude == null || airport.longitude == null) return null
   return { icao: airport.icao, name: airport.name, lat: Number(airport.latitude), lon: Number(airport.longitude) }
 }
 
+function rotate(marker, heading) {
+  const el = marker.getElement()
+  const svg = el && el.querySelector('svg')
+  if (svg) svg.style.transform = `rotate(${heading == null ? 0 : heading}deg)`
+}
+
 export default function FlightWatchMap({
   flights,
   airports,
-  bases,
   traffic,
   showTraffic,
   basemap,
@@ -106,41 +84,47 @@ export default function FlightWatchMap({
 }) {
   const hostRef = useRef(null)
   const mapRef = useRef(null)
-  const tileRef = useRef(null)
-  const labelRef = useRef(null)
-  const networkRef = useRef(null)
+  const baseRef = useRef(null)
+  const labelsRef = useRef(null)
+  const flightGroupRef = useRef(null)
   const routesRef = useRef(null)
-  const airportsRef = useRef(null)
-  const trafficRef = useRef(null)
-  const firRef = useRef(null)
+  const aptGroupRef = useRef(null)
+  const firGroupRef = useRef(null)
+  const adsbGroupRef = useRef(null)
   const radarRef = useRef(null)
   const irRef = useRef(null)
   const markersRef = useRef(new Map())
-  const hasFitted = useRef(false)
+  const flownRef = useRef(null)
 
-  // Une seule instance Leaflet pour la vie du composant : la recreer a chaque
-  // rendu perdrait le zoom et le centrage que l'operateur vient de choisir.
+  // Une seule instance Leaflet pour la vie du composant : la recréer à chaque
+  // rendu perdrait le zoom et le centrage que l'opérateur vient de choisir.
   useEffect(() => {
     if (mapRef.current || !hostRef.current) return undefined
-    const map = L.map(hostRef.current, {
-      center: [34, 12],
-      zoom: 4,
-      zoomControl: true,
-      worldCopyJump: true,
-      attributionControl: true,
-    })
+    const map = L.map(hostRef.current, { zoomControl: true, worldCopyJump: true, minZoom: 2, maxZoom: 14 }).setView(
+      [38, 15],
+      4,
+    )
+    map.zoomControl.setPosition('topleft')
     mapRef.current = map
-    networkRef.current = L.layerGroup().addTo(map)
-    // Routes and aerodromes are drawn into the same network group but kept as
-    // two layers: the prototype lets an operator turn the airports off while
-    // keeping the route lines, and vice versa.
-    routesRef.current = L.layerGroup().addTo(map)
-    airportsRef.current = L.layerGroup().addTo(map)
 
-    // Leaflet mesure son conteneur au moment ou on le cree. Ici la carte est
-    // une case de grille dont la hauteur n'est connue qu'apres la mise en
-    // page : sans cela, elle se dessine dans un carre de quelques pixels et
-    // n'en sort jamais.
+    /* Volets, pour l'ordre d'empilement — js/06 l. 285-289. */
+    map.createPane('firPane').style.zIndex = 350
+    map.createPane('routePane').style.zIndex = 420
+    map.createPane('aptPane').style.zIndex = 440
+    map.createPane('acPane').style.zIndex = 460
+
+    labelsRef.current = L.tileLayer(LABELS.url, LABELS.options)
+    routesRef.current = L.layerGroup()
+    flightGroupRef.current = L.layerGroup([routesRef.current]).addTo(map)
+    aptGroupRef.current = L.layerGroup().addTo(map)
+    firGroupRef.current = L.layerGroup()
+    adsbGroupRef.current = L.layerGroup().addTo(map)
+
+    /* Ce que l'hôte peut atteindre — js/06 l. 1795. */
+    window.__fwMap = map
+
+    // Leaflet mesure son conteneur à la création ; la case de grille n'a sa
+    // hauteur qu'après la mise en page.
     const observer = new ResizeObserver(() => map.invalidateSize())
     observer.observe(hostRef.current)
     requestAnimationFrame(() => map.invalidateSize())
@@ -148,50 +132,69 @@ export default function FlightWatchMap({
     return () => {
       observer.disconnect()
       map.remove()
+      if (window.__fwMap === map) delete window.__fwMap
       mapRef.current = null
-      networkRef.current = null
-      trafficRef.current = null
-      // Les marqueurs appartiennent a la carte qu'on vient de detruire. Sans
-      // ce nettoyage, le double montage de React en developpement laissait
-      // des marqueurs detaches dans le cache : l'effet suivant les retrouvait,
-      // se contentait de les deplacer, et aucun avion n'apparaissait.
+      baseRef.current = null
+      labelsRef.current = null
+      flightGroupRef.current = null
+      routesRef.current = null
+      aptGroupRef.current = null
+      firGroupRef.current = null
+      adsbGroupRef.current = null
       markersRef.current.clear()
-      hasFitted.current = false
+      flownRef.current = null
     }
   }, [])
 
+  /* Le fond, et les libellés Esri sur le satellite seulement — js/06 l. 271-283. */
   useEffect(() => {
     const map = mapRef.current
     if (!map) return
     const config = BASEMAPS[basemap] ?? BASEMAPS.SATELLITE
+    if (baseRef.current) map.removeLayer(baseRef.current)
+    baseRef.current = L.tileLayer(config.url, config.options).addTo(map)
 
-    if (tileRef.current) map.removeLayer(tileRef.current)
-    if (labelRef.current) {
-      map.removeLayer(labelRef.current)
-      labelRef.current = null
+    const labels = labelsRef.current
+    const wantLabels = layers?.labels !== false && (BASEMAPS[basemap] ?? BASEMAPS.SATELLITE) === BASEMAPS.SATELLITE
+    if (wantLabels) {
+      if (!map.hasLayer(labels)) labels.addTo(map)
+    } else if (map.hasLayer(labels)) {
+      map.removeLayer(labels)
     }
+  }, [basemap, layers?.labels])
 
-    tileRef.current = L.tileLayer(config.url, {
-      attribution: config.attribution,
-      maxZoom: config.maxZoom,
-      zIndex: 1,
-    }).addTo(map)
-
-    if (config.labels) {
-      labelRef.current = L.tileLayer(config.labels, {
-        maxZoom: config.maxZoom,
-        zIndex: 2,
-      }).addTo(map)
-    }
-  }, [basemap])
-
-  /** Le reseau : aerodromes connus, et la route de chaque etape du jour. */
+  /* Les aérodromes : pastille et libellé — js/06 l. 346-359. */
   useEffect(() => {
-    const layer = routesRef.current
-    const aptLayer = airportsRef.current
-    if (!layer || !aptLayer) return
-    layer.clearLayers()
-    aptLayer.clearLayers()
+    const group = aptGroupRef.current
+    if (!group) return
+    group.clearLayers()
+    ;(airports ?? []).forEach((entry) => {
+      const point = coordinatesOf(entry)
+      if (!point) return
+      const dot = L.circleMarker([point.lat, point.lon], {
+        pane: 'aptPane',
+        radius: 4,
+        color: '#F0A500',
+        weight: 1.5,
+        fillColor: '#0A1628',
+        fillOpacity: 1,
+      }).bindPopup(`<b>${point.icao}</b> — ${point.name ?? ''}`)
+      const label = L.marker([point.lat, point.lon], {
+        pane: 'aptPane',
+        icon: L.divIcon({ className: 'apt-label', html: point.icao, iconSize: [50, 12], iconAnchor: [-6, 4] }),
+        interactive: false,
+      })
+      group.addLayer(dot)
+      group.addLayer(label)
+    })
+  }, [airports])
+
+  /* Les vols suivis : route et marqueur — js/06 l. 1748-1757. */
+  useEffect(() => {
+    const map = mapRef.current
+    const routes = routesRef.current
+    const group = flightGroupRef.current
+    if (!map || !routes || !group) return
 
     const byIcao = new Map()
     ;(airports ?? []).forEach((entry) => {
@@ -199,42 +202,72 @@ export default function FlightWatchMap({
       if (point) byIcao.set(point.icao, point)
     })
 
-    // Les routes d'abord, pour qu'elles passent sous les pastilles.
+    routes.clearLayers()
+    const seen = new Set()
     ;(flights ?? []).forEach((flight) => {
       const from = byIcao.get(flight.depIcao)
       const to = byIcao.get(flight.arrIcao)
-      if (!from || !to) return
-      L.polyline(
-        [
-          [from.lat, from.lon],
-          [to.lat, to.lon],
-        ],
-        {
-          className: 'fwm-route',
-          weight: 1,
-          opacity: 0.5,
-          dashArray: '5 6',
-          interactive: false,
-        },
-      ).addTo(layer)
+      if (from && to) {
+        L.polyline(
+          [
+            [from.lat, from.lon],
+            [to.lat, to.lon],
+          ],
+          { pane: 'routePane', color: '#F0A500', weight: 1.6, opacity: 0.55, dashArray: '2,6' },
+        ).addTo(routes)
+      }
+
+      const position = flight.lastPosition
+      if (!position || position.latitude == null || position.longitude == null) return
+      seen.add(flight.legId)
+      const latLng = [Number(position.latitude), Number(position.longitude)]
+      const colour = RISK_COLOUR[flight.risk?.level] ?? RISK_COLOUR.LOW
+      const icon = L.divIcon({ className: '', html: aircraftSVG(colour), iconSize: [26, 26], iconAnchor: [13, 13] })
+      const tooltip = `${flight.flightNo} — ${flight.risk?.level ?? 'LOW'}`
+      let marker = markersRef.current.get(flight.legId)
+      if (marker) {
+        marker.setLatLng(latLng)
+        marker.setIcon(icon)
+        marker.setTooltipContent(tooltip)
+      } else {
+        marker = L.marker(latLng, { pane: 'acPane', icon, riseOnHover: true })
+        marker.on('click', () => onSelect?.(flight.legId))
+        marker.bindTooltip(tooltip, { permanent: false, direction: 'top', className: 'apt-label' })
+        group.addLayer(marker)
+        markersRef.current.set(flight.legId, marker)
+      }
+      rotate(marker, position.trackDeg)
     })
 
-    byIcao.forEach((point) => {
-      L.marker([point.lat, point.lon], {
-        icon: airportIcon(point.icao, (bases ?? []).includes(point.icao)),
-        title: `${point.icao} — ${point.name}`,
-        zIndexOffset: -400,
-      }).addTo(aptLayer)
+    // Un vol qui n'est plus suivi disparaît : laisser son symbole reviendrait
+    // à afficher une position que plus rien ne confirme.
+    markersRef.current.forEach((marker, legId) => {
+      if (!seen.has(legId)) {
+        group.removeLayer(marker)
+        markersRef.current.delete(legId)
+      }
     })
-  }, [airports, flights, bases])
+  }, [flights, airports, onSelect])
 
-  /**
-   * Les couches que l'operateur allume et eteint.
-   *
-   * Chacune est un groupe deja construit : allumer une couche l'ajoute a la
-   * carte, l'eteindre la retire. Rien n'est reconstruit — sinon rallumer les
-   * limites FIR redessinerait deux cent quatre-vingt-une frontieres.
-   */
+  /* Choisir un vol centre la carte sur lui — selectFlight js/06 l. 1236-1239. */
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !selectedId || flownRef.current === selectedId) return
+    flownRef.current = selectedId
+    const flight = (flights ?? []).find((entry) => entry.legId === selectedId)
+    if (!flight) return
+    let target = null
+    const position = flight.lastPosition
+    if (position && position.latitude != null && position.longitude != null) {
+      target = [Number(position.latitude), Number(position.longitude)]
+    } else {
+      const from = (airports ?? []).map(coordinatesOf).find((point) => point && point.icao === flight.depIcao)
+      if (from) target = [from.lat, from.lon]
+    }
+    if (target) map.flyTo(target, 6, { duration: 0.8 })
+  }, [selectedId, flights, airports])
+
+  /* Les calques que l'opérateur allume et éteint — LAYER TOGGLES js/06 l. 1612-1625. */
   useEffect(() => {
     const map = mapRef.current
     if (!map || !layers) return
@@ -246,206 +279,104 @@ export default function FlightWatchMap({
         map.removeLayer(group)
       }
     }
-    toggle(routesRef.current, layers.flights)
-    toggle(airportsRef.current, layers.airports)
-    toggle(firRef.current, layers.fir)
+    toggle(flightGroupRef.current, layers.flights !== false)
+    toggle(aptGroupRef.current, layers.airports !== false)
+    toggle(firGroupRef.current, layers.fir === true)
+    toggle(adsbGroupRef.current, layers.adsb !== false)
+  }, [layers])
 
-    // Les etapes suivies suivent la meme couche que leurs routes : une
-    // position sans sa route est un point sans contexte.
-    markersRef.current.forEach((marker) => {
-      if (layers.flights) {
-        if (!map.hasLayer(marker)) marker.addTo(map)
-      } else if (map.hasLayer(marker)) {
-        map.removeLayer(marker)
-      }
-    })
-  }, [layers, flights, airports])
-
-  /**
-   * Les limites FIR/UIR : deux cent quatre-vingt-une regions de controle.
-   *
-   * Chargees une seule fois, a la demande — un demi-megaoctet de geometrie
-   * n'a pas a etre telecharge par quelqu'un qui ne regarde que ses avions.
-   */
+  /* Les limites FIR/UIR, chargées à la demande — js/06 l. 297-341. */
   useEffect(() => {
-    const map = mapRef.current
-    if (!map || !layers?.fir || firRef.current) return undefined
-
+    const group = firGroupRef.current
+    if (!group || !layers?.fir || group.getLayers().length > 0) return undefined
     let cancelled = false
     fetch('/geo/fir.geojson')
       .then((response) => response.json())
       .then((geo) => {
-        if (cancelled || !mapRef.current) return
-        firRef.current = L.geoJSON(geo, {
-          style: () => ({
-            color: '#F0A500',
-            weight: 1,
-            opacity: 0.5,
-            fillColor: '#F0A500',
-            fillOpacity: 0.02,
-          }),
+        if (cancelled || !firGroupRef.current) return
+        L.geoJSON(geo, {
+          pane: 'firPane',
+          style: () => ({ color: '#F0A500', weight: 1, opacity: 0.5, fillColor: '#F0A500', fillOpacity: 0.02 }),
           onEachFeature: (feature, layer) => {
             const icao = feature?.properties?.icao ?? '????'
             layer.bindPopup(`<b>${icao}</b> FIR/UIR`)
-            layer.on('mouseover', () =>
-              layer.setStyle({ fillOpacity: 0.12, weight: 1.6, opacity: 0.9 }))
-            layer.on('mouseout', () =>
-              layer.setStyle({ fillOpacity: 0.02, weight: 1, opacity: 0.5 }))
+            layer.on('mouseover', () => layer.setStyle({ fillOpacity: 0.12, weight: 1.6, opacity: 0.9 }))
+            layer.on('mouseout', () => layer.setStyle({ fillOpacity: 0.02, weight: 1, opacity: 0.5 }))
+            group.addLayer(layer)
+            try {
+              const center = layer.getBounds().getCenter()
+              group.addLayer(
+                L.marker(center, {
+                  pane: 'firPane',
+                  icon: L.divIcon({ className: 'fir-label', html: icao, iconSize: [90, 14] }),
+                  interactive: false,
+                }),
+              )
+            } catch {
+              /* skip label if bounds unavailable */
+            }
           },
         })
-        firRef.current.addTo(mapRef.current)
       })
       .catch(() => {
-        // The boundaries are context, not a position. Losing them must not
-        // take the aircraft off the screen with them.
+        // Les limites sont un contexte, pas une position : les perdre ne
+        // doit pas retirer les appareils de l'écran.
       })
-
     return () => {
       cancelled = true
     }
   }, [layers?.fir])
 
-  /**
-   * Le radar de precipitations et l'imagerie infrarouge, en direct.
-   *
-   * Les tuiles viennent de RainViewer, comme dans le prototype. L'horodatage
-   * de la trame est affiche a cote du bouton : une image radar sans son heure
-   * est une image dont on ne sait pas si elle date de cinq minutes ou d'une
-   * heure.
-   */
+  /* Radar de précipitations et infrarouge RainViewer — js/06 l. 1637-1667. */
   useEffect(() => {
     const map = mapRef.current
     if (!map) return
-
     if (radarRef.current) {
       map.removeLayer(radarRef.current)
       radarRef.current = null
     }
     if (layers?.radar && radarFrame?.radar) {
-      radarRef.current = L.tileLayer(radarFrame.radar, { opacity: 0.7, zIndex: 500 })
-      radarRef.current.addTo(map)
+      radarRef.current = L.tileLayer(radarFrame.radar, { opacity: 0.7, zIndex: 500 }).addTo(map)
     }
-
     if (irRef.current) {
       map.removeLayer(irRef.current)
       irRef.current = null
     }
     if (layers?.ir && radarFrame?.infrared) {
-      irRef.current = L.tileLayer(radarFrame.infrared, { opacity: 0.55, zIndex: 490 })
-      irRef.current.addTo(map)
+      irRef.current = L.tileLayer(radarFrame.infrared, { opacity: 0.55, zIndex: 490 }).addTo(map)
     }
   }, [layers?.radar, layers?.ir, radarFrame])
 
-  /** Les libelles et frontieres, par-dessus l'imagerie. */
+  /* Le trafic ADS-B des autres exploitants — fwSetAdsb js/06 l. 1712-1735. */
   useEffect(() => {
-    const map = mapRef.current
-    if (!map || !labelRef.current) return
-    if (layers?.labels === false && map.hasLayer(labelRef.current)) {
-      map.removeLayer(labelRef.current)
-    } else if (layers?.labels !== false && !map.hasLayer(labelRef.current)) {
-      labelRef.current.addTo(map)
-    }
-  }, [layers?.labels, basemap])
-
-  useEffect(() => {
-    const map = mapRef.current
-    if (!map) return
-
-    const seen = new Set()
-    ;(flights ?? []).forEach((flight) => {
-      const position = flight.lastPosition
-      if (!position || position.latitude == null || position.longitude == null) return
-
-      seen.add(flight.legId)
-      const latLng = [Number(position.latitude), Number(position.longitude)]
-      const icon = aircraftIcon(flight, flight.legId === selectedId)
-      const existing = markersRef.current.get(flight.legId)
-
-      if (existing) {
-        existing.setLatLng(latLng)
-        existing.setIcon(icon)
-      } else {
-        const marker = L.marker(latLng, { icon, title: flight.flightNo, zIndexOffset: 500 })
-        marker.on('click', () => onSelect?.(flight.legId))
-        // A new position arriving while the flight layer is off must not put
-        // the layer back on behind the operator.
-        if (layers?.flights !== false) marker.addTo(map)
-        markersRef.current.set(flight.legId, marker)
-      }
-    })
-
-    // Au premier chargement, la vue se cale sur le reseau : les aerodromes
-    // desservis et les appareils suivis. Un centrage fixe laissait les seuls
-    // vols suivis hors de l'ecran, ce qui se lisait comme une carte vide
-    // alors que la donnee etait la.
-    // On attend que le reseau soit charge avant de cadrer : cadrer sur les
-    // deux seuls appareils suivis donnait une vue serree qui cachait le reste
-    // des aerodromes desservis.
-    if (!hasFitted.current && (airports ?? []).length > 0) {
-      const points = [...markersRef.current.values()].map((marker) => marker.getLatLng())
-      ;(airports ?? []).forEach((entry) => {
-        const point = coordinatesOf(entry)
-        if (point) points.push(L.latLng(point.lat, point.lon))
-      })
-      if (points.length > 1) {
-        map.fitBounds(L.latLngBounds(points), { padding: [50, 50], maxZoom: 6 })
-        hasFitted.current = true
-      }
-    }
-
-    // Un vol qui n'est plus suivi disparait de la carte : laisser son symbole
-    // reviendrait a afficher une position que plus rien ne confirme.
-    markersRef.current.forEach((marker, legId) => {
-      if (!seen.has(legId)) {
-        map.removeLayer(marker)
-        markersRef.current.delete(legId)
-      }
-    })
-  }, [flights, airports, selectedId, onSelect, layers?.flights])
-
-
-  /**
-   * Le trafic tiers : des appareils reellement entendus, dessines plus
-   * discrets et d'une autre couleur que nos etapes.
-   *
-   * Ils ne sont pas cliquables et ne portent pas d'etiquette : ce sont des
-   * voisins, pas des vols dont on repond. Les confondre visuellement avec la
-   * flotte est exactement ce qui rendait la carte du prototype convaincante
-   * et fausse.
-   */
-  useEffect(() => {
-    const map = mapRef.current
-    if (!map) return
-    if (!trafficRef.current) trafficRef.current = L.layerGroup().addTo(map)
-    const layer = trafficRef.current
-    layer.clearLayers()
+    const group = adsbGroupRef.current
+    if (!group) return
+    group.clearLayers()
     if (!showTraffic) return
-
     ;(traffic ?? []).forEach((vector) => {
       if (vector.latitude == null || vector.longitude == null) return
-      const rotation = vector.trackDeg == null ? 0 : vector.trackDeg
-      const icon = L.divIcon({
-        className: 'fwm-traffic-icon',
-        iconSize: [16, 16],
-        iconAnchor: [8, 8],
-        html: `<div class="fwm-traffic" style="transform:rotate(${rotation}deg)">
-                 <svg viewBox="0 0 24 24"><path d="M12 2.2l2 7.3 8 4v2l-8-2.2v5l2.6 2v1.6L12 20.6l-4.6 1.3v-1.6l2.6-2v-5l-8 2.2v-2l8-4z"/></svg>
-               </div>`,
-      })
+      const colour = '#4DA3FF'
+      const callsign = (vector.callsign || vector.modeSHex || '').toString().trim()
       const marker = L.marker([vector.latitude, vector.longitude], {
-        icon,
+        pane: 'acPane',
+        icon: adsbIcon(colour, vector.trackDeg || 0, false),
         interactive: true,
-        zIndexOffset: -200,
       })
-      const level = vector.altitudeFt == null ? '—' : `FL${Math.round(vector.altitudeFt / 100)}`
-      const speed = vector.groundSpeedKt == null ? '—' : `${vector.groundSpeedKt} kt`
-      marker.bindTooltip(
-        `${vector.callsign ?? vector.modeSHex} · ${level} · ${speed} · traffic`,
-        { direction: 'top', className: 'fwm-tip' },
-      )
-      marker.addTo(layer)
+      const feet = vector.altitudeFt != null ? ` · ${Math.round(vector.altitudeFt / 100) * 100}ft` : ''
+      marker.bindTooltip(`${callsign || '?'}${feet}`, { direction: 'top', className: 'apt-label' })
+      const popup =
+        '<div style="min-width:170px;font:12px system-ui;color:#dce9f7;line-height:1.5;padding:2px">' +
+        `<div style="font-weight:800;font-size:13px;margin-bottom:2px">${callsign || '?'} <span style='color:#79b8ff'>TRAFFIC</span></div>` +
+        `<div>ICAO24: ${vector.modeSHex || '—'}</div>` +
+        (vector.altitudeFt != null ? `<div>Altitude: ${Math.round(vector.altitudeFt)} ft</div>` : '') +
+        (vector.groundSpeedKt != null ? `<div>Ground speed: ${Math.round(vector.groundSpeedKt)} kt</div>` : '') +
+        (vector.trackDeg != null ? `<div>Track: ${Math.round(vector.trackDeg)}°</div>` : '') +
+        `<div>Position: ${Number(vector.latitude).toFixed(3)}, ${Number(vector.longitude).toFixed(3)}</div>` +
+        '</div>'
+      marker.bindPopup(popup)
+      group.addLayer(marker)
     })
   }, [traffic, showTraffic])
 
-  return <div className="fwm" ref={hostRef} />
+  return <div id="map" ref={hostRef} />
 }
