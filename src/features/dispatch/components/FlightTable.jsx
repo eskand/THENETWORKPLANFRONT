@@ -69,10 +69,9 @@ function CrewCell({ row }) {
       <span className="badge-group">
         <Badge
           tone={row.crewAssigned ? 'INFO' : 'ATTENTION'}
-          warn={!row.crewAssigned}
           title={`${row.crewSeatsFilled} of ${row.crewMinimumSeats} flight-deck seats`}
         >
-          {row.crewAssigned ? 'Assigned' : 'Unassigned'}
+          {row.crewAssigned ? 'Assigned' : `${row.crewSeatsFilled}/${row.crewMinimumSeats}`}
         </Badge>
         {ftlWarn ? (
           <Badge
