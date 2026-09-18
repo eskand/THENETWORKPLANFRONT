@@ -252,6 +252,35 @@ describe('F11 — la pile d’alertes : texte, facteur dominant, mitigation, hui
   })
 })
 
+describe('F03c — les tags des facteurs actifs sur les cartes (js/06 renderList l. 1135-1145)', () => {
+  test('un facteur actif donne un .factor-tag en majuscules ; .warm dès la sévérité 2, .hot dès 4 ; rien sans facteur', async () => {
+    const tagged = flight({
+      legId: 'l2', flightNo: 'TNP202',
+      risk: {
+        level: 'HIGH', index: 12, severity: 4, likelihood: 3, action: 'Mitigation required.',
+        factors: [
+          { factor: 'WEATHER', level: 'NONE', detail: 'Above minima' },
+          { factor: 'NOTAM', level: 'MINOR', detail: 'Minor' },
+          { factor: 'FTL', level: 'UNKNOWN', detail: 'No roster read' },
+          { factor: 'MEL', level: 'MAJOR', detail: 'Major MEL' },
+          { factor: 'CREW', level: 'SEVERE', detail: 'Fatigue + qual. gap' },
+        ],
+      },
+    })
+    await open(board([flight(), tagged]))
+    const cards = qa('#flightlist .fcard')
+    const withTags = cards.find((c) => c.querySelector('.fcard-call').textContent === 'TNP202')
+    const tags = [...withTags.querySelectorAll('.fcard-factors .factor-tag')]
+    expect(tags.map((t) => t.textContent)).toEqual(['NOTAM', 'MEL', 'CREW'])
+    expect(tags[0]).toHaveClass('warm')
+    expect(tags[0]).not.toHaveClass('hot')
+    expect(tags[1]).toHaveClass('hot')
+    expect(tags[2]).toHaveClass('hot')
+    const plain = cards.find((c) => c.querySelector('.fcard-call').textContent === 'TNP101')
+    expect(plain.querySelector('.fcard-factors')).toBeNull()
+  })
+})
+
 describe('F01a — les commandes du bandeau (#fwTopHost, index.html l. 30-39, js/09 l. 175-186, js/10 l. 139-148)', () => {
   test('le bandeau du produit porte #fwTopHost : LIVE, ACTIVATE ERP, FLIGHT LIST, horloge UTC', async () => {
     await open()

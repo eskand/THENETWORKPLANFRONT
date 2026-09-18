@@ -4,7 +4,8 @@
  * Référence NETPLUS_FLIGHT_FOLLOWING js/06 renderList l. 1114-1160 : deux
  * tris (risque — le plus grave d'abord, puis l'indice — ou indicatif), une
  * carte par vol : indicatif, pastille « LEVEL · index » colorée par le niveau,
- * route, FL / vitesse sol / type / immatriculation, exploitant.
+ * route, FL / vitesse sol / type / immatriculation, exploitant, et un tag par
+ * facteur de risque actif (.factor-tag .warm / .hot).
  *
  * Le tri est local — il ne change pas ce qui est affiché, seulement l'ordre.
  * « FL — » et « — KT » disent qu'aucune position n'a donné la valeur : la
@@ -19,6 +20,21 @@ export const RISK_COLOUR = {
   MEDIUM: '#E0C22A',
   HIGH: '#E67E22',
   CRITICAL: '#C0392B',
+}
+
+/** Clé courte du facteur — RISK_FACTOR_DEFS js/06 l. 156-186 (wx, notam, ftl, mel, crew). */
+const FACTOR_TAG = { WEATHER: 'WX', NOTAM: 'NOTAM', FTL: 'FTL', MEL: 'MEL', CREW: 'CREW' }
+const SEVERITY = { MINOR: 2, MODERATE: 3, MAJOR: 4, SEVERE: 5 }
+
+/** Les tags d'une carte : un facteur actif par tag, .hot dès 4, .warm dès 2 — renderList js/06 l. 1135-1145. */
+function factorTags(risk) {
+  return (risk?.factors ?? [])
+    .filter((factor) => (SEVERITY[factor.level] ?? 0) > 0)
+    .map((factor) => {
+      const sev = SEVERITY[factor.level]
+      const cls = sev >= 4 ? 'hot' : sev >= 2 ? 'warm' : ''
+      return { key: factor.factor, label: FACTOR_TAG[factor.factor] ?? factor.factor, cls }
+    })
 }
 
 export default function FlightWatchList({ flights, sort, selectedId, onSelect }) {
@@ -36,6 +52,7 @@ export default function FlightWatchList({ flights, sort, selectedId, onSelect })
         const position = flight.lastPosition
         const level = flight.risk?.level ?? 'LOW'
         const colour = RISK_COLOUR[level] ?? RISK_COLOUR.LOW
+        const tags = factorTags(flight.risk)
         return (
           <div
             key={flight.legId}
@@ -63,6 +80,15 @@ export default function FlightWatchList({ flights, sort, selectedId, onSelect })
               {flight.registration ? <span>{flight.registration}</span> : null}
             </div>
             <div className="fcard-op">{flight.operator}</div>
+            {tags.length ? (
+              <div className="fcard-factors">
+                {tags.map((tag) => (
+                  <span className={`factor-tag${tag.cls ? ` ${tag.cls}` : ''}`} key={tag.key}>
+                    {tag.label}
+                  </span>
+                ))}
+              </div>
+            ) : null}
           </div>
         )
       })}
