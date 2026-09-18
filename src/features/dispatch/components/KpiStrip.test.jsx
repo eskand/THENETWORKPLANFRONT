@@ -28,4 +28,10 @@ describe('KpiStrip — sous-libellés de la référence', () => {
     rerender(<KpiStrip kpi={kpi({ servicesPending: 4 })} />)
     expect(screen.getByText('4 files need action')).toBeInTheDocument()
   })
+
+  // ref l. 7556 : sous-libellé statique « overflight, not confirmed »
+  test('Permits Outstanding porte « overflight, not confirmed »', () => {
+    render(<KpiStrip kpi={kpi()} />)
+    expect(screen.getByText('overflight, not confirmed')).toBeInTheDocument()
+  })
 })

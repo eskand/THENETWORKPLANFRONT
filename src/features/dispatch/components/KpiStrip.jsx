@@ -45,7 +45,7 @@ export default function KpiStrip({ kpi }) {
     {
       label: 'Permits outstanding',
       value: kpi.permitsOutstanding,
-      hint: 'requested, not confirmed',
+      hint: 'overflight, not confirmed',
       accent: 'var(--info-fg)',
       valueColor: kpi.permitsOutstanding > 0 ? 'var(--pending-fg)' : undefined,
     },
