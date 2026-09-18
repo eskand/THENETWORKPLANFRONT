@@ -79,3 +79,25 @@ describe('En-tête — bouton fermer (ref l. 17398)', () => {
     expect(screen.getByTitle('Fermer')).toHaveClass('detail-close-btn')
   })
 })
+
+describe('FLIGHT — bloc « Flight note » (ref l. 14747-14757)', () => {
+  test('une note existante s’affiche dans .fd-note avec son horodatage et « Edit »', async () => {
+    routes['/legs/leg-1/note'] = { legId: 'leg-1', note: 'Slot 08:40 confirmed by NMOC', noteAt: '2026-09-18T07:12:00Z' }
+    open(row())
+    const body = await screen.findByText('Slot 08:40 confirmed by NMOC')
+    expect(body).toHaveClass('fd-note-body')
+    const block = body.closest('.fd-note')
+    expect(block).not.toBeNull()
+    expect(block.querySelector('.fd-note-hd')).toHaveTextContent('Flight note')
+    // ref l. 12090 : _noteAt = ISO.slice(0,16).replace('T',' ') + 'Z'
+    expect(block.querySelector('.fd-note-ts')).toHaveTextContent('2026-09-18 07:12Z')
+    expect(block.querySelector('.fd-note-edit')).toHaveTextContent('Edit')
+  })
+
+  test('sans note, aucun bloc .fd-note', async () => {
+    routes['/legs/leg-1/note'] = { legId: 'leg-1', note: null, noteAt: null }
+    const { container } = open(row())
+    await screen.findByText('TNP526')
+    expect(container.querySelector('.fd-note')).toBeNull()
+  })
+})

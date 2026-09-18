@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import {
-  BarChart3, CircleCheck, Clock, FileText, Fuel, Globe, Plane, Send, TriangleAlert,
+  BarChart3, CircleCheck, Clock, FileText, Fuel, Globe, Pencil, Plane, Send, TriangleAlert,
   Users, UserRound, Wrench,
 } from 'lucide-react'
 import { LoadingState } from '../States'
@@ -8,7 +8,7 @@ import { useDispatchLeg, useLegReadiness } from '../../hooks/useDispatchBoard'
 import { useAirportDetail } from '../../hooks/useOperations'
 import { useRecordMovement, useSendMvt } from '../../hooks/useOperations'
 import { useStationWeather } from '../../hooks/useWeather'
-import { useFlightFileLvp, useTripFolder } from '../../hooks/useFlightFile'
+import { useFlightFileLvp, useFlightNote, useTripFolder } from '../../hooks/useFlightFile'
 import { EMPTY, hhmm, isoDate, titleCase } from '../../lib/format'
 import { documentHref } from '../../api/flightfile'
 import AirportBlock from './AirportBlock'
@@ -16,7 +16,7 @@ import FlightHero, { nature } from './FlightHero'
 import { vigilFor } from './vigil'
 import CrewTab from './CrewTab'
 import FuelTab from './FuelTab'
-import HeaderMenu, { FlightDataModal } from './HeaderMenu'
+import HeaderMenu, { FlightDataModal, NoteModal } from './HeaderMenu'
 import OccTimelineModal from './OccTimelineModal'
 import LvpModal from './LvpModal'
 import MvtModal from './MvtModal'
@@ -394,6 +394,8 @@ function FlightTab({ row }) {
     <>
       <LowVisibilityBanner row={row} />
 
+      <FlightNoteBlock row={row} />
+
       {/* Pas de type de vol pour un appareil immobilise : la pastille du
           bandeau porte le motif, comme FL.nature() qui lit flight.label avant
           toute autre chose. */}
@@ -498,6 +500,41 @@ function FlightTab({ row }) {
           Aucune n'avait de gestionnaire : quatre tuiles mortes. */}
       <ActionTiles row={row} />
 
+    </>
+  )
+}
+
+/**
+ * Le bloc « Flight note » de l'onglet FLIGHT — tabFlight() de l'annexe
+ * (l. 14747-14757) : rendu seulement quand la note existe, avec l'horodatage
+ * ecrit comme elle l'ecrit (l. 12090 : « YYYY-MM-DD HH:MMZ ») et « Edit », qui
+ * ouvre la meme modale que l'entree « Flight note » du menu.
+ */
+function FlightNoteBlock({ row }) {
+  const note = useFlightNote(row.legId, Boolean(row.legId))
+  const [editing, setEditing] = useState(false)
+  const text = note.data?.note
+  if (!text) return null
+  const stamp = note.data.noteAt
+    ? `${new Date(note.data.noteAt).toISOString().slice(0, 16).replace('T', ' ')}Z`
+    : null
+
+  return (
+    <>
+      <div className="fd-note">
+        <div className="fd-note-hd">
+          <Pencil size={12} />
+          <span>Flight note</span>
+          {stamp ? <span className="fd-note-ts">{stamp}</span> : null}
+          <span className="fd-note-edit" role="button" tabIndex={0} title="Edit this note"
+                onClick={() => setEditing(true)}
+                onKeyDown={(event) => { if (event.key === 'Enter') setEditing(true) }}>
+            Edit
+          </span>
+        </div>
+        <div className="fd-note-body">{text}</div>
+      </div>
+      {editing ? <NoteModal row={row} onClose={() => setEditing(false)} /> : null}
     </>
   )
 }

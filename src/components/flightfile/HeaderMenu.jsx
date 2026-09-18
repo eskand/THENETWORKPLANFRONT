@@ -163,7 +163,7 @@ export default function HeaderMenu({ row }) {
  * lit avant le depart, l'autre s'ecrit apres. Elle laisse un evenement au
  * journal, ce que l'annexe ne pouvait pas faire.
  */
-function NoteModal({ row, onClose }) {
+export function NoteModal({ row, onClose }) {
   const note = useFlightNote(row.legId)
   const save = useSaveFlightNote(row.legId)
   const [text, setText] = useState('')
