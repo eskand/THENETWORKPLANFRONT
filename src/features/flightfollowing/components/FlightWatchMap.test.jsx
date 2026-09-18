@@ -138,6 +138,21 @@ describe('F01d — la sélection centre la carte (selectFlight l. 1236-1239)', (
   })
 })
 
+describe('F04g — le suivi caméra (followbtn js/06 l. 1604-1608, tick l. 508-511)', () => {
+  test('FOLLOW passe au zoom 7 puis recentre la carte sur chaque nouvelle position, sans animation', async () => {
+    const props = { flights: [flight()], airports, traffic: [], showTraffic: false, basemap: 'SATELLITE', layers: LAYERS, radarFrame: null, selectedId: 'l1', onSelect: () => {} }
+    const { rerender } = render(<FlightWatchMap {...props} following={false} />)
+    await act(async () => { await new Promise((r) => setTimeout(r, 1100)) })
+    rerender(<FlightWatchMap {...props} following />)
+    expect(window.__fwMap.getZoom()).toBe(7)
+    const moved = flight({ lastPosition: { latitude: 41.5, longitude: 8.2, trackDeg: 300 } })
+    rerender(<FlightWatchMap {...props} flights={[moved]} following />)
+    const c = window.__fwMap.getCenter()
+    expect(c.lat).toBeCloseTo(41.5, 2)
+    expect(c.lng).toBeCloseTo(8.2, 2)
+  })
+})
+
 describe('F08a — le trafic ADS-B (fwSetAdsb l. 1703-1740)', () => {
   test('un appareil tiers : icône bleue #4DA3FF de 11 px dans acPane, infobulle et fenêtre de la référence', () => {
     draw({

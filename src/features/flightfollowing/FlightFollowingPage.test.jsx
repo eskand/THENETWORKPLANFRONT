@@ -414,6 +414,18 @@ describe('F01d — la source et l’âge de la position, l’encart du trafic (f
   })
 })
 
+describe('F04g — choisir un autre vol arrête le suivi (selectFlight js/06 l. 1229)', () => {
+  test('FOLLOW allumé puis clic sur un autre vol : le bouton redit « FOLLOW THIS FLIGHT ON MAP »', async () => {
+    await open(board([flight(), flight({ legId: 'l2', flightNo: 'TNP202' })]))
+    fireEvent.click(q('#fwListBtn'))
+    fireEvent.click(qa('#flightlist .fcard .fcard-call')[0])
+    fireEvent.click(q('#followbtn'))
+    expect(q('#followbtn')).toHaveTextContent('⏸ STOP FOLLOWING')
+    fireEvent.click(qa('#flightlist .fcard .fcard-call')[1])
+    expect(q('#followbtn')).toHaveTextContent('📍 FOLLOW THIS FLIGHT ON MAP')
+  })
+})
+
 describe('F01a — les commandes du bandeau (#fwTopHost, index.html l. 30-39, js/09 l. 175-186, js/10 l. 139-148)', () => {
   test('le bandeau du produit porte #fwTopHost : LIVE, ACTIVATE ERP, FLIGHT LIST, horloge UTC', async () => {
     await open()

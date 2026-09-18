@@ -13,8 +13,9 @@ import { RISK_COLOUR } from './FlightWatchList'
  * aérodromes l. 346-359 (pastille r4 or sur fond navy + .apt-label), vol suivi
  * l. 1748-1757 (route #F0A500 · 1.6 · .55 · 2,6 ; icône aircraftSVG 26 px
  * colorée par le niveau, tournée au cap ; infobulle « CS — LEVEL »),
- * sélection l. 1236-1239 (flyTo zoom 6), trafic ADS-B fwSetAdsb l. 1703-1740
- * (icône bleue 11 px, infobulle, fenêtre).
+ * sélection l. 1236-1239 (flyTo zoom 6), suivi caméra l. 508-511 et 1604-1608
+ * (zoom 7 puis panTo sans animation à chaque position), trafic ADS-B fwSetAdsb
+ * l. 1703-1740 (icône bleue 11 px, infobulle, fenêtre).
  *
  * Un appareil ne se dessine que s'il a une position reçue : la référence
  * simulait les positions (A-D14). La liste dit « NO SOURCE » pour les autres.
@@ -81,6 +82,7 @@ export default function FlightWatchMap({
   radarFrame,
   selectedId,
   onSelect,
+  following = false,
 }) {
   const hostRef = useRef(null)
   const mapRef = useRef(null)
@@ -266,6 +268,23 @@ export default function FlightWatchMap({
     }
     if (target) map.flyTo(target, 6, { duration: 0.8 })
   }, [selectedId, flights, airports])
+
+  /* « FOLLOW THIS FLIGHT ON MAP » : zoom 7 à l'allumage (js/06 l. 1607), puis la
+     carte se recentre sur chaque position reçue, sans animation (l. 508-511). */
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !following) return
+    map.setZoom(7)
+  }, [following])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !following || !selectedId) return
+    const flight = (flights ?? []).find((entry) => entry.legId === selectedId)
+    const position = flight?.lastPosition
+    if (!position || position.latitude == null || position.longitude == null) return
+    map.panTo([Number(position.latitude), Number(position.longitude)], { animate: false })
+  }, [following, selectedId, flights])
 
   /* Les calques que l'opérateur allume et éteint — LAYER TOGGLES js/06 l. 1612-1625. */
   useEffect(() => {

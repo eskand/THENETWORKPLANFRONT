@@ -207,6 +207,7 @@ export default function FlightFollowingPage() {
      le détail (js/07 : selectFlight → openDetail). */
   const selectFlight = useCallback((legId) => {
     setSelectedId(legId)
+    setFollowing(false)
     setDetailOpen(true)
   }, [])
 
@@ -369,6 +370,7 @@ export default function FlightFollowingPage() {
               radarFrame={radarFrame}
               selectedId={selectedId}
               onSelect={selectFlight}
+              following={following}
             />
 
             <div id="fwMapCtl">
