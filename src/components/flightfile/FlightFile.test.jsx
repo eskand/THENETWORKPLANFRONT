@@ -187,6 +187,27 @@ describe('Onglets — badges de compte (fdTabBadgeCount, ref l. 16559-16577 ; ma
   })
 })
 
+describe('CREW — en-tête « Assigned Crew » (TNPFL.decorate, ref l. 77583-77600)', () => {
+  test('le titre compte les sièges pourvus et porte le lien « Crew Roster »', async () => {
+    routes['/crew/scheduling/board'] = {
+      legs: [{
+        legId: 'leg-1', minimumSeats: 2,
+        crew: [{ assignmentId: 'a1', personId: 'p1', seat: 'CPT', fullName: 'A B', ftlVerdict: 'OK', documentStatus: 'VALID' }],
+      }],
+      pool: [],
+    }
+    open(row())
+    fireEvent.click(screen.getByTitle('Crew'))
+    // ref l. 77594-77595 : « (n) » quand tout est pourvu, « (n/N) » sinon
+    const title = await screen.findByText('Assigned Crew (1/2)')
+    expect(title.closest('.fl-crew-hd')).not.toBeNull()
+    expect(title.closest('.fd-section')).toHaveAttribute('title', '1 assigned of 2 required for this aircraft type')
+    const link = screen.getByText('Crew Roster').closest('a')
+    expect(link).toHaveClass('fl-lnk')
+    expect(link).toHaveAttribute('href', '/roster')
+  })
+})
+
 describe('FLIGHT — cellule « Flight time » (ref l. 14788, buildFlightData l. 14275-14277)', () => {
   // flightHrs = max(0.25, (e − s) − 0.33) : 3h00 bloc → 2h40 ; fmtDur → « 2h40 »
   test('le temps de vol est le bloc moins 20 minutes, au format « HhMM »', () => {

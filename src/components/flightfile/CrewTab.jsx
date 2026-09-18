@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ClipboardList, Clock, FileText, MapPin, Plane, Settings2, SlidersHorizontal } from 'lucide-react'
+import {
+  ClipboardList, Clock, FileText, MapPin, Plane, Settings2, SlidersHorizontal, Users,
+} from 'lucide-react'
 import { LoadingState } from '../States'
 import { useCrewList } from '../../hooks/useCrew'
 import { useRecordCheckTimes, useSchedulingBoard } from '../../hooks/useCrewScheduling'
@@ -78,6 +80,7 @@ export default function CrewTab({ row }) {
   const filledSeats = new Set(crew.map((member) => member.seat))
   const shown = SEATS.filter((definition, index) =>
     index < minimumSeats || filledSeats.has(definition.seat))
+  const filled = shown.filter((definition) => filledSeats.has(definition.seat)).length
 
   return (
     <>
@@ -104,7 +107,25 @@ export default function CrewTab({ row }) {
         STD/ETD/off-block. Block time is tracked separately and never feeds duty.
       </div>
 
-      <div className="fd-section"><span>Assigned Crew</span></div>
+      {/* L'en-tete que TNPFL.decorate('crew') pose autour de la section (l. 77583-
+          77600) : le compte reel dans le titre — « (n) » quand tout est pourvu,
+          « (n/N) » sinon — et le lien « Crew Roster » dans la barre. Les deux
+          boutons Auto Assign / Add Crew de l'annexe appellent des moteurs du
+          module Crew (crewAutoAssign, crewAddCrew) non encore specifies ici. */}
+      <div className="fl-crew-hd">
+        <div className="fd-section"
+             title={`${filled} assigned of ${shown.length} required for this aircraft type`}>
+          <i className="flc-hdico"><Users size={16} /></i>
+          <span>
+            Assigned Crew ({filled === shown.length ? filled : `${filled}/${shown.length}`})
+          </span>
+          <div className="flc-hdacts">
+            <Link className="fl-lnk" to="/roster" title="Open the Roster module">
+              <Users size={15} />Crew Roster
+            </Link>
+          </div>
+        </div>
+      </div>
 
       {shown.map((definition) => (
         <CrewCard
