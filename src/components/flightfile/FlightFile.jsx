@@ -138,7 +138,7 @@ export default function FlightFile({ row: given, legId, onClose }) {
 
         <div className="detail-head">
           <button type="button" className="detail-close-btn" onClick={onClose}
-                  title="Close" aria-label="Close">✕</button>
+                  title="Fermer" aria-label="Fermer">✕</button>
           <div className="flight-id">{ground ? row.registration : (row.flightNo ?? row.label)}</div>
           {/* La pastille de l'en-tete ouvre la MEME frise que l'entree du menu :
               l'annexe appelle openOccDispatchModal() depuis les deux. */}

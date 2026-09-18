@@ -71,3 +71,11 @@ describe('En-tête — pastille de statut (statusLabel, ref l. 12588-12589)', ()
     expect(screen.getByText('Scheduled')).toHaveClass('status-pill', 'scheduled')
   })
 })
+
+describe('En-tête — bouton fermer (ref l. 17398)', () => {
+  // ref : <button class="detail-close-btn" title="Fermer">✕</button> — libellé FR conservé (Q3)
+  test('l’infobulle du bouton ✕ est « Fermer »', () => {
+    open(row())
+    expect(screen.getByTitle('Fermer')).toHaveClass('detail-close-btn')
+  })
+})
