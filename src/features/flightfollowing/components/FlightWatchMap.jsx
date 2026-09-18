@@ -15,7 +15,8 @@ import { RISK_COLOUR } from './FlightWatchList'
  * colorée par le niveau, tournée au cap ; infobulle « CS — LEVEL »),
  * sélection l. 1236-1239 (flyTo zoom 6), suivi caméra l. 508-511 et 1604-1608
  * (zoom 7 puis panTo sans animation à chaque position), trafic ADS-B fwSetAdsb
- * l. 1703-1740 (icône bleue 11 px, infobulle, fenêtre).
+ * l. 1703-1740 (icône bleue 11 px, infobulle, fenêtre), radar RainViewer à
+ * l'opacité du curseur l. 1637-1655.
  *
  * Un appareil ne se dessine que s'il a une position reçue : la référence
  * simulait les positions (A-D14). La liste dit « NO SOURCE » pour les autres.
@@ -80,6 +81,7 @@ export default function FlightWatchMap({
   basemap,
   layers,
   radarFrame,
+  radarOpacity = 70,
   selectedId,
   onSelect,
   following = false,
@@ -355,7 +357,7 @@ export default function FlightWatchMap({
       radarRef.current = null
     }
     if (layers?.radar && radarFrame?.radar) {
-      radarRef.current = L.tileLayer(radarFrame.radar, { opacity: 0.7, zIndex: 500 }).addTo(map)
+      radarRef.current = L.tileLayer(radarFrame.radar, { opacity: radarOpacity / 100, zIndex: 500 }).addTo(map)
     }
     if (irRef.current) {
       map.removeLayer(irRef.current)
@@ -365,6 +367,11 @@ export default function FlightWatchMap({
       irRef.current = L.tileLayer(radarFrame.infrared, { opacity: 0.55, zIndex: 490 }).addTo(map)
     }
   }, [layers?.radar, layers?.ir, radarFrame])
+
+  /* Le curseur « Radar opacity » — js/06 l. 1652-1655. */
+  useEffect(() => {
+    if (radarRef.current) radarRef.current.setOpacity(radarOpacity / 100)
+  }, [radarOpacity])
 
   /* Le trafic ADS-B des autres exploitants — fwSetAdsb js/06 l. 1712-1735. */
   useEffect(() => {

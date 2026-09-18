@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import TopBar from '../../components/TopBar'
 import { ErrorState } from '../../components/States'
@@ -126,32 +126,70 @@ const ERP_STYLE = {
  * ignore l'heure ne dit pas si elle date de cinq minutes ou d'une heure.
  */
 function useRadarFrame(enabled) {
-  const [frame, setFrame] = useState(null)
+  const [rv, setRv] = useState(null)
+  const [frameIdx, setFrameIdx] = useState(null)
+  const [playing, setPlaying] = useState(false)
+  const [opacity, setOpacity] = useState(70)
+  const [wxTime, setWxTime] = useState('LIVE')
 
   useEffect(() => {
-    if (!enabled || frame) return undefined
+    if (!enabled || rv) return undefined
     let cancelled = false
     fetch('https://api.rainviewer.com/public/weather-maps.json')
       .then((response) => response.json())
       .then((data) => {
-        if (cancelled) return
-        const radar = data?.radar?.past?.[data.radar.past.length - 1]
-        const infrared = data?.satellite?.infrared?.[data.satellite.infrared.length - 1]
-        setFrame({
-          radar: radar ? `${data.host}${radar.path}/256/{z}/{x}/{y}/2/1_1.png` : null,
-          infrared: infrared ? `${data.host}${infrared.path}/256/{z}/{x}/{y}/0/0_0.png` : null,
-          at: radar ? new Date(radar.time * 1000).toISOString().slice(11, 16) : null,
-        })
+        if (!cancelled) setRv(data ?? { failed: true })
       })
       .catch(() => {
-        if (!cancelled) setFrame({ radar: null, infrared: null, at: null, failed: true })
+        if (!cancelled) setRv({ failed: true })
       })
     return () => {
       cancelled = true
     }
-  }, [enabled, frame])
+  }, [enabled, rv])
 
-  return frame
+  const past = useMemo(() => rv?.radar?.past ?? [], [rv])
+  const infraredFrames = rv?.satellite?.infrared ?? []
+  const idx = frameIdx == null ? past.length - 1 : frameIdx
+
+  /* ▶ : une trame toutes les 600 ms, son heure dans #wx-time (js/06 l. 1669-1685). */
+  useEffect(() => {
+    if (!playing || past.length === 0) return undefined
+    const timer = setInterval(() => {
+      setFrameIdx((current) => {
+        const next = ((current == null ? past.length - 1 : current) + 1) % past.length
+        const d = new Date(past[next].time * 1000)
+        const pad = (n) => String(n).padStart(2, '0')
+        setWxTime(`${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}Z`)
+        return next
+      })
+    }, 600)
+    return () => clearInterval(timer)
+  }, [playing, past])
+
+  const radar = past[idx]
+  const infrared = infraredFrames[infraredFrames.length - 1]
+  return {
+    frame: rv
+      ? {
+          radar: radar ? `${rv.host}${radar.path}/256/{z}/{x}/{y}/2/1_1.png` : null,
+          infrared: infrared ? `${rv.host}${infrared.path}/256/{z}/{x}/{y}/0/0_0.png` : null,
+          failed: !!rv.failed,
+        }
+      : null,
+    opacity,
+    setOpacity,
+    playing,
+    /* stopWxAnim js/06 l. 1687-1691 : la pause garde l'heure affichée. */
+    togglePlaying: () => setPlaying((current) => !current),
+    wxTime,
+    /* ly-radar coché ou décoché : trame vivante, « LIVE » (l. 1640-1650). */
+    reset: () => {
+      setPlaying(false)
+      setFrameIdx(null)
+      setWxTime('LIVE')
+    },
+  }
 }
 
 /** L'horloge UTC du bandeau — js/06 l. 546-552 : HH:MM:SS<small>UTC</small>. */
@@ -211,7 +249,8 @@ export default function FlightFollowingPage() {
   // LIVE (js/09 l. 175-186) : éteint au départ, comme NP.adsb._on.
   const [live, setLive] = useState(false)
   const showTraffic = live && layers.adsb
-  const radarFrame = useRadarFrame(layers.radar || layers.ir)
+  const radar = useRadarFrame(layers.radar || layers.ir)
+  const radarFrame = radar.frame
 
   const interval = REFRESH.find((entry) => entry.id === refresh)?.ms ?? 15_000
   const board = useFollowingBoard(date, interval)
@@ -290,8 +329,10 @@ export default function FlightFollowingPage() {
     return () => document.removeEventListener('click', onClick)
   }, [layersOpen])
 
-  const toggleLayer = (key) => (event) =>
+  const toggleLayer = (key) => (event) => {
     setLayers((current) => ({ ...current, [key]: event.target.checked }))
+    if (key === 'radar') radar.reset()
+  }
 
   const controls = (
     <>
@@ -474,6 +515,7 @@ export default function FlightFollowingPage() {
               basemap={BASEMAPS.find(([id]) => id === basemap)?.[2] ?? 'SATELLITE'}
               layers={layers}
               radarFrame={radarFrame}
+              radarOpacity={radar.opacity}
               selectedId={selectedId}
               onSelect={selectFlight}
               following={following}
@@ -531,26 +573,39 @@ export default function FlightFollowingPage() {
                 <div id="layerctl" className={layersOpen ? 'open' : undefined} onClick={(event) => event.stopPropagation()}>
                   <div className="lc-head">MAP LAYERS</div>
                   {OVERLAYS.map(([key, icon, label]) => (
-                    <div className="lc-item" key={key}>
-                      <label htmlFor={`ly-${key}`}>
-                        <span className="lc-icon">{icon}</span> {label}
-                      </label>
-                      <label className="switch">
-                        <input type="checkbox" id={`ly-${key}`} checked={!!layers[key]} onChange={toggleLayer(key)} />
-                        <span className="slider" />
-                      </label>
-                    </div>
+                    <Fragment key={key}>
+                      <div className="lc-item">
+                        <label htmlFor={`ly-${key}`}>
+                          <span className="lc-icon">{icon}</span> {label}
+                        </label>
+                        <label className="switch">
+                          <input type="checkbox" id={`ly-${key}`} checked={!!layers[key]} onChange={toggleLayer(key)} />
+                          <span className="slider" />
+                        </label>
+                      </div>
+                      {key === 'radar' ? (
+                        /* « Radar opacity » — index.html l. 136-139, js/06 l. 1638, 1652-1655. */
+                        <div className="lc-sub" id="radar-opacity-wrap" style={{ display: layers.radar ? 'block' : 'none' }}>
+                          <div className="lc-sub-label">
+                            <span>Radar opacity</span>
+                            <span id="radar-op-val">{radar.opacity}%</span>
+                          </div>
+                          <input
+                            type="range"
+                            id="radar-opacity"
+                            min="10"
+                            max="100"
+                            value={radar.opacity}
+                            onChange={(event) => radar.setOpacity(Number(event.target.value))}
+                          />
+                        </div>
+                      ) : null}
+                    </Fragment>
                   ))}
-                  {layers.radar || layers.ir ? (
+                  {(layers.radar || layers.ir) && radarFrame?.failed ? (
                     <div className="lc-sub">
                       <div className="lc-sub-label">
-                        <span>
-                          {radarFrame == null
-                            ? 'Loading the weather imagery…'
-                            : radarFrame.failed
-                              ? 'Weather imagery unavailable — the provider did not answer.'
-                              : `RainViewer · frame ${radarFrame.at} UTC`}
-                        </span>
+                        <span>Weather imagery unavailable — the provider did not answer.</span>
                       </div>
                     </div>
                   ) : null}
@@ -575,6 +630,16 @@ export default function FlightFollowingPage() {
                   {label}
                 </button>
               ))}
+            </div>
+
+            {/* ▶ / heure de la trame — index.html l. 184-187, js/06 l. 1639, 1669-1691. */}
+            <div id="wx-anim-ctl" className={layers.radar ? 'show' : undefined}>
+              <button id="wx-play" type="button" onClick={() => radar.togglePlaying()}>
+                {radar.playing ? '⏸' : '▶'}
+              </button>
+              <span className="wxtime" id="wx-time">
+                {radar.wxTime}
+              </span>
             </div>
 
             {/* La source et l'âge de la position — fwRefreshFeedAge js/06 l. 763-780.

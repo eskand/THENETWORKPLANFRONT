@@ -492,6 +492,54 @@ describe('F03a — les filtres de la liste (index.html l. 66-82, js/06 l. 660-74
   })
 })
 
+describe('F19 — radar météo : curseur d’opacité et commande d’animation (index.html l. 136-139, 184-187 ; js/06 l. 1637-1691)', () => {
+  const rainviewer = {
+    host: 'https://tilecache.rainviewer.com',
+    radar: { past: [{ time: 1758178800, path: '/v2/radar/1758178800' }, { time: 1758179400, path: '/v2/radar/1758179400' }] },
+    satellite: { infrared: [{ time: 1758179400, path: '/v2/satellite/abc' }] },
+  }
+  let realFetch
+  beforeEach(() => {
+    realFetch = globalThis.fetch
+    globalThis.fetch = vi.fn(() => Promise.resolve({ json: () => Promise.resolve(rainviewer) }))
+  })
+  afterEach(() => {
+    globalThis.fetch = realFetch
+  })
+
+  test('allumer le radar montre #radar-opacity-wrap (70 %) et #wx-anim-ctl.show avec « LIVE »', async () => {
+    await open()
+    const wrap = q('#layerctl .lc-sub#radar-opacity-wrap')
+    expect(wrap).not.toBeVisible()
+    expect(q('#mapwrap #wx-anim-ctl')).not.toHaveClass('show')
+    fireEvent.click(q('#ly-radar'))
+    expect(wrap).toBeVisible()
+    expect(wrap.querySelector('.lc-sub-label')).toHaveTextContent('Radar opacity')
+    expect(wrap.querySelector('#radar-op-val')).toHaveTextContent('70%')
+    const slider = wrap.querySelector('input#radar-opacity[type="range"]')
+    expect(slider).toHaveAttribute('min', '10')
+    expect(slider).toHaveAttribute('max', '100')
+    expect(slider.value).toBe('70')
+    fireEvent.input(slider, { target: { value: '55' } })
+    expect(wrap.querySelector('#radar-op-val')).toHaveTextContent('55%')
+    expect(q('#mapwrap #wx-anim-ctl')).toHaveClass('show')
+    expect(q('#wx-anim-ctl #wx-play')).toHaveTextContent('▶')
+    expect(q('#wx-anim-ctl .wxtime#wx-time')).toHaveTextContent('LIVE')
+  })
+
+  test('▶ fait défiler les trames toutes les 600 ms et écrit leur heure ; ⏸ arrête', async () => {
+    await open()
+    fireEvent.click(q('#ly-radar'))
+    await waitFor(() => expect(globalThis.fetch).toHaveBeenCalled())
+    await new Promise((r) => setTimeout(r, 0))
+    fireEvent.click(q('#wx-play'))
+    expect(q('#wx-play')).toHaveTextContent('⏸')
+    await waitFor(() => expect(q('#wx-time').textContent).toMatch(/^\d\d:\d\dZ$/), { timeout: 1500 })
+    fireEvent.click(q('#wx-play'))
+    expect(q('#wx-play')).toHaveTextContent('▶')
+  })
+})
+
 describe('F01a — les commandes du bandeau (#fwTopHost, index.html l. 30-39, js/09 l. 175-186, js/10 l. 139-148)', () => {
   test('le bandeau du produit porte #fwTopHost : LIVE, ACTIVATE ERP, FLIGHT LIST, horloge UTC', async () => {
     await open()

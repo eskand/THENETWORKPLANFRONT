@@ -153,6 +153,20 @@ describe('F04g — le suivi caméra (followbtn js/06 l. 1604-1608, tick l. 508-5
   })
 })
 
+describe('F19 — le radar suit le curseur d’opacité (js/06 l. 1652-1655)', () => {
+  test('la trame radar se pose à l’opacité demandée, l’infrarouge à .55', () => {
+    draw({
+      layers: { ...LAYERS, radar: true, ir: true },
+      radarFrame: { radar: 'https://tilecache.rainviewer.com/v2/radar/1/256/{z}/{x}/{y}/2/1_1.png', infrared: 'https://tilecache.rainviewer.com/v2/satellite/a/256/{z}/{x}/{y}/0/0_0.png' },
+      radarOpacity: 40,
+    })
+    const radarImg = qa('#map img.leaflet-tile').find((img) => img.src.includes('/v2/radar/'))
+    expect(radarImg.closest('.leaflet-layer').style.opacity).toBe('0.4')
+    const irImg = qa('#map img.leaflet-tile').find((img) => img.src.includes('/v2/satellite/'))
+    expect(irImg.closest('.leaflet-layer').style.opacity).toBe('0.55')
+  })
+})
+
 describe('F08a — le trafic ADS-B (fwSetAdsb l. 1703-1740)', () => {
   test('un appareil tiers : icône bleue #4DA3FF de 11 px dans acPane, infobulle et fenêtre de la référence', () => {
     draw({
