@@ -71,6 +71,19 @@ const TABS = [
   ['tripfolder', 'Trip Folder', FileText, 'docs'],
 ]
 
+/**
+ * La pastille de statut de l'en-tete — statusLabel() de l'annexe (l. 12588) et
+ * la classe que sa feuille colore (l. 1487-1492), par ton de statut.
+ */
+const STATUS_PILL = {
+  SCHEDULED: ['scheduled', 'Scheduled'],
+  ENROUTE: ['enroute', 'In flight'],
+  DELAYED: ['delayed', 'Delayed'],
+  AOG: ['aog', 'AOG'],
+  MAINTENANCE: ['maint', 'Maintenance'],
+  CANCELLED: ['cancelled', 'Cancelled'],
+}
+
 /** Les bandeaux de section de l'annexe (TNPFL.ASSETS.banner_*), par onglet. */
 const BANNERS = {
   airport: 'banner-airport',
@@ -134,8 +147,9 @@ export default function FlightFile({ row: given, legId, onClose }) {
                   onClick={() => setOccTimeline(true)}>
             <Clock size={14} /><span>OCC Dispatch</span>
           </button>
-          <div className={`status-pill ${String(row.status ?? '').toLowerCase()}`}>
-            {titleCase(row.status)}
+          <div className={`status-pill ${
+            (STATUS_PILL[row.statusTone] ?? [String(row.status ?? '').toLowerCase()])[0]}`}>
+            {(STATUS_PILL[row.statusTone] ?? [null, titleCase(row.status)])[1]}
           </div>
           {/* Le menu de l'annexe (TNPFL.headerMenuHtml, l. 77315) : cinq actions,
               deroulees PAR-DESSUS le bandeau de date et la barre d'onglets. */}
