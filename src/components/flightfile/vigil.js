@@ -114,7 +114,9 @@ export function vigilFor(tab, row) {
     }
     if (ftl === 'WARNING') {
       return {
-        title: 'Crew duty looks compliant — one item to review.',
+        // ref l. 77500 : 'Crew duty looks compliant — '+warn+' item(s) to review.' —
+        // la ligne ne porte qu'un verdict FTL, donc un seul élément à revoir.
+        title: 'Crew duty looks compliant — 1 item(s) to review.',
         sub: `Warnings from the FTL / currency checks for ${who}.`,
         level: 'warn', action: 'Crew analysis', actionHint: vigil,
       }
