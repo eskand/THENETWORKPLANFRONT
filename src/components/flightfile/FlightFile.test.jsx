@@ -133,3 +133,19 @@ describe('AIRPORT INFO — rangée des quatre cartes (ref l. 14821-14824)', () =
     expect(screen.queryByText(/ft$/)).toBeNull()
   })
 })
+
+describe('TRIP FOLDER — titre et sous-ligne (ref l. 16537-16538)', () => {
+  test('l’onglet ouvre sur « FN — Trip Folder » et sa sous-ligne', async () => {
+    routes['/legs/leg-1/trip-folder'] = {
+      legId: 'leg-1', flightNo: 'TNP526', closed: false, remark: null, closureBlockers: ['ATD', 'ATA'], documents: [],
+    }
+    open(row())
+    fireEvent.click(screen.getByTitle('Trip Folder'))
+    const title = await screen.findByText('TNP526 — Trip Folder')
+    expect(title).toHaveClass('fd-section')
+    // La phrase existe deux fois chez la référence aussi : dans le bandeau TNPFL
+    // (<small>, l. 77334) ET en sous-ligne de l'onglet (<div>, l. 16538).
+    const sublines = screen.getAllByText('Flight documents uploaded by the crew ahead of / during this trip.')
+    expect(sublines.some((element) => element.tagName === 'DIV')).toBe(true)
+  })
+})

@@ -50,9 +50,25 @@ export default function TripFolderTab({ row }) {
 
   const [error, setError] = useState(null)
 
-  if (folder.isLoading) return <LoadingState label="Opening the trip folder…" />
+  // Le titre et la sous-ligne de l'annexe (l. 16537-16538), rendus avant
+  // meme que le dossier soit lu : chez elle ils font partie de l'onglet.
+  const heading = (
+    <>
+      <div className="fd-section">{row.flightNo ?? row.registration} — Trip Folder</div>
+      <div style={{ fontSize: 10.5, color: 'var(--text-faint)', margin: '-4px 0 10px' }}>
+        Flight documents uploaded by the crew ahead of / during this trip.
+      </div>
+    </>
+  )
+
+  if (folder.isLoading) return <>{heading}<LoadingState label="Opening the trip folder…" /></>
   if (folder.isError) {
-    return <div className="fd-banner warn">Trip folder unavailable — {folder.error.message}</div>
+    return (
+      <>
+        {heading}
+        <div className="fd-banner warn">Trip folder unavailable — {folder.error.message}</div>
+      </>
+    )
   }
 
   const data = folder.data
@@ -65,6 +81,7 @@ export default function TripFolderTab({ row }) {
 
   return (
     <>
+      {heading}
       {error ? <div className="fd-banner warn">{error}</div> : null}
 
       {DOCUMENTS.map(({ kind, label }) => (
