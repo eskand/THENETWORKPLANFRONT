@@ -150,6 +150,21 @@ describe('TRIP FOLDER — titre et sous-ligne (ref l. 16537-16538)', () => {
   })
 })
 
+describe('FLIGHT — cellule « Flight time » (ref l. 14788, buildFlightData l. 14275-14277)', () => {
+  // flightHrs = max(0.25, (e − s) − 0.33) : 3h00 bloc → 2h40 ; fmtDur → « 2h40 »
+  test('le temps de vol est le bloc moins 20 minutes, au format « HhMM »', () => {
+    open(row())
+    const label = screen.getByText('Flight time')
+    expect(label.parentElement.querySelector('.val')).toHaveTextContent('2h40')
+  })
+
+  test('un bloc très court ne descend pas sous 15 minutes', () => {
+    open(row({ std: '2026-09-18T08:00:00Z', sta: '2026-09-18T08:20:00Z' }))
+    const label = screen.getByText('Flight time')
+    expect(label.parentElement.querySelector('.val')).toHaveTextContent('0h15')
+  })
+})
+
 describe('Modale « Open Flight Data » (openFlightDataModal, ref l. 16682-16716)', () => {
   test('la table porte les lignes de la référence et rien de plus', async () => {
     routes['/legs/leg-1/passengers'] = {

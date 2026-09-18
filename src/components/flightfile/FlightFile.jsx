@@ -1152,7 +1152,13 @@ function shortDate(iso) {
 /** Le temps de vol programme, « 2h10 ». */
 function blockTime(row) {
   if (!row.std || !row.sta) return EMPTY
-  const minutes = Math.round((new Date(row.sta) - new Date(row.std)) / 60000)
-  if (minutes <= 0) return EMPTY
-  return `${Math.floor(minutes / 60)}h${String(minutes % 60).padStart(2, '0')}`
+  // buildFlightData() de l'annexe (l. 14275-14277) : blockHrs = e − s,
+  // flightHrs = max(0.25, blockHrs − 0.33) — le temps de vol est le bloc moins
+  // vingt minutes, plancher quinze minutes ; fmtDur → « 2h40 ».
+  const blockHrs = (new Date(row.sta) - new Date(row.std)) / 3_600_000
+  if (blockHrs <= 0) return EMPTY
+  const flightHrs = Math.max(0.25, blockHrs - 0.33)
+  const hh = Math.floor(flightHrs)
+  const mm = Math.round((flightHrs - hh) * 60)
+  return `${hh}h${String(mm).padStart(2, '0')}`
 }
