@@ -308,24 +308,25 @@ export default function FlightFollowingPage() {
               </button>
             </div>
 
-            {data ? <RiskPanel board={data} flights={flights} onSelect={selectFlight} /> : null}
+            <RiskPanel board={data} flights={flights} onSelect={selectFlight} />
 
-            <div className="fw__sorts">
-              <button type="button" className={sort === 'risk' ? 'is-on' : ''} onClick={() => setSort('risk')}>
+            <div className="sortbar">
+              <button id="sort-risk" type="button" className={sort === 'risk' ? 'active' : undefined} onClick={() => setSort('risk')}>
                 Sort: Risk
               </button>
               <button
+                id="sort-callsign"
                 type="button"
-                className={sort === 'callsign' ? 'is-on' : ''}
+                className={sort === 'callsign' ? 'active' : undefined}
                 onClick={() => setSort('callsign')}
               >
                 Sort: Callsign
               </button>
             </div>
 
-            <div className="fw__listhead">
-              <span>Active flights</span>
-              <b>{flights.length}</b>
+            <div className="panel-head">
+              <h3>ACTIVE FLIGHTS</h3>
+              <span className="count" id="flightcount">{flights.length}</span>
             </div>
 
             <FlightWatchList flights={flights} sort={sort} selectedId={selectedId} onSelect={selectFlight} />

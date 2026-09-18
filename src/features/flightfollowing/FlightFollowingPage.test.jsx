@@ -63,7 +63,10 @@ function board(flights = [flight()]) {
 async function open(data = board()) {
   routes['/flight-following/board'] = data
   const utils = renderWithProviders(<FlightFollowingPage />)
+  // Le cadre se rend avant la réponse (la référence s'ouvre sur la carte seule) :
+  // on attend que le tableau soit lu, c'est-à-dire la première carte de vol.
   await waitFor(() => expect(document.querySelector('#viewFlightFollowing #app')).not.toBeNull())
+  await waitFor(() => expect(document.querySelector('#flightlist .fcard, .fwl__card')).not.toBeNull())
   return utils
 }
 
@@ -134,6 +137,84 @@ describe('F01a — le cadre « la carte d’abord » (index.html l. 43-206, js/0
 
     fireEvent.keyDown(document, { key: 'Escape' })
     expect(q('#left')).not.toHaveClass('fw-open')
+  })
+})
+
+describe('F01b — le tiroir gauche (index.html l. 46-92, renderList js/06 l. 1114-1160, updateDashboard l. 557-566)', () => {
+  test('#sms-dashboard : titre, bandeau d’alertes caché sans alerte, quatre compteurs', async () => {
+    await open()
+    const dash = q('#left #sms-dashboard')
+    expect(dash.querySelector('.dash-title')).toHaveTextContent('SMS PROACTIVE RISK OVERVIEW')
+    expect(dash.querySelector('#fwAlertBanner')).not.toBeVisible()
+    const cells = [...dash.querySelectorAll('.dash-grid .dash-cell')]
+    expect(cells.map((c) => c.querySelector('.l').textContent)).toEqual(['Low', 'Medium', 'High', 'Critical'])
+    expect(dash.querySelector('#cnt-low')).toHaveTextContent('1')
+    expect(dash.querySelector('#cnt-medium')).toHaveTextContent('0')
+    expect(dash.querySelector('#cnt-high')).toHaveTextContent('0')
+    expect(dash.querySelector('#cnt-critical')).toHaveTextContent('0')
+    expect(cells[3]).toHaveStyle({ borderColor: '#C0392B' })
+    expect(dash.querySelector('#cnt-critical')).toHaveStyle({ color: '#C0392B' })
+  })
+
+  test('une alerte MEDIUM ou plus remplit #fwAlertBanner d’une ligne .fw-al qui sélectionne son vol', async () => {
+    const high = flight({
+      legId: 'l2', flightNo: 'TNP202', depIcao: 'DTTA', arrIcao: 'LFPB',
+      risk: {
+        level: 'HIGH', index: 12, severity: 4, likelihood: 3, action: 'Mitigation required.',
+        factors: [{ factor: 'MEL', level: 'MAJOR', detail: 'MEL 21-51-01 open, category B' }],
+      },
+    })
+    await open(board([flight(), high]))
+    const banner = q('#fwAlertBanner')
+    expect(banner).toBeVisible()
+    const row = banner.querySelector('.fw-al')
+    expect(row).toHaveAttribute('title', 'Open this flight and centre the map on it')
+    expect(row.querySelector('.fw-al-txt b')).toHaveTextContent('TNP202')
+    expect(row.querySelector('.fw-al-txt')).toHaveTextContent('(DTTA→LFPB) — HIGH RISK')
+    fireEvent.click(row)
+    expect(q('#right')).toHaveClass('fw-open')
+    expect(q('#flightlist .fcard.selected .fcard-call')).toHaveTextContent('TNP202')
+  })
+
+  test('.sortbar : Sort: Risk actif par défaut, Sort: Callsign prend le relais (js/06 l. 1193-1204)', async () => {
+    await open()
+    const risk = q('#left .sortbar #sort-risk')
+    const callsign = q('#left .sortbar #sort-callsign')
+    expect(risk).toHaveTextContent('Sort: Risk')
+    expect(callsign).toHaveTextContent('Sort: Callsign')
+    expect(risk).toHaveClass('active')
+    fireEvent.click(callsign)
+    expect(callsign).toHaveClass('active')
+    expect(risk).not.toHaveClass('active')
+  })
+
+  test('.panel-head ACTIVE FLIGHTS + #flightcount, puis #flightlist et ses .fcard', async () => {
+    await open()
+    expect(q('#left .panel-head h3')).toHaveTextContent('ACTIVE FLIGHTS')
+    expect(q('#left .panel-head .count#flightcount')).toHaveTextContent('1')
+
+    const card = q('#left #flightlist .fcard')
+    expect(card).not.toHaveClass('selected')
+    expect(card.querySelector('.fcard-top .fcard-call')).toHaveTextContent('TNP101')
+    const chip = card.querySelector('.fcard-top .risk-chip')
+    expect(chip).toHaveTextContent('LOW · 2')
+    expect(chip).toHaveStyle({ color: '#27AE60', border: '1px solid #27AE60' })
+    expect(chip).toHaveStyle({ background: '#27AE6022' })
+    expect(card.querySelector('.fcard-route')).toHaveTextContent('DTTA → LFMN')
+    expect([...card.querySelectorAll('.fcard-meta span')].map((s) => s.textContent)).toEqual([
+      'FL390', '— KT', 'F2TH', 'TS-NPA',
+    ])
+    expect(card.querySelector('.fcard-op')).toHaveTextContent('TNP')
+
+    fireEvent.click(card)
+    expect(card).toHaveClass('selected')
+    expect(q('#right')).toHaveClass('fw-open')
+  })
+
+  test('la légende suit la liste dans le tiroir (index.html l. 85-91) et les classes propres à la cible ont disparu', async () => {
+    await open()
+    expect(q('#left .legend-box .legend-row .dot')).not.toBeNull()
+    expect(q('#left .fwr, #left .fwl, #left .fw__sorts, #left .fw__listhead')).toBeNull()
   })
 })
 
