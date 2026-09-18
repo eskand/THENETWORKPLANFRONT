@@ -60,13 +60,8 @@ export function vigilFor(tab, row, extra = {}) {
     if (!readiness) {
       return { title: 'Airport suitability not computed.', sub: 'INSUFFICIENT DATA', level: 'grey', ...action }
     }
-    const unsuitable = (icao) => (readiness.blocking ?? []).some((item) =>
-      String(item.message ?? '').includes(icao ?? '')
-        && /RUNWAY|AIRPORT|AERODROME|SLOT/.test(String(item.check ?? '')))
-    const failing = [
-      unsuitable(row.depIcao) ? (row.depCode ?? row.depIcao) : null,
-      unsuitable(row.arrIcao) ? (row.arrCode ?? row.arrIcao) : null,
-    ].filter(Boolean)
+    const failing = unsuitableStations(row, readiness)
+      .map((icao) => (icao === row.depIcao ? (row.depCode ?? icao) : (row.arrCode ?? icao)))
     const metar = (extra.weather?.stations ?? []).some((station) => station.observation)
     return {
       title: failing.length
@@ -214,6 +209,18 @@ export function vigilFor(tab, row, extra = {}) {
     level: on === tot ? 'ok' : 'warn',
     action: 'Document check', actionHint: 'Scroll to the flight closure',
   }
+}
+
+/**
+ * Les terrains de l'etape juges inaptes — computeAirportSuitability() de
+ * l'annexe (l. 9970), rendue par les controles de mise en ligne : un constat
+ * BLOQUANT de piste / aerodrome / creneau qui nomme le terrain.
+ */
+export function unsuitableStations(row, readiness) {
+  const unsuitable = (icao) => Boolean(icao) && (readiness?.blocking ?? []).some((item) =>
+    String(item.message ?? '').includes(icao)
+      && /RUNWAY|AIRPORT|AERODROME|SLOT/.test(String(item.check ?? '')))
+  return [row.depIcao, row.arrIcao].filter(unsuitable)
 }
 
 /** Les cinq lignes du dossier de vol (tabTripFolder, l. 16525-16531), par nature stockee. */

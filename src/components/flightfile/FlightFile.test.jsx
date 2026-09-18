@@ -150,6 +150,43 @@ describe('TRIP FOLDER — titre et sous-ligne (ref l. 16537-16538)', () => {
   })
 })
 
+describe('Onglets — badges de compte (fdTabBadgeCount, ref l. 16559-16577 ; markup l. 17428)', () => {
+  function badgeOf(title) {
+    return screen.getByTitle(title).querySelector('.fd-tab-badge')
+  }
+
+  test('OVF Permit porte le nombre de permis non confirmés, AIRPORT INFO le nombre de terrains inaptes, CREW les membres non ok', async () => {
+    routes['/legs/leg-1/readiness'] = {
+      legId: 'leg-1', releasable: false,
+      blocking: [{ check: 'RUNWAY_TOO_SHORT', message: 'HECA longest runway is below the type minimum', rule: 'AIRPORT' }],
+      derogable: [], info: [],
+    }
+    routes['/crew/scheduling/board'] = {
+      legs: [{
+        legId: 'leg-1', minimumSeats: 2,
+        crew: [
+          { assignmentId: 'a1', personId: 'p1', seat: 'CPT', fullName: 'A B', ftlVerdict: 'BREACH', documentStatus: 'VALID' },
+          { assignmentId: 'a2', personId: 'p2', seat: 'FO', fullName: 'C D', ftlVerdict: 'OK', documentStatus: 'EXPIRED' },
+          { assignmentId: 'a3', personId: 'p3', seat: 'CABIN_1', fullName: 'E F', ftlVerdict: 'OK', documentStatus: 'VALID' },
+        ],
+      }],
+      pool: [],
+    }
+    open(row({ permitsOutstanding: 2 }))
+    expect(badgeOf('OVF Permit')).toHaveTextContent('2')
+    await screen.findByText('1', { selector: '.fd-tab-badge' })
+    expect(badgeOf('Airport Info')).toHaveTextContent('1')
+    await screen.findByText('2', { selector: '[title="Crew"] .fd-tab-badge' })
+    expect(badgeOf('Flight')).toBeNull()
+    expect(badgeOf('Services')).toBeNull()
+  })
+
+  test('aucun badge quand rien n’est à signaler', () => {
+    open(row({ permitsOutstanding: 0 }))
+    expect(badgeOf('OVF Permit')).toBeNull()
+  })
+})
+
 describe('FLIGHT — cellule « Flight time » (ref l. 14788, buildFlightData l. 14275-14277)', () => {
   // flightHrs = max(0.25, (e − s) − 0.33) : 3h00 bloc → 2h40 ; fmtDur → « 2h40 »
   test('le temps de vol est le bloc moins 20 minutes, au format « HhMM »', () => {

@@ -15,7 +15,8 @@ import { EMPTY, hhmm, isoDate, titleCase } from '../../lib/format'
 import { documentHref } from '../../api/flightfile'
 import AirportBlock from './AirportBlock'
 import FlightHero, { nature } from './FlightHero'
-import { vigilFor } from './vigil'
+import { unsuitableStations, vigilFor } from './vigil'
+import { useSchedulingBoard } from '../../hooks/useCrewScheduling'
 import CrewTab from './CrewTab'
 import FuelTab from './FuelTab'
 import HeaderMenu, { FlightDataModal, NoteModal } from './HeaderMenu'
@@ -92,6 +93,15 @@ export default function FlightFile({ row: given, legId, onClose }) {
   // l'identifiant. La requete ne part donc que dans le second cas.
   const fetched = useDispatchLeg(given ? null : legId)
   const row = given ?? fetched.data
+
+  // Les badges des onglets — fdTabBadgeCount() de l'annexe (l. 16559-16577) :
+  // terrains inaptes (AIRPORT INFO), membres d'equipage non ok (CREW), permis
+  // non confirmes (OVF). Les deux lectures sont celles des onglets eux-memes,
+  // donc partagees par le cache.
+  const readiness = useLegReadiness(row?.legId ?? null)
+  const board = useSchedulingBoard(
+    row?.std && row?.legId ? { date: isoDate(new Date(row.std)), role: '' } : undefined)
+  const badges = row ? tabBadges(row, readiness.data, board.data) : {}
 
   useEffect(() => {
     function onKey(event) { if (event.key === 'Escape') onClose() }
@@ -170,6 +180,9 @@ export default function FlightFile({ row: given, legId, onClose }) {
                    onKeyDown={(event) => { if (event.key === 'Enter') setTab(key) }}>
                 <span className="fd-tab-ico"><Icon size={17} /></span>
                 <span className="lbl">{label}</span>
+                {badges[key] > 0
+                  ? <span className="fd-tab-badge">{badges[key] > 9 ? '9+' : badges[key]}</span>
+                  : null}
               </div>
             </Group>
           ))}
@@ -213,6 +226,22 @@ export default function FlightFile({ row: given, legId, onClose }) {
         ? <OccTimelineModal row={row} onClose={() => setOccTimeline(false)} /> : null}
     </>
   )
+}
+
+/**
+ * fdTabBadgeCount() de l'annexe (l. 16559-16577), par onglet. Le badge FLIGHT
+ * (alertes de rotation) n'est pas rendu : le serveur n'expose pas les marges
+ * de rotation par etape.
+ */
+function tabBadges(row, readiness, board) {
+  const crew = (board?.legs ?? []).find((leg) => leg.legId === row.legId)?.crew ?? []
+  return {
+    airport: unsuitableStations(row, readiness).length,
+    crew: crew.filter((member) =>
+      String(member.ftlVerdict ?? 'OK').toUpperCase() !== 'OK'
+        || (member.documentStatus && String(member.documentStatus).toUpperCase() !== 'VALID')).length,
+    ovf: row.permitsOutstanding ?? 0,
+  }
 }
 
 /**
