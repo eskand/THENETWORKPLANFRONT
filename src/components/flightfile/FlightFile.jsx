@@ -344,8 +344,10 @@ function VigilStrip({ row, tab }) {
   const weather = useStationWeather(
     tab === 'airport' ? [row.depIcao, row.arrIcao].filter(Boolean) : [])
   const pax = useLegPassengers(tab === 'pax' ? row.legId : null)
+  const folder = useTripFolder(tab === 'tripfolder' ? row.legId : null)
   const verdict = vigilFor(tab, row, {
     fuel: fuel.data, readiness: readiness.data, weather: weather.data, pax: pax.data,
+    folder: folder.data,
   })
 
   return (

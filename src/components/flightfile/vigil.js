@@ -200,11 +200,21 @@ export function vigilFor(tab, row, extra = {}) {
     }
   }
 
+  // ref l. 77512-77515 : on = documents deposes parmi les cinq lignes du
+  // dossier, tot = 5 ; la sous-ligne dit ce qui bloque la cloture.
+  const onFile = new Set((extra.folder?.documents ?? []).map((document) => document.kind))
+  const on = TRIP_FOLDER_KINDS.filter((kind) => onFile.has(kind)).length
+  const tot = TRIP_FOLDER_KINDS.length
+  const blockers = extra.folder?.closureBlockers ?? []
   return {
-    title: 'Trip folder open.',
-    sub: 'Flight plan, OFP, weight & balance, NOTOC and fuel receipt are listed on the '
-      + 'TRIP FOLDER tab — each one is On File only when the document is there.',
-    level: 'ok', action: 'Document check',
-    actionHint: 'Open the TRIP FOLDER tab',
+    title: on === tot ? 'All required documents are on file.' : `${tot - on} of ${tot} documents pending upload.`,
+    sub: blockers.length
+      ? `Flight closure blocked: ${blockers.join(' · ')}`
+      : 'All required documents will be validated before flight closure.',
+    level: on === tot ? 'ok' : 'warn',
+    action: 'Document check', actionHint: 'Scroll to the flight closure',
   }
 }
+
+/** Les cinq lignes du dossier de vol (tabTripFolder, l. 16525-16531), par nature stockee. */
+const TRIP_FOLDER_KINDS = ['FPL', 'OFP', 'WEIGHT_BALANCE', 'NOTOC', 'FUEL_RECEIPT']

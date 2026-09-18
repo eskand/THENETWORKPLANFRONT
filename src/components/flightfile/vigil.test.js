@@ -91,6 +91,29 @@ describe('vigilFor — onglet PAX (ref l. 77507-77511)', () => {
   })
 })
 
+describe('vigilFor — onglet TRIP FOLDER (ref l. 77512-77515)', () => {
+  test('deux documents sur cinq déposés, clôture bloquée', () => {
+    const verdict = vigilFor('tripfolder', base, {
+      folder: { documents: [{ kind: 'FPL' }, { kind: 'OFP' }], closureBlockers: ['ATD', 'ATA'] },
+    })
+    expect(verdict.title).toBe('3 of 5 documents pending upload.')
+    expect(verdict.sub).toBe('Flight closure blocked: ATD · ATA')
+    expect(verdict.level).toBe('warn')
+  })
+
+  test('tous les documents déposés, rien ne bloque', () => {
+    const verdict = vigilFor('tripfolder', base, {
+      folder: {
+        documents: ['FPL', 'OFP', 'WEIGHT_BALANCE', 'NOTOC', 'FUEL_RECEIPT'].map((kind) => ({ kind })),
+        closureBlockers: [],
+      },
+    })
+    expect(verdict.title).toBe('All required documents are on file.')
+    expect(verdict.sub).toBe('All required documents will be validated before flight closure.')
+    expect(verdict.level).toBe('ok')
+  })
+})
+
 describe('vigilFor — onglet CREW (ref l. 77498-77504)', () => {
   // ref l. 77500 : 'Crew duty looks compliant — '+warn+' item(s) to review.'
   test('un avertissement FTL est compté, au format de la référence', () => {
