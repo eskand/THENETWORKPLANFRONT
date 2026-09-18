@@ -8,7 +8,9 @@ import { useDispatchLeg, useLegReadiness } from '../../hooks/useDispatchBoard'
 import { useAirportDetail } from '../../hooks/useOperations'
 import { useRecordMovement, useSendMvt } from '../../hooks/useOperations'
 import { useStationWeather } from '../../hooks/useWeather'
-import { useFlightFileLvp, useFlightNote, useTripFolder } from '../../hooks/useFlightFile'
+import {
+  useFlightFileLvp, useFlightNote, useLegFuel, useTripFolder,
+} from '../../hooks/useFlightFile'
 import { EMPTY, hhmm, isoDate, titleCase } from '../../lib/format'
 import { documentHref } from '../../api/flightfile'
 import AirportBlock from './AirportBlock'
@@ -335,7 +337,10 @@ function RiskBanner({ row }) {
  * c'est celui-la qui est affiche.
  */
 function VigilStrip({ row, tab }) {
-  const verdict = vigilFor(tab, row)
+  // Les lectures dont la phrase a besoin, limitees a l'onglet ouvert : la
+  // requete est celle que l'onglet fait deja, donc partagee par le cache.
+  const fuel = useLegFuel(tab === 'fuel' ? row.legId : null)
+  const verdict = vigilFor(tab, row, { fuel: fuel.data })
 
   return (
     <div className="fl-vigil">

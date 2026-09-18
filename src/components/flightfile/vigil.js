@@ -6,8 +6,14 @@ import { nature } from './FlightHero'
  * <p>Extrait de FlightFile.jsx pour que le menu de l'en-tete puisse l'ouvrir
  * en entier sans que les deux fichiers s'importent l'un l'autre.
  */
-/** Ce que la bande annonce, onglet par onglet — vigilFor() de l'annexe. */
-export function vigilFor(tab, row) {
+/**
+ * Ce que la bande annonce, onglet par onglet — vigilFor() de l'annexe.
+ *
+ * @param extra ce que l'onglet ouvert a deja lu (`fuel`, `readiness`, `weather`,
+ *   `pax`, `folder`) : l'annexe relit le DOM de l'onglet, ici la bande recoit
+ *   les memes donnees que lui.
+ */
+export function vigilFor(tab, row, extra = {}) {
   const who = row.flightNo ?? row.registration
   const vigil = 'The VIGIL operations assistant is its own module — not wired yet'
 
@@ -86,10 +92,23 @@ export function vigilFor(tab, row) {
   }
 
   if (tab === 'fuel') {
+    // ref l. 77497 : fournisseur ET prix connus → « Fuel data ready » avec le
+    // detail du tarif ; sinon l'avertissement, en ambre.
+    const fuel = extra.fuel
+    if (fuel?.supplierName && fuel?.price) {
+      const symbol = fuel.currency === 'USD' ? '$' : `${fuel.currency ?? ''} `
+      const dated = [fuel.effectiveFrom, fuel.effectiveTo].filter(Boolean).join(' → ')
+      return {
+        title: `Fuel data ready for ${who}.`,
+        sub: `${fuel.supplierName} · ${symbol}${fuel.price} / ${String(fuel.unit ?? 'usg').toUpperCase()}`
+          + (dated ? ` · price date ${dated}` : ' · price not dated'),
+        level: 'ok', action: 'Ask VIGIL', actionHint: vigil,
+      }
+    }
     return {
       title: `No fuel supplier / price recorded for ${row.depCode ?? row.depIcao}.`,
-      sub: 'Uplift and price need the fuel module — no source feeds this tab.',
-      level: 'grey', action: 'Ask VIGIL', actionHint: vigil,
+      sub: 'Select a supplier in the Services tab or import the fuel price database.',
+      level: 'warn', action: 'Ask VIGIL', actionHint: vigil,
     }
   }
 
