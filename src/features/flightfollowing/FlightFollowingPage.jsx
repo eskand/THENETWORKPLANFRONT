@@ -72,6 +72,39 @@ const DEFAULT_LAYERS = {
   labels: true,
 }
 
+/** La famille de flotte d'un type — fwFamille js/06 l. 662-669, sur « modèle + code OACI ». */
+export function fwFamille(actype) {
+  const t = String(actype || '')
+  if (/7X|900|2000|Falcon/i.test(t)) return 'FALCON'
+  if (/Citation|525/i.test(t)) return 'CITATION'
+  if (/Legacy/i.test(t)) return 'LEGACY'
+  if (/Lineage|E190/i.test(t)) return 'E190'
+  return 'OTHER'
+}
+
+/** Le libellé d'une famille dans le sélecteur — fwRemplirFiltres js/06 l. 716-719. */
+function familleLabel(k) {
+  return k === 'E190' ? 'Lineage / E190' : k.charAt(0) + k.slice(1).toLowerCase()
+}
+
+/** La phase se lit de l'horaire (fwPhase js/06 l. 675-695) : ici du statut de l'étape. */
+function fwPhase(flight) {
+  if (flight.status === 'DEPARTED') return 'air'
+  return 'ground'
+}
+
+const FW_RANG = { LOW: 1, MEDIUM: 2, HIGH: 3, CRITICAL: 4 }
+const NO_FILTER = { fleet: 'ALL', phase: 'ALL', risk: 'ALL', op: 'ALL' }
+
+/** fwPasseFiltres js/06 l. 697-703. */
+function passesFilters(flight, filters) {
+  if (filters.fleet !== 'ALL' && fwFamille(`${flight.model ?? ''} ${flight.icaoType ?? ''}`) !== filters.fleet) return false
+  if (filters.phase !== 'ALL' && fwPhase(flight) !== filters.phase) return false
+  if (filters.risk !== 'ALL' && (FW_RANG[flight.risk?.level] || 0) < (FW_RANG[filters.risk] || 0)) return false
+  if (filters.op !== 'ALL' && flight.operator !== filters.op) return false
+  return true
+}
+
 /** Style en ligne du bouton ERP tel que js/10 l. 145 le pose. */
 const ERP_STYLE = {
   marginLeft: 8,
@@ -171,6 +204,7 @@ export default function FlightFollowingPage() {
   const [layers, setLayers] = useState(DEFAULT_LAYERS)
   const [layersOpen, setLayersOpen] = useState(false)
   const [listOpen, setListOpen] = useState(false)
+  const [filters, setFilters] = useState(NO_FILTER)
   const [detailOpen, setDetailOpen] = useState(false)
   // « FOLLOW THIS FLIGHT ON MAP » — followSelected js/06 l. 1604-1608.
   const [following, setFollowing] = useState(false)
@@ -188,20 +222,32 @@ export default function FlightFollowingPage() {
   const airports = useAirports(USED_STATIONS)
   const traffic = useLiveTraffic(showTraffic, interval || 30_000)
 
-  const flights = useMemo(() => {
-    if (!data) return []
-    const all = [...data.airborne, ...data.upcoming, ...data.arrived]
-    const needle = query.trim().toUpperCase()
-    if (!needle) return all
-    return all.filter((flight) =>
-      [flight.flightNo, flight.registration, flight.icaoType, flight.depIcao, flight.arrIcao, flight.operator]
-        .filter(Boolean)
-        .some((field) => field.toUpperCase().includes(needle)),
-    )
-  }, [data, query])
+  /* Tous les vols du tableau : la carte et les compteurs les voient tous. */
+  const all = useMemo(() => (data ? [...data.airborne, ...data.upcoming, ...data.arrived] : []), [data])
 
-  const selected = flights.find((flight) => flight.legId === selectedId) ?? null
-  const plotted = flights.filter((flight) => flight.lastPosition)
+  /* La liste : le texte cherche d'abord, les filtres retranchent ensuite
+     (renderList js/06 l. 1118-1125). */
+  const flights = useMemo(() => {
+    const needle = query.trim().toUpperCase()
+    return all.filter(
+      (flight) =>
+        (!needle ||
+          [flight.flightNo, flight.registration, flight.icaoType, flight.depIcao, flight.arrIcao, flight.operator]
+            .filter(Boolean)
+            .some((field) => field.toUpperCase().includes(needle))) &&
+        passesFilters(flight, filters),
+    )
+  }, [all, query, filters])
+
+  /* Les options se déduisent de ce qui est suivi (fwRemplirFiltres js/06 l. 706-739). */
+  const families = useMemo(
+    () => [...new Set(all.map((flight) => fwFamille(`${flight.model ?? ''} ${flight.icaoType ?? ''}`)))].sort(),
+    [all],
+  )
+  const operators = useMemo(() => [...new Set(all.map((flight) => flight.operator).filter(Boolean))].sort(), [all])
+
+  const selected = all.find((flight) => flight.legId === selectedId) ?? null
+  const plotted = all.filter((flight) => flight.lastPosition)
 
   /* Un seul point d'entrée pour choisir un vol — liste ou carte — qui ouvre
      le détail (js/07 : selectFlight → openDetail). */
@@ -325,7 +371,7 @@ export default function FlightFollowingPage() {
               </button>
             </div>
 
-            <RiskPanel board={data} flights={flights} onSelect={selectFlight} />
+            <RiskPanel board={data} flights={all} onSelect={selectFlight} />
 
             <div className="sortbar">
               <button id="sort-risk" type="button" className={sort === 'risk' ? 'active' : undefined} onClick={() => setSort('risk')}>
@@ -341,9 +387,69 @@ export default function FlightFollowingPage() {
               </button>
             </div>
 
+            <div className="fw-filters">
+              <select
+                id="fwFleet"
+                title="Filter by fleet"
+                value={filters.fleet}
+                onChange={(event) => setFilters((current) => ({ ...current, fleet: event.target.value }))}
+              >
+                <option value="ALL">Fleet: All</option>
+                {families.map((k) => (
+                  <option value={k} key={k}>
+                    Fleet: {familleLabel(k)}
+                  </option>
+                ))}
+              </select>
+              <select
+                id="fwPhase"
+                title="Filter by flight phase"
+                value={filters.phase}
+                onChange={(event) => setFilters((current) => ({ ...current, phase: event.target.value }))}
+              >
+                <option value="ALL">Phase: All</option>
+                <option value="air">Airborne</option>
+                <option value="ground">On ground</option>
+                <option value="divert">Diverting</option>
+              </select>
+              <select
+                id="fwRisk"
+                title="Show this risk level and above"
+                value={filters.risk}
+                onChange={(event) => setFilters((current) => ({ ...current, risk: event.target.value }))}
+              >
+                <option value="ALL">Risk: All</option>
+                <option value="MEDIUM">Risk: Medium +</option>
+                <option value="HIGH">Risk: High +</option>
+                <option value="CRITICAL">Risk: Critical</option>
+              </select>
+              <select
+                id="fwOp"
+                title="Filter by operator"
+                style={operators.length > 1 ? undefined : { display: 'none' }}
+                value={filters.op}
+                onChange={(event) => setFilters((current) => ({ ...current, op: event.target.value }))}
+              >
+                <option value="ALL">Operator: All</option>
+                {operators.length > 1
+                  ? operators.map((k) => (
+                      <option value={k} key={k}>
+                        Operator: {k}
+                      </option>
+                    ))
+                  : null}
+              </select>
+              <button id="fwClear" type="button" title="Clear every filter" onClick={() => setFilters(NO_FILTER)}>
+                Clear
+              </button>
+            </div>
+
             <div className="panel-head">
               <h3>ACTIVE FLIGHTS</h3>
-              <span className="count" id="flightcount">{flights.length}</span>
+              {/* Le compteur dit ce qu'il montre ET sur combien, dès qu'un filtre agit (js/06 l. 1131-1133). */}
+              <span className="count" id="flightcount">
+                {flights.length === all.length ? flights.length : `${flights.length} / ${all.length}`}
+              </span>
             </div>
 
             <FlightWatchList flights={flights} sort={sort} selectedId={selectedId} onSelect={selectFlight} />
@@ -361,7 +467,7 @@ export default function FlightFollowingPage() {
 
           <div id="mapwrap">
             <FlightWatchMap
-              flights={flights}
+              flights={all}
               airports={airports.data?.rows ?? []}
               traffic={traffic.data ?? []}
               showTraffic={showTraffic}
@@ -541,7 +647,7 @@ export default function FlightFollowingPage() {
                   ' — no live source configured'
                 ) : null}
                 {' · '}
-                {plotted.length} of {flights.length} legs plotted · {data.withoutSource} with no position ever
+                {plotted.length} of {all.length} legs plotted · {data.withoutSource} with no position ever
                 received · {data.trackedStale} stale beyond {data.staleThresholdMinutes} min
               </div>
             ) : null}

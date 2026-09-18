@@ -426,6 +426,72 @@ describe('F04g — choisir un autre vol arrête le suivi (selectFlight js/06 l. 
   })
 })
 
+describe('F03a — les filtres de la liste (index.html l. 66-82, js/06 l. 660-745, compteur l. 1131-1133)', () => {
+  const fleet = () => [
+    flight({ legId: 'a', flightNo: 'TNP101', icaoType: 'F2TH', model: 'Falcon 2000LX', operator: 'TNP', status: 'DEPARTED' }),
+    flight({ legId: 'b', flightNo: 'TNP202', icaoType: 'C25B', model: 'Citation CJ3', operator: 'TNP', status: 'PLANNED',
+      risk: { level: 'HIGH', index: 12, severity: 4, likelihood: 3, action: '', factors: [] } }),
+    flight({ legId: 'c', flightNo: 'XYZ303', icaoType: 'E35L', model: 'Legacy 650', operator: 'PARTNER AIR', status: 'ARRIVED',
+      risk: { level: 'MEDIUM', index: 6, severity: 3, likelihood: 2, action: '', factors: [] } }),
+  ]
+
+  test('.fw-filters : Fleet (familles déduites), Phase, Risk, Operator (visible dès deux exploitants), Clear', async () => {
+    await open(board(fleet()))
+    const box = q('#left .fw-filters')
+    const fleetSel = box.querySelector('select#fwFleet')
+    expect([...fleetSel.options].map((o) => o.textContent)).toEqual(['Fleet: All', 'Fleet: Citation', 'Fleet: Falcon', 'Fleet: Legacy'])
+    expect([...fleetSel.options].map((o) => o.value)).toEqual(['ALL', 'CITATION', 'FALCON', 'LEGACY'])
+    expect(fleetSel).toHaveAttribute('title', 'Filter by fleet')
+    const phase = box.querySelector('select#fwPhase')
+    expect([...phase.options].map((o) => o.textContent)).toEqual(['Phase: All', 'Airborne', 'On ground', 'Diverting'])
+    expect([...phase.options].map((o) => o.value)).toEqual(['ALL', 'air', 'ground', 'divert'])
+    const risk = box.querySelector('select#fwRisk')
+    expect([...risk.options].map((o) => o.textContent)).toEqual(['Risk: All', 'Risk: Medium +', 'Risk: High +', 'Risk: Critical'])
+    const op = box.querySelector('select#fwOp')
+    expect(op).toBeVisible()
+    expect([...op.options].map((o) => o.textContent)).toEqual(['Operator: All', 'Operator: PARTNER AIR', 'Operator: TNP'])
+    expect(box.querySelector('button#fwClear')).toHaveTextContent('Clear')
+    expect(box.querySelector('button#fwClear')).toHaveAttribute('title', 'Clear every filter')
+  })
+
+  test('un seul exploitant : le filtre Operator est caché (js/06 l. 727-736)', async () => {
+    await open()
+    expect(q('#left .fw-filters select#fwOp')).not.toBeVisible()
+  })
+
+  test('filtrer retranche et le compteur dit « n / total » ; Clear remet tout', async () => {
+    await open(board(fleet()))
+    expect(q('#flightcount')).toHaveTextContent('3')
+    fireEvent.change(q('#fwRisk'), { target: { value: 'MEDIUM' } })
+    expect(qa('#flightlist .fcard .fcard-call').map((c) => c.textContent)).toEqual(['TNP202', 'XYZ303'])
+    expect(q('#flightcount')).toHaveTextContent('2 / 3')
+    fireEvent.change(q('#fwPhase'), { target: { value: 'air' } })
+    expect(qa('#flightlist .fcard')).toHaveLength(0)
+    expect(q('#flightcount')).toHaveTextContent('0 / 3')
+    fireEvent.change(q('#fwPhase'), { target: { value: 'ALL' } })
+    fireEvent.change(q('#fwRisk'), { target: { value: 'ALL' } })
+    fireEvent.change(q('#fwFleet'), { target: { value: 'FALCON' } })
+    expect(qa('#flightlist .fcard .fcard-call').map((c) => c.textContent)).toEqual(['TNP101'])
+    fireEvent.change(q('#fwOp'), { target: { value: 'PARTNER AIR' } })
+    expect(qa('#flightlist .fcard')).toHaveLength(0)
+    fireEvent.click(q('#fwClear'))
+    expect(q('#fwFleet').value).toBe('ALL')
+    expect(q('#fwOp').value).toBe('ALL')
+    expect(q('#flightcount')).toHaveTextContent('3')
+    expect(qa('#flightlist .fcard')).toHaveLength(3)
+  })
+
+  test('la recherche cherche d’abord (indicatif, exploitant, escales), les filtres retranchent ensuite (js/06 l. 1118-1125)', async () => {
+    await open(board(fleet()))
+    fireEvent.change(q('#searchbox'), { target: { value: 'partner' } })
+    expect(qa('#flightlist .fcard .fcard-call').map((c) => c.textContent)).toEqual(['XYZ303'])
+    fireEvent.change(q('#searchbox'), { target: { value: 'LFMN' } })
+    expect(qa('#flightlist .fcard')).toHaveLength(3)
+    fireEvent.change(q('#fwRisk'), { target: { value: 'HIGH' } })
+    expect(qa('#flightlist .fcard .fcard-call').map((c) => c.textContent)).toEqual(['TNP202'])
+  })
+})
+
 describe('F01a — les commandes du bandeau (#fwTopHost, index.html l. 30-39, js/09 l. 175-186, js/10 l. 139-148)', () => {
   test('le bandeau du produit porte #fwTopHost : LIVE, ACTIVATE ERP, FLIGHT LIST, horloge UTC', async () => {
     await open()
