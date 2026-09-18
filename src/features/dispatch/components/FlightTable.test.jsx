@@ -61,3 +61,18 @@ describe('FlightTable — cellule Crew de la référence', () => {
 function cleanupRender() {
   document.body.innerHTML = ''
 }
+
+function statusCell(rowData) {
+  render(<FlightTable rows={[rowData]} loading={false} selectedId={null} onSelect={() => {}} />)
+  // 12e colonne (index 11) : Status
+  return within(screen.getAllByRole('row')[1]).getAllByRole('cell')[11]
+}
+
+describe('FlightTable — cellule Status de la référence (dispatchStatusBadge, l. 22677-22683)', () => {
+  // ref l. 22681 : enroute → « In flight », vert
+  test('un vol en route s’écrit « In flight »', () => {
+    const cell = statusCell(row({ status: 'DEPARTED', statusTone: 'ENROUTE' }))
+    expect(within(cell).getByText('In flight')).toHaveClass('badge--ready')
+    expect(within(cell).queryByText('En route')).toBeNull()
+  })
+})

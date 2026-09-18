@@ -18,7 +18,7 @@ const STATUS_TONE = {
 
 const STATUS_LABEL = {
   SCHEDULED: 'Scheduled',
-  ENROUTE: 'En route',
+  ENROUTE: 'In flight',
   DELAYED: 'Delayed',
   AOG: 'AOG',
   MAINTENANCE: 'Maintenance',
