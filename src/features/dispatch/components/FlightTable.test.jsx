@@ -43,4 +43,21 @@ describe('FlightTable — cellule Crew de la référence', () => {
     const cell = crewCell(row())
     expect(within(cell).getByText('Assigned')).toHaveClass('badge--ready')
   })
+
+  // ref l. 22785-22786 : « FTL ⛔ » rouge sur un dépassement, « FTL ⚠ » ambre
+  // sur une marge serrée ; rien quand le FTL est bon.
+  test('le chip FTL s’écrit « FTL ⛔ » ou « FTL ⚠ » et se tait quand tout va bien', () => {
+    let cell = crewCell(row({ crewFtlStatus: 'BREACH' }))
+    expect(within(cell).getByText('FTL ⛔')).toHaveClass('badge--attention')
+    cleanupRender()
+    cell = crewCell(row({ crewFtlStatus: 'WARNING' }))
+    expect(within(cell).getByText('FTL ⚠')).toHaveClass('badge--pending')
+    cleanupRender()
+    cell = crewCell(row({ crewFtlStatus: 'OK' }))
+    expect(within(cell).queryByText(/FTL/)).toBeNull()
+  })
 })
+
+function cleanupRender() {
+  document.body.innerHTML = ''
+}

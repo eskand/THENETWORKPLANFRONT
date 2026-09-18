@@ -63,7 +63,8 @@ function CrewCell({ row }) {
   if (row.kind === 'GROUND') {
     return <td className="cell--time cell--empty">{EMPTY}</td>
   }
-  const ftlWarn = row.crewFtlStatus !== 'OK'
+  const ftlBreach = row.crewFtlStatus === 'BREACH'
+  const ftlWarn = row.crewFtlStatus === 'WARNING'
   return (
     <td>
       <span className="badge-group">
@@ -73,13 +74,14 @@ function CrewCell({ row }) {
         >
           {row.crewAssigned ? 'Assigned' : `${row.crewSeatsFilled}/${row.crewMinimumSeats}`}
         </Badge>
-        {ftlWarn ? (
+        {ftlBreach || ftlWarn ? (
           <Badge
-            tone={row.crewFtlStatus === 'BREACH' ? 'ATTENTION' : 'PENDING'}
-            warn
-            title={`Flight-time limitation: ${row.crewFtlStatus}`}
+            tone={ftlBreach ? 'ATTENTION' : 'PENDING'}
+            title={ftlBreach
+              ? 'FDP/rest/currency exceedance on assigned crew — see Crew tab'
+              : 'FDP/rest margin close to the regulatory limit — see Crew tab'}
           >
-            FTL
+            {ftlBreach ? 'FTL ⛔' : 'FTL ⚠'}
           </Badge>
         ) : null}
       </span>
