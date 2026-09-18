@@ -34,4 +34,12 @@ describe('KpiStrip — sous-libellés de la référence', () => {
     render(<KpiStrip kpi={kpi()} />)
     expect(screen.getByText('overflight, not confirmed')).toBeInTheDocument()
   })
+
+  // ref l. 22841 : crewGaps ? 'roles to fill' : 'fully crewed'
+  test('Crew Unassigned dit « roles to fill » quand un siège manque', () => {
+    const { rerender } = render(<KpiStrip kpi={kpi({ crewUnassigned: 2 })} />)
+    expect(screen.getByText('roles to fill')).toBeInTheDocument()
+    rerender(<KpiStrip kpi={kpi({ crewUnassigned: 0 })} />)
+    expect(screen.getByText('fully crewed')).toBeInTheDocument()
+  })
 })

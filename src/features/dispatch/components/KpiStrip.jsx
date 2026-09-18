@@ -52,7 +52,7 @@ export default function KpiStrip({ kpi }) {
     {
       label: 'Crew unassigned',
       value: kpi.crewUnassigned,
-      hint: kpi.crewUnassigned === 0 ? 'fully crewed' : 'flight deck incomplete',
+      hint: kpi.crewUnassigned ? 'roles to fill' : 'fully crewed',
       accent: 'var(--accent-teal)',
       valueColor: kpi.crewUnassigned > 0 ? 'var(--attention-fg)' : undefined,
     },
