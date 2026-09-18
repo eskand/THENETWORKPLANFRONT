@@ -535,6 +535,11 @@ body.fw-topbar .topbar-left p{ white-space:nowrap; overflow:hidden; text-overflo
     text-shadow:0 0 3px #000,0 0 3px #000;white-space:nowrap;
   }
 
+/* ── adaptation à l'hôte : le bandeau et la page de la suite posent un line-height
+   (theme.css) que le chrome de la référence (css/05) ne pose pas ; le module se lit
+   donc à line-height normal, comme dans la référence. ──────────────────────── */
+#viewFlightFollowing, #fwTopHost { line-height: normal; }
+
 /* ── annexe injectée par js/09 l. 7 (feuille posée depuis le script) ──── */
 #fw-live-btn{background:#12213f;border:1px solid #24406b;color:#cfe0f5;font:700 11px system-ui;padding:6px 11px;border-radius:6px;cursor:pointer;letter-spacing:.5px}#fw-live-btn:hover{border-color:#3a5c8f}#fw-live-btn.on{background:#123b2a;border-color:#2ECC71;color:#8ef0bd}
 
