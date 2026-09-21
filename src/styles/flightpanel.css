@@ -1006,3 +1006,7 @@
   display: flex; align-items: flex-start; justify-content: center;
   min-height: 2.2em;
 }
+
+/* La cause du retard, demandee a cote du masque ATD quand l heure saisie depasse le STD
+   (la liste des codes du tenant ; le mouvement ne part qu une fois la cause choisie). */
+.fd-root .tnp-time-mask .tnp-delay-cause{ margin-left:6px; max-width:230px; height:30px; font-size:11px; }

@@ -11,6 +11,7 @@ import {
   fetchLiveTraffic,
   fetchTripSupportBoard,
   recordMovement,
+  fetchDelayCodes,
   sendMvt,
 } from '../api/operations'
 
@@ -149,6 +150,19 @@ export function useLeg(legId) {
  * POST /v1/legs/{id}/mvt, qui horodate l'envoi sur l'etape. Les ecrans qui
  * lisent l'etape sont donc rafraichis derriere.
  */
+/**
+ * Les codes de retard du tenant, pour la cause demandee a la saisie de l'ATD.
+ * Une liste de reference : pas de rafraichissement, longue duree de vie.
+ */
+export function useDelayCodes(enabled = true) {
+  return useQuery({
+    queryKey: ['delay-codes'],
+    queryFn: fetchDelayCodes,
+    enabled,
+    staleTime: 3_600_000,
+  })
+}
+
 export function useSendMvt() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -173,7 +187,7 @@ export function useSendMvt() {
 export function useRecordMovement() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ legId, kind, at }) => recordMovement(legId, kind, at),
+    mutationFn: ({ legId, kind, at, delay }) => recordMovement(legId, kind, at, delay),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['leg'] })
       queryClient.invalidateQueries({ queryKey: ['timeline'] })

@@ -125,8 +125,21 @@ export async function sendMvt(legId) {
  * suivi de vol, pas d'une saisie au clavier — c'est pourquoi le panneau ne
  * propose que les deux premiers.
  */
-export async function recordMovement(legId, kind, at) {
-  const { data } = await client.post(`/legs/${legId}/movements`, { kind, at })
+export async function recordMovement(legId, kind, at, delay = null) {
+  const body = { kind, at }
+  // Un OUT en retard porte sa cause : le serveur l'enregistre comme retard
+  // code (RecordMovementCommand.delayMinutes / delayCode) avec le mouvement.
+  if (delay && delay.minutes >= 1 && delay.code) {
+    body.delayMinutes = delay.minutes
+    body.delayCode = delay.code
+  }
+  const { data } = await client.post(`/legs/${legId}/movements`, body)
+  return data
+}
+
+/** GET /v1/legs/delay-codes — la liste des codes de retard du tenant (IATA par defaut). */
+export async function fetchDelayCodes() {
+  const { data } = await client.get('/legs/delay-codes')
   return data
 }
 

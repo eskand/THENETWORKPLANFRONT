@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { CloudFog, Clock, FileText, Pencil, Send, ShieldCheck } from 'lucide-react'
 import { LoadingState } from '../States'
-import { useRecordMovement, useSendMvt } from '../../hooks/useOperations'
+import { useDelayCodes, useRecordMovement, useSendMvt } from '../../hooks/useOperations'
 import { useSchedulingBoard } from '../../hooks/useCrewScheduling'
 import {
   useFlightFileLvp, useFlightNote, useLegFuel, useLegPassengers, useSaveFlightNote,
@@ -246,6 +246,13 @@ export function OffBlockModal({ row, onClose }) {
   const [time, setTime] = useState(hhmmNow())
   const [error, setError] = useState(null)
   const [step, setStep] = useState(null)
+  const [cause, setCause] = useState('')
+
+  /* Le retard, lu de l'heure saisie contre le STD. Des qu'il y en a un, la cause
+     est demandee : le serveur l'enregistre comme retard code avec le mouvement,
+     et sans choix il retombait sur « 89 » en silence. */
+  const delayMinutes = delayOf(row.std, atDay(time))
+  const codes = useDelayCodes(delayMinutes >= 1)
 
   /** L'heure saisie, posee sur le JOUR de l'etape, en UTC. */
   function atDay(value) {
@@ -259,9 +266,14 @@ export function OffBlockModal({ row, onClose }) {
   function run() {
     const at = atDay(time)
     if (!at) return
+    if (delayMinutes >= 1 && !cause) {
+      setError('The delay needs a cause before the time is recorded.')
+      return
+    }
     setError(null)
     setStep('Recording the off-block time…')
-    record.mutate({ legId: row.legId, kind: 'OUT', at }, {
+    const delay = delayMinutes >= 1 ? { minutes: delayMinutes, code: cause } : null
+    record.mutate({ legId: row.legId, kind: 'OUT', at, delay }, {
       onError: (failure) => { setStep(null); setError(failure.message) },
       onSuccess: () => {
         setStep('Sending the MVT message…')
@@ -300,9 +312,36 @@ export function OffBlockModal({ row, onClose }) {
                    onChange={(event) => setTime(event.target.value)} />
           </div>
         </div>
+        {delayMinutes >= 1 ? (
+          <>
+            <div className="fd-card">
+              <div className="lbl">Delay</div>
+              <div className="val">+{delayMinutes} min</div>
+            </div>
+            <div className="fd-card">
+              <label className="lbl" htmlFor="offblock-delay-cause">Delay cause</label>
+              <div className="val">
+                <select id="offblock-delay-cause" className="fd-select tnp-delay-cause" value={cause}
+                        onChange={(event) => setCause(event.target.value)}>
+                  <option value="">Choose the cause…</option>
+                  {(codes.data ?? []).map((code) => (
+                    <option value={code.code} key={code.code}>{code.code} — {code.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </>
+        ) : null}
       </div>
     </Modal>
   )
+}
+
+/** Le retard en minutes d'une heure saisie contre l'heure programmee ; 0 si l'une manque ou si l'heure est en avance. */
+export function delayOf(std, at) {
+  if (!std || !at) return 0
+  const minutes = Math.round((new Date(at) - new Date(std)) / 60000)
+  return Number.isNaN(minutes) || minutes < 1 ? 0 : minutes
 }
 
 function hhmmNow() {

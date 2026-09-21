@@ -6,7 +6,7 @@ import {
 import { LoadingState } from '../States'
 import { useDispatchLeg, useLegReadiness } from '../../hooks/useDispatchBoard'
 import { useAirportDetail } from '../../hooks/useOperations'
-import { useRecordMovement, useSendMvt } from '../../hooks/useOperations'
+import { useDelayCodes, useRecordMovement, useSendMvt } from '../../hooks/useOperations'
 import { useStationWeather } from '../../hooks/useWeather'
 import {
   useFlightFileLvp, useFlightNote, useLegFuel, useLegPassengers, useTripFolder,
@@ -474,7 +474,7 @@ function FlightTab({ row }) {
             {/* Les champs restent en place sur un appareil au sol — la rangee
                 fait la hauteur de la carte — mais ils n'ecrivent nulle part :
                 il n'y a pas d'etape a horodater. */}
-            <TimeMask legId={row.legId} kind="OUT" day={row.std} value={row.atd}
+            <TimeMask legId={row.legId} kind="OUT" day={row.std} value={row.atd} std={row.std}
                       title={row.legId ? 'Actual Time of Departure (UTC, HH:MM)'
                         : 'No leg to record a movement against'} />
           </div>
@@ -804,12 +804,17 @@ function LowVisibilityBanner({ row }) {
  * ouvert a 23h55 et une ATD a 00:05 restent sur le meme jour d'exploitation :
  * c'est l'etape qui porte la date, pas la pendule du poste.
  */
-function TimeMask({ legId, kind, day, value, title }) {
+function TimeMask({ legId, kind, day, value, title, std }) {
   const recorded = value ? hhmm(value) : ''
   const [hh, setHh] = useState(recorded.slice(0, 2))
   const [mm, setMm] = useState(recorded.slice(3, 5))
   const minutes = useRef(null)
   const record = useRecordMovement()
+  /* Un OUT en retard attend sa cause avant de partir : { at, minutes } tant
+     que le code n'est pas choisi. Le serveur enregistre alors le retard code
+     avec le mouvement au lieu de retomber sur « 89 » en silence. */
+  const [pendingDelay, setPendingDelay] = useState(null)
+  const codes = useDelayCodes(Boolean(pendingDelay))
 
   // Quand le tableau se rafraichit, la valeur enregistree reprend la main sur
   // ce qui est a l'ecran : sans cela une saisie refusee resterait affichee.
@@ -829,7 +834,21 @@ function TimeMask({ legId, kind, day, value, title }) {
     if (`${hours}:${mins}` === recorded) return
     const at = new Date(day)
     at.setUTCHours(Number(hours), Number(mins), 0, 0)
+    if (kind === 'OUT' && std) {
+      const late = Math.round((at - new Date(std)) / 60000)
+      if (late >= 1) {
+        setPendingDelay({ at: at.toISOString(), minutes: late })
+        return
+      }
+    }
+    setPendingDelay(null)
     record.mutate({ legId, kind, at: at.toISOString() })
+  }
+
+  function commitWithCause(code) {
+    if (!pendingDelay || !code) return
+    record.mutate({ legId, kind, at: pendingDelay.at, delay: { minutes: pendingDelay.minutes, code } })
+    setPendingDelay(null)
   }
 
   return (
@@ -848,6 +867,16 @@ function TimeMask({ legId, kind, day, value, title }) {
              onChange={(event) => setMm(digits(event.target.value))}
              onBlur={() => commit(hh, mm)} />
       {value ? <CircleCheck className="tnp-time-ok" size={16} aria-label="Recorded" /> : null}
+      {pendingDelay ? (
+        <select className="fd-select tnp-delay-cause" aria-label="Delay cause" defaultValue=""
+                title={`+${pendingDelay.minutes} min — choose the delay cause to record the time`}
+                onChange={(event) => commitWithCause(event.target.value)}>
+          <option value="">+{pendingDelay.minutes} min — cause…</option>
+          {(codes.data ?? []).map((code) => (
+            <option value={code.code} key={code.code}>{code.code} — {code.label}</option>
+          ))}
+        </select>
+      ) : null}
     </span>
   )
 }
