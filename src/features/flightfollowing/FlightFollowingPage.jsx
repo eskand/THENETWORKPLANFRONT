@@ -2,7 +2,6 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'rea
 import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { fetchTrack } from '../../api/operations'
-import TopBar from '../../components/TopBar'
 import { ErrorState } from '../../components/States'
 import { useAirports, useFollowingBoard, useLiveTraffic } from '../../hooks/useOperations'
 import { isoDate } from '../../lib/format'
@@ -154,6 +153,28 @@ function replayPositions(tracks, s) {
 }
 
 const REPLAY_OFF = { on: false, s: null, span: null, tracks: {}, msg: '', slider: 100 }
+
+/**
+ * Le bandeau du module — index.html l. 24-41 : le chrome de la page autonome
+ * (css/05), que la capture du 21/09 retient comme visuel attendu. Il ne porte
+ * que le titre et #fwTopHost ; les commandes de l'application (VIGIL, alertes,
+ * boîte OCC, avatar) restent sur les autres écrans.
+ */
+function FwTopbar({ controls }) {
+  return (
+    <div className="topbar">
+      <div className="topbar-left">
+        <h1>Flight Following</h1>
+        <p>Live OCC overview · UTC</p>
+      </div>
+      <div className="topbar-right">
+        <div id="fwTopHost" aria-label="Flight Watch controls">
+          {controls}
+        </div>
+      </div>
+    </div>
+  )
+}
 
 /** Style en ligne du bouton ERP tel que js/10 l. 145 le pose. */
 const ERP_STYLE = {
@@ -350,7 +371,6 @@ export default function FlightFollowingPage() {
   const operators = useMemo(() => [...new Set(all.map((flight) => flight.operator).filter(Boolean))].sort(), [all])
 
   const selected = all.find((flight) => flight.legId === selectedId) ?? null
-  const plotted = all.filter((flight) => flight.lastPosition)
 
   /* Un seul point d'entrée pour choisir un vol — liste ou carte — qui ouvre
      le détail (js/07 : selectFlight → openDetail). */
@@ -557,20 +577,20 @@ export default function FlightFollowingPage() {
 
   if (board.isError) {
     return (
-      <>
-        <TopBar title="Flight Following — TNP Flight Watch" subtitle="Live ADS-B tracking" controls={controls} />
+      <div id="fw-host">
+        <FwTopbar controls={controls} />
         <div className="shell__scroll">
           <main className="page">
             <ErrorState error={board.error} onRetry={() => board.refetch()} />
           </main>
         </div>
-      </>
+      </div>
     )
   }
 
   return (
-    <>
-      <TopBar title="Flight Following — TNP Flight Watch" subtitle="Live ADS-B tracking" controls={controls} />
+    <div id="fw-host">
+      <FwTopbar controls={controls} />
 
       <div
         id="viewFlightFollowing"
@@ -990,38 +1010,6 @@ export default function FlightFollowingPage() {
               </span>
             </div>
 
-            {data ? (
-              <div className="fw__mapfoot">
-                <span className={`fw__live${board.isFetching ? ' is-on' : ''}`}>
-                  {board.isFetching ? 'READING' : 'IDLE'}
-                </span>{' '}
-                <span className={`fw__src fw__src--${(data.adsb?.state ?? 'not_run').toLowerCase()}`}>
-                  {data.adsb?.provider ?? 'ADS-B'} · {data.adsb?.state ?? 'NOT RUN'}
-                </span>
-                {data.adsb?.state === 'LIVE' ? (
-                  <>
-                    {' '}
-                    {data.adsb.seen} aircraft seen in the box, {data.adsb.matched} ours
-                    {data.adsb.withoutModeS?.length > 0 ? (
-                      <>
-                        {' · '}
-                        <b title={data.adsb.withoutModeS.join(', ')}>
-                          {data.adsb.withoutModeS.length} of our tails carry no Mode-S code
-                        </b>
-                        {' — they cannot be correlated until one is entered'}
-                      </>
-                    ) : null}
-                  </>
-                ) : data.adsb?.state === 'NO_ANSWER' ? (
-                  ' — the feed did not answer; the last known positions stand, with their age'
-                ) : data.adsb?.state === 'NO_SOURCE' ? (
-                  ' — no live source configured'
-                ) : null}
-                {' · '}
-                {plotted.length} of {all.length} legs plotted · {data.withoutSource} with no position ever
-                received · {data.trackedStale} stale beyond {data.staleThresholdMinutes} min
-              </div>
-            ) : null}
           </div>
 
           <div id="right" className={detailOpen ? 'fw-open' : undefined} aria-hidden={detailOpen ? 'false' : 'true'}>
@@ -1162,6 +1150,6 @@ export default function FlightFollowingPage() {
           </div>
         ) : null}
       </div>
-    </>
+    </div>
   )
 }

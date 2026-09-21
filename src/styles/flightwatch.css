@@ -535,6 +535,21 @@ body.fw-topbar .topbar-left p{ white-space:nowrap; overflow:hidden; text-overflo
     text-shadow:0 0 3px #000,0 0 3px #000;white-space:nowrap;
   }
 
+/* ── chrome de la page — css/05-host-page-chrome l. 6-15, porté sous #fw-host pour que
+   le bandeau des autres écrans (shell.css .topbar) ne soit pas touché. #fw-host n'est
+   pas fixé à la fenêtre : il remplit la colonne principale de la suite (la barre
+   latérale reste), d'où flex:1 au lieu de position:fixed. ──────────────────────── */
+#fw-host{display:flex;flex-direction:column;flex:1;min-height:0;margin:0;background:#0A1628;color:#E8EDF4;
+     font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;overflow:hidden;}
+#fw-host .topbar{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;
+        gap:16px;padding:10px 18px;background:#0F2036;border-bottom:1px solid #22354f;
+        position:static;z-index:auto;color:#E8EDF4;backdrop-filter:none;}
+#fw-host .topbar-left{margin-right:auto;}
+#fw-host .topbar-left h1{margin:0;font-size:15px;font-weight:700;letter-spacing:.2px;color:#E8EDF4;font-family:inherit;}
+#fw-host .topbar-left p{margin:2px 0 0;font-size:10.5px;color:#8fa2bd;letter-spacing:.4px;}
+#fw-host .topbar-right{display:flex;align-items:center;gap:10px;}
+#fw-host > #viewFlightFollowing{flex:1;min-height:0;}
+
 /* ── adaptation à l'hôte : le bandeau et la page de la suite posent un line-height
    (theme.css) que le chrome de la référence (css/05) ne pose pas ; le module se lit
    donc à line-height normal, comme dans la référence. ──────────────────────── */
@@ -543,11 +558,9 @@ body.fw-topbar .topbar-left p{ white-space:nowrap; overflow:hidden; text-overflo
 /* ── annexe injectée par js/09 l. 7 (feuille posée depuis le script) ──── */
 #fw-live-btn{background:#12213f;border:1px solid #24406b;color:#cfe0f5;font:700 11px system-ui;padding:6px 11px;border-radius:6px;cursor:pointer;letter-spacing:.5px}#fw-live-btn:hover{border-color:#3a5c8f}#fw-live-btn.on{background:#123b2a;border-color:#2ECC71;color:#8ef0bd}
 
-
 /* ==================================================================
-   PROVISOIRE — éléments propres à la cible en attente d'arbitrage
-   (A_ARBITRER F01e pied de carte, F01f pastille READING / IDLE, F01h
-   message de liste vide). Chaque bloc disparaît avec la décision.
+   PROVISOIRE — élément propre à la cible en attente d'arbitrage
+   (A_ARBITRER F01h message de liste vide). F01e / F01f retirés le 21/09.
    ================================================================== */
 #viewFlightFollowing {
   --fw-bg: #071528;
@@ -562,40 +575,6 @@ body.fw-topbar .topbar-left p{ white-space:nowrap; overflow:hidden; text-overflo
   --fw-critical: #c0392b;
 }
 
-
-.fw__live {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-family: var(--mono);
-  font-size: 10px;
-  font-weight: 700;
-  padding: 5px 11px;
-  border: 1px solid var(--fw-line);
-  border-radius: 6px;
-  color: var(--fw-mute);
-}
-
-.fw__live.is-on {
-  border-color: var(--fw-low);
-  color: #8ef0bd;
-}
-
-
-.fw__mapfoot {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 500;
-  padding: 5px 12px;
-  background: rgba(7, 21, 40, 0.88);
-  border-top: 1px solid var(--fw-line);
-  font-size: 9.5px;
-  color: var(--fw-mute);
-}
-
-
 .fwl__empty {
   padding: 26px 14px;
   font-size: 11px;
@@ -603,35 +582,3 @@ body.fw-topbar .topbar-left p{ white-space:nowrap; overflow:hidden; text-overflo
   text-align: center;
 }
 
-.fw__src {
-  font-family: var(--mono);
-  font-size: 8.5px;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  padding: 2px 6px;
-  border-radius: 3px;
-  margin-right: 6px;
-  background: rgba(120, 160, 220, 0.16);
-  color: var(--fw-mute);
-}
-
-.fw__src--live {
-  background: rgba(39, 174, 96, 0.2);
-  color: #8ef0bd;
-}
-
-.fw__src--no_answer {
-  background: rgba(230, 126, 34, 0.22);
-  color: #ffbe7a;
-}
-
-.fw__src--no_source {
-  background: rgba(192, 57, 43, 0.22);
-  color: #ff9c93;
-}
-
-.fw__mapfoot b {
-  color: #ffe08a;
-  font-weight: 700;
-  cursor: help;
-}

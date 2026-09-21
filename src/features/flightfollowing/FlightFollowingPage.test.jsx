@@ -33,7 +33,7 @@ vi.mock('../../api/client', () => {
 })
 
 vi.mock('./components/FlightWatchMap', () => ({
-  default: () => <div data-testid="leaflet-stub" />,
+  default: () => <div id="map" data-testid="leaflet-stub" />,
 }))
 
 // eslint-disable-next-line import/first
@@ -822,6 +822,43 @@ describe('F20 — le seam hôte : window.FW et l’événement fw:select (js/11 
     expect(window.FW.setFlights).toBeUndefined()
     unmount()
     expect(window.FW).toBeUndefined()
+  })
+})
+
+describe('Chrome du module — bandeau et cadre de la référence (index.html l. 22-41, css/05 l. 6-15 ; décision du 21/09 : capture 1)', () => {
+  test('la page vit dans #fw-host : bandeau plat « Flight Following / Live OCC overview · UTC » et #fwTopHost seul à droite', async () => {
+    await open()
+    const host = q('#fw-host')
+    expect(host).not.toBeNull()
+    const bar = host.querySelector(':scope > .topbar')
+    expect(bar.querySelector('.topbar-left h1')).toHaveTextContent('Flight Following')
+    expect(bar.querySelector('.topbar-left p')).toHaveTextContent('Live OCC overview · UTC')
+    expect(bar.querySelector('.topbar-right #fwTopHost')).not.toBeNull()
+    expect([...bar.querySelector('.topbar-right').children].map((c) => c.id)).toEqual(['fwTopHost'])
+    expect(bar.querySelector('.topbar__back, .vigil-btn, .icon-btn, .avatar')).toBeNull()
+    expect(host.querySelector(':scope > #viewFlightFollowing')).not.toBeNull()
+  })
+
+  test('le pied de carte propre à la cible a disparu (F01e / F01f tranchés par la capture du 21/09)', async () => {
+    await open()
+    expect(q('#mapwrap .fw__mapfoot')).toBeNull()
+    expect(q('.fw__live')).toBeNull()
+    expect([...q('#mapwrap').children].map((c) => c.id || c.className)).toEqual([
+      'map', 'fwMapCtl', 'map-note', 'fw-watch-ctl', 'fw-table', 'fw-replay', 'basemap-switch', 'fw-speed-badge', 'fw-feed-age', 'wx-anim-ctl',
+    ])
+  })
+
+  test('la feuille porte le chrome de css/05 sous #fw-host et plus aucune règle du pied de carte', () => {
+    const css = readFileSync(resolve(process.cwd(), 'src/styles/flightwatch.css'), 'utf8')
+    expect(css).toContain('#fw-host .topbar{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;')
+    expect(css).toContain('gap:16px;padding:10px 18px;background:#0F2036;border-bottom:1px solid #22354f;')
+    expect(css).toContain('#fw-host .topbar-left h1{margin:0;font-size:15px;font-weight:700;letter-spacing:.2px;color:#E8EDF4;font-family:inherit;}')
+    expect(css).toContain('#fw-host .topbar-left p{margin:2px 0 0;font-size:10.5px;color:#8fa2bd;letter-spacing:.4px;}')
+    expect(css).toContain('#fw-host .topbar-right{display:flex;align-items:center;gap:10px;}')
+    expect(css).toContain('#fw-host > #viewFlightFollowing{flex:1;min-height:0;}')
+    expect(css).not.toContain('.fw__mapfoot')
+    expect(css).not.toContain('.fw__live')
+    expect(css).not.toContain('.fw__src')
   })
 })
 
