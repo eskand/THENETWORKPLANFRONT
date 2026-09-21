@@ -74,7 +74,7 @@ const DEFAULT_LAYERS = {
 }
 
 /** La famille de flotte d'un type — fwFamille js/06 l. 662-669, sur « modèle + code OACI ». */
-export function fwFamille(actype) {
+function fwFamille(actype) {
   const t = String(actype || '')
   if (/7X|900|2000|Falcon/i.test(t)) return 'FALCON'
   if (/Citation|525/i.test(t)) return 'CITATION'
