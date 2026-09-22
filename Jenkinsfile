@@ -26,7 +26,8 @@
 //    CI_DEPLOY     « true » pour déployer main sur le cluster
 //
 //  Il tourne sur un agent Linux ou Windows : chaque commande passe par
-//  `run`, qui choisit `sh` ou `bat`.
+//  `run`, qui choisit `sh` ou `bat`. Ces fonctions ne sont pas des étapes
+//  déclaratives, d'où les blocs script { } qui les entourent.
 //
 //  Voir docs/50_JENKINS.md et docs/60_DOCKER_KUBERNETES.md du dépôt parent.
 // ============================================================
@@ -68,21 +69,25 @@ pipeline {
                 script {
                     env.SHORT_SHA  = (env.GIT_COMMIT ?: runOut('git rev-parse HEAD')).take(7)
                     env.BRANCH_TAG = dockerTag(env.BRANCH_NAME ?: 'local')
+                    run 'npm ci'
                 }
-                run 'npm ci'
             }
         }
 
         stage('Lint') {
             steps {
-                run 'npm run lint'
+                script {
+                    run 'npm run lint'
+                }
             }
         }
 
         stage('Tests') {
             steps {
-                // JUnit pour Jenkins, lcov pour SonarQube (vite.config.js → coverage).
-                run 'npm test -- --reporter=default --reporter=junit --outputFile.junit=reports/junit.xml --coverage.enabled=true'
+                script {
+                    // JUnit pour Jenkins, lcov pour SonarQube (vite.config.js → coverage).
+                    run 'npm test -- --reporter=default --reporter=junit --outputFile.junit=reports/junit.xml --coverage.enabled=true'
+                }
             }
             post {
                 always {
@@ -115,24 +120,28 @@ pipeline {
 
         stage('Image Docker') {
             steps {
-                // Le Dockerfile refait npm ci + vite build dans une image Node propre :
-                // ce qui est livré est ce qui a été construit dans l'image, pas sur l'agent.
-                run "docker build --pull -t ${env.IMAGE}:${env.SHORT_SHA} -t ${env.IMAGE}:${env.BRANCH_TAG} ."
+                script {
+                    // Le Dockerfile refait npm ci + vite build dans une image Node propre :
+                    // ce qui est livré est ce qui a été construit dans l'image, pas sur l'agent.
+                    run "docker build --pull -t ${env.IMAGE}:${env.SHORT_SHA} -t ${env.IMAGE}:${env.BRANCH_TAG} ."
+                }
             }
         }
 
         stage('Publication') {
             when { branch 'main' }
             steps {
-                withCredentials([usernamePassword(credentialsId: 'registry-credentials',
-                                                  usernameVariable: 'REG_USER',
-                                                  passwordVariable: 'REG_PASS')]) {
-                    run(isUnix()
-                        ? 'echo "$REG_PASS" | docker login -u "$REG_USER" --password-stdin ' + env.REGISTRY
-                        : 'echo %REG_PASS%| docker login -u %REG_USER% --password-stdin ' + env.REGISTRY)
+                script {
+                    withCredentials([usernamePassword(credentialsId: 'registry-credentials',
+                                                      usernameVariable: 'REG_USER',
+                                                      passwordVariable: 'REG_PASS')]) {
+                        run(isUnix()
+                            ? 'echo "$REG_PASS" | docker login -u "$REG_USER" --password-stdin ' + env.REGISTRY
+                            : 'echo %REG_PASS%| docker login -u %REG_USER% --password-stdin ' + env.REGISTRY)
+                    }
+                    run "docker push ${env.IMAGE}:${env.SHORT_SHA}"
+                    run "docker push ${env.IMAGE}:${env.BRANCH_TAG}"
                 }
-                run "docker push ${env.IMAGE}:${env.SHORT_SHA}"
-                run "docker push ${env.IMAGE}:${env.BRANCH_TAG}"
             }
         }
 
@@ -144,9 +153,11 @@ pipeline {
                 }
             }
             steps {
-                withKubeConfig([credentialsId: 'kubeconfig-netplus']) {
-                    run "kubectl -n ${env.K8S_NS} set image deployment/${env.K8S_DEPLOY} ${env.K8S_DEPLOY}=${env.IMAGE}:${env.SHORT_SHA}"
-                    run "kubectl -n ${env.K8S_NS} rollout status deployment/${env.K8S_DEPLOY} --timeout=5m"
+                script {
+                    withKubeConfig([credentialsId: 'kubeconfig-netplus']) {
+                        run "kubectl -n ${env.K8S_NS} set image deployment/${env.K8S_DEPLOY} ${env.K8S_DEPLOY}=${env.IMAGE}:${env.SHORT_SHA}"
+                        run "kubectl -n ${env.K8S_NS} rollout status deployment/${env.K8S_DEPLOY} --timeout=5m"
+                    }
                 }
             }
         }
