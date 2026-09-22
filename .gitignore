@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Rapport JUnit produit par le pipeline Jenkins
+reports
+# Couverture Vitest (lue par SonarQube)
+coverage

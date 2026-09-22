@@ -21,5 +21,14 @@ export default defineConfig({
     globals: true,
     setupFiles: './src/test/setup.js',
     include: ['src/**/*.test.{js,jsx}'],
+    // Couverture pour SonarQube (sonar-project.properties lit coverage/lcov.info).
+    // Désactivée par défaut ; le pipeline passe --coverage.enabled=true.
+    coverage: {
+      provider: 'v8',
+      reporter: ['text-summary', 'lcov'],
+      reportsDirectory: 'coverage',
+      include: ['src/**/*.{js,jsx}'],
+      exclude: ['src/**/*.test.{js,jsx}', 'src/test/**', 'src/main.jsx'],
+    },
   },
 })

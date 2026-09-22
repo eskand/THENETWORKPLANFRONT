@@ -1,0 +1,11 @@
+node_modules
+dist
+coverage
+reports
+.git
+.vscode
+.idea
+*.log
+Jenkinsfile
+README.md
+sonar-project.properties
