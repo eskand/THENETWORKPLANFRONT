@@ -101,10 +101,15 @@ pipeline {
                 script {
                     def scannerHome = tool 'sonar-scanner'
                     def scanner = isUnix() ? "${scannerHome}/bin/sonar-scanner" : "\"${scannerHome}\\bin\\sonar-scanner.bat\""
-                    // withSonarQubeEnv fournit SONAR_HOST_URL et le jeton ; le reste
+                    // withSonarQubeEnv fournit SONAR_HOST_URL et SONAR_AUTH_TOKEN ; le reste
                     // (projectKey, sources, lcov) est dans sonar-project.properties.
+                    // Le jeton est passé explicitement en sonar.token : SonarQube 2025.1+
+                    // n'accepte plus le sonar.login que le plugin injecte, et sans cela le
+                    // scanner part anonyme (HTTP 401). Simples quotes : c'est le shell qui
+                    // lit la variable, le secret ne passe pas par Groovy.
+                    def tokenArg = isUnix() ? '-Dsonar.token=$SONAR_AUTH_TOKEN' : '-Dsonar.token=%SONAR_AUTH_TOKEN%'
                     withSonarQubeEnv('sonarqube') {
-                        run "${scanner} -Dsonar.projectVersion=${env.SHORT_SHA}"
+                        run(scanner + ' ' + tokenArg + ' -Dsonar.projectVersion=' + env.SHORT_SHA)
                     }
                 }
             }
