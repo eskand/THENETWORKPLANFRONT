@@ -128,7 +128,11 @@ pipeline {
                 script {
                     // Le Dockerfile refait npm ci + vite build dans une image Node propre :
                     // ce qui est livré est ce qui a été construit dans l'image, pas sur l'agent.
-                    run "docker build --pull -t ${env.IMAGE}:${env.SHORT_SHA} -t ${env.IMAGE}:${env.BRANCH_TAG} ."
+                    // Sans --pull et avec retry : un aléa réseau vers Docker Hub ne casse
+                    // pas le build (voir le Jenkinsfile du back).
+                    retry(2) {
+                        run "docker build -t ${env.IMAGE}:${env.SHORT_SHA} -t ${env.IMAGE}:${env.BRANCH_TAG} ."
+                    }
                 }
             }
         }
